@@ -18,7 +18,7 @@ zenflow takes a narrower position than the most popular multi-agent frameworks. 
 | **Concurrency model** | DAG-scheduled goroutines, race detector clean | Sequential tasks, no native parallelism | Sequential conversation turns | Graph step at a time | Auto-parallelize independent tasks in the DAG | Caller-managed |
 | **Test surface** | Mailbox + Wake assertions, typed drops, no LLM needed for unit tests | Crew run integration tests (LLM required) | Group chat integration tests (LLM required) | Graph-step unit tests possible | `onTrace` span assertions, structured-output Zod schemas | Caller-managed |
 | **Languages** | Go (CLI + library) | Python | Python | Python (TS port) | TypeScript / Node.js >= 18 | Go |
-| **Deployment** | Single static binary (~20 MB stripped) | Python interpreter + deps | Python interpreter + deps | Python interpreter + deps | Node.js + 3 runtime deps | Go binary + deps |
+| **Deployment** | Single static binary | Python interpreter + deps | Python interpreter + deps | Python interpreter + deps | Node.js + 3 runtime deps | Go binary + deps |
 | **Observability** | Built-in OTel tracer, NDJSON event stream, ProgressSink | Custom callbacks | Custom callbacks | LangSmith integration | `onProgress` events + `onTrace` spans + post-run HTML dashboard | Caller-managed |
 
 ## Where each tool shines

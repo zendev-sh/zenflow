@@ -28,7 +28,7 @@ Or pull the Docker image:
 docker pull ghcr.io/zendev-sh/zenflow:latest
 ```
 
-The single ~20 MB Go binary has no runtime dependencies.
+The single Go binary has no runtime dependencies.
 
 ## Three CLI verbs
 

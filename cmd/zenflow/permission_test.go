@@ -349,6 +349,14 @@ func equalSlice(a, b []string) bool {
 // ctx is cancelled after 5ms; the watcher goroutine must trigger SetReadDeadline
 // and unblock the reader.
 func TestPrompt_DeadlinePath_CtxCancel_NoLeak(t *testing.T) {
+	if runtime.GOOS == "windows" {
+ // SetReadDeadline on os.Pipe doesn't reliably unblock a blocked
+ // Read on Windows the way kqueue/epoll does on Unix. The
+ // production fallback path (goroutine-with-documented-leak) is
+ // what Windows users actually take, so a deadline-path-specific
+ // goroutine assertion does not apply there.
+		t.Skip("os.Pipe SetReadDeadline does not interrupt blocked Read on Windows")
+	}
 	pr, pw, err := os.Pipe()
 	if err != nil {
 		t.Fatalf("os.Pipe: %v", err)
