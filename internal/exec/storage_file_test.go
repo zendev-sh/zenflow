@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -629,6 +630,9 @@ func TestAtomicWriteJSON_MarshalError(t *testing.T) {
 // TestFileStorage_DirPermissions verifies: run directories are
 // created with mode 0o700 (owner-only), not the group-readable 0o755.
 func TestFileStorage_DirPermissions(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Windows ignores POSIX file modes; the 0o700 invariant has no effect there")
+	}
 	dir := t.TempDir()
 	store := NewFileStorage(dir)
 

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -36,13 +37,21 @@ func TestGrepToolIn_PathInsideWorkdir(t *testing.T) {
 func TestGrepToolIn_AbsolutePathOutsideWorkdir_Rejected(t *testing.T) {
 	dir := t.TempDir()
 	g := grepToolIn(dir)
+	// Pick a path that filepath.IsAbs reports true on the current OS
+	// and that points outside the workdir. The path itself does not
+	// need to exist - the containment check fires before the
+	// filesystem walk.
+	outsidePath := "/etc/passwd"
+	if runtime.GOOS == "windows" {
+		outsidePath = `C:\Windows\System32\drivers\etc\hosts`
+	}
 	args, _ := json.Marshal(map[string]any{
 		"pattern": "root",
-		"path":    "/etc/passwd",
+		"path":    outsidePath,
 	})
 	_, err := g.Execute(context.Background(), args)
 	if err == nil {
-		t.Fatal("expected containment error for '/etc/passwd', got nil")
+		t.Fatalf("expected containment error for %q, got nil", outsidePath)
 	}
 	if !strings.Contains(err.Error(), "outside workdir") {
 		t.Errorf("expected 'outside workdir' in error, got: %v", err)

@@ -3,6 +3,7 @@ package exec
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -493,6 +494,9 @@ func TestAssemblePrompt_OversizedTextAttachment(t *testing.T) {
 // Stat reports a file under the cap but ReadFile fails. We trigger this
 // with a mode-0 file: Stat succeeds, ReadFile fails with EACCES.
 func TestAssemblePrompt_ImageReadFileError(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Windows ignores POSIX file modes; chmod 0 still permits reads")
+	}
 	if os.Getuid() == 0 {
 		t.Skip("running as root: chmod 0 doesn't deny reads")
 	}
@@ -516,6 +520,9 @@ func TestAssemblePrompt_ImageReadFileError(t *testing.T) {
 // TestAssemblePrompt_TextReadFileError covers prompt.go:283-287 -
 // Stat passes for the text file but ReadFile fails (mode 0).
 func TestAssemblePrompt_TextReadFileError(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Windows ignores POSIX file modes; chmod 0 still permits reads")
+	}
 	if os.Getuid() == 0 {
 		t.Skip("running as root: chmod 0 doesn't deny reads")
 	}

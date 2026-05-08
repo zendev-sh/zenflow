@@ -9,6 +9,7 @@ import (
 	"github.com/zendev-sh/goai/provider"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -3349,6 +3350,13 @@ func TestExecutor_RepeatUntil_InnerDAG_Failed(t *testing.T) {
 // --- Coverage: runRepeatUntilInnerDAG timeout (executor.go line 1569-1571) ---
 
 func TestExecutor_RepeatUntil_InnerDAG_Timeout(t *testing.T) {
+	if runtime.GOOS == "windows" {
+ // Windows' default scheduler timer is ~15.6 ms; the 1 ms vs 10 ms
+ // race this test relies on is too tight to be reliable there.
+ // Coverage of the runRepeatUntilInnerDAG timeout branch holds via
+ // the ubuntu / macos runs.
+		t.Skip("scheduler timer granularity on Windows makes the 1ms-vs-10ms race flaky")
+	}
 	slowLLM := &slowMockLLM{}
 	until := "iteration >= 0"
 	maxIter := 2

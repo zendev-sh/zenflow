@@ -5,9 +5,21 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
+
+// absPatternOutsideWorkdir returns a glob pattern that filepath.IsAbs
+// reports as absolute on the current platform AND that does not sit
+// under the test's tempdir. `/etc/*` works on POSIX; on Windows, the
+// equivalent must include a drive letter.
+func absPatternOutsideWorkdir() string {
+	if runtime.GOOS == "windows" {
+		return `C:\Windows\System32\*`
+	}
+	return "/etc/*"
+}
 
 // TestGlobToolIn_RelativePatternMatchesInsideWorkdir verifies that a
 // relative pattern like "*.txt" resolves matches under workdir.
@@ -55,14 +67,15 @@ func TestGlobToolIn_DotDotPatternRejected(t *testing.T) {
 }
 
 // TestGlobToolIn_AbsolutePatternRejected verifies that an absolute pattern
-// like "/etc/*" is rejected when a workdir is configured.
+// is rejected when a workdir is configured.
 func TestGlobToolIn_AbsolutePatternRejected(t *testing.T) {
 	dir := t.TempDir()
 	g := globToolIn(dir)
-	args, _ := json.Marshal(map[string]string{"pattern": "/etc/*"})
+	pat := absPatternOutsideWorkdir()
+	args, _ := json.Marshal(map[string]string{"pattern": pat})
 	_, err := g.Execute(context.Background(), args)
 	if err == nil {
-		t.Fatal("expected error for '/etc/*' pattern, got nil")
+		t.Fatalf("expected error for absolute pattern %q, got nil", pat)
 	}
 	if !strings.Contains(err.Error(), "absolute path") {
 		t.Errorf("expected 'absolute path' in error, got: %v", err)
@@ -140,9 +153,10 @@ func TestDefaultToolsIn_GlobIsContained(t *testing.T) {
 	}
 
 	// Absolute pattern must be rejected.
-	args, _ := json.Marshal(map[string]string{"pattern": "/etc/*"})
+	pat := absPatternOutsideWorkdir()
+	args, _ := json.Marshal(map[string]string{"pattern": pat})
 	_, err := execFn(context.Background(), args)
 	if err == nil {
-		t.Fatal("expected containment error for '/etc/*' from DefaultToolsIn glob")
+		t.Fatalf("expected containment error for %q from DefaultToolsIn glob", pat)
 	}
 }
