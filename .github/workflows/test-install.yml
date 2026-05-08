@@ -134,3 +134,66 @@ jobs:
           $InstallDir = Join-Path $env:LOCALAPPDATA 'Programs\zenflow'
           $env:Path = "$InstallDir;$env:Path"
           zenflow plan C:\zenflow-smoke\sample.yaml
+
+  # Real tool-execution against a Gemini Flash model. Catches Windows-
+  # specific tool failures the no-LLM smoke above cannot reach: bash
+  # invocation, file IO via read/write, glob/grep path resolution.
+  # Skipped automatically if GEMINI_API_KEY isn't set on the repo
+  # (forks etc).
+  tool-execution-windows:
+    name: zenflow flow on windows-latest (real LLM)
+    runs-on: windows-latest
+    if: ${{ github.repository == 'zendev-sh/zenflow' }}
+    steps:
+      - name: install zenflow
+        shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          iwr -useb https://zenflow.sh/install.ps1 | iex
+
+      - name: write tool-exercising workflow
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path C:\zf-tool | Out-Null
+          @'
+          version: 1
+          name: smoke-tool
+          agents:
+            scribe:
+              description: writes one short fact to disk
+              model: google/gemini-3-flash-preview
+              prompt: |
+                You are a careful scribe. Use the write tool to create
+                a file `note.txt` containing the literal string
+                "zenflow tool-execution OK on windows-latest", then
+                stop. Do not write anything else.
+              tools:
+                - write
+          steps:
+            - id: write_note
+              agent: scribe
+              instructions: |
+                Use the write tool exactly once with path "note.txt"
+                and content "zenflow tool-execution OK on windows-latest".
+          '@ | Set-Content -Path C:\zf-tool\flow.yaml -Encoding utf8
+
+      - name: zenflow flow (writes note.txt via the write tool)
+        shell: pwsh
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          $InstallDir = Join-Path $env:LOCALAPPDATA 'Programs\zenflow'
+          $env:Path = "$InstallDir;$env:Path"
+          Set-Location C:\zf-tool
+          zenflow flow flow.yaml --workdir C:\zf-tool --yolo
+          if (-not (Test-Path C:\zf-tool\note.txt)) {
+            Write-Error "note.txt was not created by the write tool"
+            exit 1
+          }
+          $content = Get-Content -Raw C:\zf-tool\note.txt
+          Write-Host "note.txt content: $content"
+          if ($content -notmatch 'zenflow tool-execution OK') {
+            Write-Error "note.txt content unexpected: $content"
+            exit 1
+          }
