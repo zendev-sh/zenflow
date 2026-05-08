@@ -89,11 +89,24 @@ jobs:
 
       - name: Commit versions.json
         run: |
+          # The job runs in detached HEAD at the release tag. Earlier
+          # steps (GoReleaser, the python pipeline above) leave
+          # untracked / modified files in the workspace, which makes
+          # `git rebase` blow up with "cannot rebase: You have
+          # unstaged changes". Sidestep the rebase entirely: stash the
+          # versions.json change, switch to a fresh main checkout, and
+          # apply only that one file there before committing + pushing.
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet -- docs/public/versions.json; then
+            echo "no versions.json change; nothing to commit"
+            exit 0
+          fi
+          cp docs/public/versions.json /tmp/versions.json
+          git fetch origin main
+          git checkout -B main origin/main
+          cp /tmp/versions.json docs/public/versions.json
           git add docs/public/versions.json
           git diff --cached --quiet && exit 0
           git commit -m "chore: update versions.json for ${GITHUB_REF#refs/tags/}"
-          git fetch origin main
-          git rebase origin/main
-          git push origin HEAD:main
+          git push origin main
