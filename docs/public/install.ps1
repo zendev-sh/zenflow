@@ -33,17 +33,30 @@ $Arch = switch -Regex ($env:PROCESSOR_ARCHITECTURE) {
 }
 
 # ---------- resolve version ----------
+# Use a GitHub token when available so api.github.com calls get the
+# 5000/h authenticated rate-limit instead of the 60/h anonymous one.
+# CI runners on shared egress IPs hit the anonymous limit often
+# enough that the unauthenticated path is unreliable. GH_TOKEN takes
+# precedence (matches `gh` CLI convention); GITHUB_TOKEN is the
+# auto-provisioned secret on GitHub Actions runners.
+$GhHeaders = @{}
+if ($env:GH_TOKEN) {
+    $GhHeaders['Authorization'] = "Bearer $($env:GH_TOKEN)"
+} elseif ($env:GITHUB_TOKEN) {
+    $GhHeaders['Authorization'] = "Bearer $($env:GITHUB_TOKEN)"
+}
+
 if ($env:ZENFLOW_VERSION) {
     $Tag = $env:ZENFLOW_VERSION
 } else {
     Write-Info 'resolving latest release'
     try {
-        $Latest = Invoke-RestMethod -Uri "https://api.github.com/repos/$Repo/releases/latest" -UseBasicParsing
+        $Latest = Invoke-RestMethod -Uri "https://api.github.com/repos/$Repo/releases/latest" -Headers $GhHeaders -UseBasicParsing
         $Tag = $Latest.tag_name
     } catch {
         # No stable release yet (prerelease-only); fall back to most-recent release.
         try {
-            $List = Invoke-RestMethod -Uri "https://api.github.com/repos/$Repo/releases?per_page=1" -UseBasicParsing
+            $List = Invoke-RestMethod -Uri "https://api.github.com/repos/$Repo/releases?per_page=1" -Headers $GhHeaders -UseBasicParsing
             $Tag = $List[0].tag_name
         } catch {
             Write-Err "could not resolve any release tag: $($_.Exception.Message)"

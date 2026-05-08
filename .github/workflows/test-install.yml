@@ -28,7 +28,13 @@ jobs:
         os: [ubuntu-latest, macos-latest]
     steps:
       - name: curl | sh
-        run: curl -fsSL https://zenflow.sh/install.sh | sh
+        # Pass GITHUB_TOKEN through so install.sh's `api.github.com`
+        # release-tag lookup uses the authenticated 5000/h rate-limit
+        # instead of the 60/h anonymous one (shared CI egress IPs hit
+        # the anon limit constantly).
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: curl -fsSL https://zenflow.sh/install.sh | GITHUB_TOKEN="$GITHUB_TOKEN" sh
 
       - name: write sample workflow
         run: |
@@ -73,6 +79,12 @@ jobs:
     steps:
       - name: iwr | iex
         shell: pwsh
+        # Pass GITHUB_TOKEN through so install.ps1's release-tag lookup
+        # uses the 5000/h authenticated rate-limit. windows-latest
+        # runners share a smaller egress IP pool than ubuntu/macos but
+        # the auth header is still good hygiene.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           iwr -useb https://zenflow.sh/install.ps1 | iex
 

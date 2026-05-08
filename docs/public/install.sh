@@ -50,19 +50,44 @@ case "$ARCH" in
   *) err "unsupported arch: $ARCH" ;;
 esac
 
+# Use a GitHub token when one is available so api.github.com calls
+# get the 5000/h authenticated rate-limit instead of the 60/h
+# anonymous one. CI runners on shared egress IPs hit the anonymous
+# limit often enough that the unauthenticated path is unreliable.
+# GH_TOKEN takes precedence (matches `gh` CLI convention); GITHUB_TOKEN
+# is the auto-provisioned secret on GitHub Actions runners.
+GH_AUTH=""
+if [ -n "${GH_TOKEN:-}" ]; then
+  GH_AUTH="Authorization: Bearer $GH_TOKEN"
+elif [ -n "${GITHUB_TOKEN:-}" ]; then
+  GH_AUTH="Authorization: Bearer $GITHUB_TOKEN"
+fi
+
 # ---------- resolve version ----------
 if [ -n "${ZENFLOW_VERSION:-}" ]; then
   TAG="$ZENFLOW_VERSION"
 else
   info "resolving latest release"
-  TAG="$(curl -fsSL --proto '=https' --tlsv1.2 --max-time 60 "https://api.github.com/repos/$REPO/releases/latest" 2>/dev/null \
-    | sed -n 's/.*"tag_name": *"\([^"]*\)".*/\1/p' \
-    | head -n1)"
-  if [ -z "$TAG" ]; then
-    # No stable release yet (prerelease-only); fall back to most-recent release.
-    TAG="$(curl -fsSL --proto '=https' --tlsv1.2 --max-time 60 "https://api.github.com/repos/$REPO/releases?per_page=1" \
+  if [ -n "$GH_AUTH" ]; then
+    TAG="$(curl -fsSL --proto '=https' --tlsv1.2 --max-time 60 -H "$GH_AUTH" "https://api.github.com/repos/$REPO/releases/latest" 2>/dev/null \
       | sed -n 's/.*"tag_name": *"\([^"]*\)".*/\1/p' \
       | head -n1)"
+  else
+    TAG="$(curl -fsSL --proto '=https' --tlsv1.2 --max-time 60 "https://api.github.com/repos/$REPO/releases/latest" 2>/dev/null \
+      | sed -n 's/.*"tag_name": *"\([^"]*\)".*/\1/p' \
+      | head -n1)"
+  fi
+  if [ -z "$TAG" ]; then
+    # No stable release yet (prerelease-only); fall back to most-recent release.
+    if [ -n "$GH_AUTH" ]; then
+      TAG="$(curl -fsSL --proto '=https' --tlsv1.2 --max-time 60 -H "$GH_AUTH" "https://api.github.com/repos/$REPO/releases?per_page=1" \
+        | sed -n 's/.*"tag_name": *"\([^"]*\)".*/\1/p' \
+        | head -n1)"
+    else
+      TAG="$(curl -fsSL --proto '=https' --tlsv1.2 --max-time 60 "https://api.github.com/repos/$REPO/releases?per_page=1" \
+        | sed -n 's/.*"tag_name": *"\([^"]*\)".*/\1/p' \
+        | head -n1)"
+    fi
   fi
   [ -n "$TAG" ] || err "could not resolve any release tag"
 fi
