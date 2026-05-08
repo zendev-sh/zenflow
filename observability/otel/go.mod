@@ -5,7 +5,7 @@ go 1.25.0
 require (
 	github.com/zendev-sh/goai v0.7.5
 	github.com/zendev-sh/goai/observability/otel v0.7.5
-	github.com/zendev-sh/zenflow v0.1.1
+	github.com/zendev-sh/zenflow v0.1.2
 	go.opentelemetry.io/otel v1.43.0
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.43.0
 	go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.43.0
