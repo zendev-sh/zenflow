@@ -42,11 +42,12 @@ jobs:
         run: go build ./cmd/zenflow/
 
       - name: Test (race)
-        # `coverage.out` (not `coverage.txt`) avoids a PowerShell
-        # argument-parsing quirk on `windows-latest` that splits
-        # `-coverprofile=coverage.txt` and feeds `.txt` to go test as
-        # a phantom package, yielding `FAIL .txt [setup failed]`.
-        # `.out` matches goai's convention.
+        # Force bash on Windows: PowerShell's argument tokeniser
+        # splits any `-flag=path.<ext>` form so that `.<ext>` lands in
+        # `go test` as a phantom package (verified with both `.txt`
+        # and `.out` extensions). bash on `windows-latest` is provided
+        # by GitHub-hosted runners.
+        shell: bash
         run: go test -race -coverprofile=coverage.out -covermode=atomic ./...
 
       - name: Smoke-check examples

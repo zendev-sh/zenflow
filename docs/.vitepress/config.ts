@@ -150,13 +150,12 @@ export default defineConfig({
     ['link', { rel: 'apple-touch-icon', sizes: '256x256', href: '/zenflow-icon.png' }],
     ['meta', { name: 'theme-color', content: '#0d1226', media: '(prefers-color-scheme: dark)' }],
     ['meta', { name: 'theme-color', content: '#fafbfd', media: '(prefers-color-scheme: light)' }],
-    // Google Analytics 4. To enable: create a GA4 property at
-    // https://analytics.google.com/analytics/web/, replace the two
-    // G-PLACEHOLDER strings below with the real measurement ID, then
-    // uncomment the two script entries. Loads on every build
-    // (production, PR preview, local dev) once enabled.
-    // ['script', { async: '', src: 'https://www.googletagmanager.com/gtag/js?id=G-PLACEHOLDER' }],
-    // ['script', {}, "window.dataLayer = window.dataLayer || [];\nfunction gtag(){dataLayer.push(arguments);}\ngtag('js', new Date());\ngtag('config', 'G-PLACEHOLDER');"],
+    // Google Analytics 4. Loads on every build (production, PR
+    // preview, local dev). To rotate the property, replace the two
+    // measurement IDs below; to disable temporarily, comment out
+    // both script entries.
+    ['script', { async: '', src: 'https://www.googletagmanager.com/gtag/js?id=G-KJP3V6GDWH' }],
+    ['script', {}, "window.dataLayer = window.dataLayer || [];\nfunction gtag(){dataLayer.push(arguments);}\ngtag('js', new Date());\ngtag('config', 'G-KJP3V6GDWH');"],
   ],
 
   themeConfig: {
