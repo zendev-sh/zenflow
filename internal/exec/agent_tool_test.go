@@ -334,7 +334,7 @@ func TestAgentSpawner_ChildWithPrompt(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	// : subagent role (cfg.Prompt) now flows to system slot via
+	// Z.7.3: subagent role (cfg.Prompt) now flows to system slot via
 	// goai.WithSystem. The user message carries ONLY the task
 	// instructions; role text must NOT appear there.
 	calls := model.getCalls()
@@ -358,7 +358,7 @@ func TestAgentSpawner_ChildWithPrompt(t *testing.T) {
 		t.Errorf("user message leaked system role: %q", userText)
 	}
 	if strings.Contains(userText, "## Agent Role") {
-		t.Errorf("'## Agent Role' header should not appear after Z.7.3 migration")
+		t.Errorf("'## Agent Role' header")
 	}
 	if !strings.Contains(userText, "Write tests") {
 		t.Errorf("user message missing instructions: %q", userText)

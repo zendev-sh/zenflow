@@ -39,7 +39,7 @@ zenflow/
 │   ├── router/                 # MessageRouter, MailboxStore, deliveryEngine (race-safe send/wake)
 │   ├── resume/                 # TranscriptStore, InMemoryTranscriptStore
 │   ├── coord/                  # RunnerHandle interface + 4 coord goai.Tool factories (forward_to_agent, send_message, narrate, finalize)
-│   └── exec/                   # AgentRunner + Executor + Orchestrator + JSON coordinator + RunFlow/RunGoal/RunAgent + ResumeFlow + 49 With* options (+ 4 Without* deprecation toggles) + Storage backends (MemoryStorage, FileStorage) + SharedMemory + parsers + validators + scheduler + CEL evaluator + portability lints + isolation default + lifecycle + prompt assembly + 16 source files moved from root in Z.8.27.C
+│   └── exec/                   # AgentRunner + Executor + Orchestrator + JSON coordinator + RunFlow/RunGoal/RunAgent + ResumeFlow + 49 With* options (+ 4 Without* deprecation toggles) + Storage backends (MemoryStorage, FileStorage) + SharedMemory + parsers + validators + scheduler + CEL evaluator + portability lints + isolation default + lifecycle + prompt assembly + 16 source files moved from root
 ├── cmd/zenflow/
 │   ├── main.go                 # CLI entrypoint
 │   ├── flags.go                # Shared flag parser

@@ -12,7 +12,7 @@ import (
 	"github.com/zendev-sh/zenflow/internal/spec"
 )
 
-// : agent.Prompt now flows to goai.WithSystem, not the user-message
+// Z.7.4: agent.Prompt now flows to goai.WithSystem, not the user-message
 // "## Agent Role" header. AssemblePrompt no longer emits that section;
 // the user-message asserts focus on the Task / Context / Required
 // blocks. The original "BothRoleAndInstructions" test became
@@ -24,14 +24,14 @@ func TestAssemblePrompt_InstructionsAreInUserMessage(t *testing.T) {
 
 	got, _ := AssemblePrompt(agent, step, "", nil)
 
-	// agent.Prompt no longer leaks into the user message - it lives
+	// agent.Prompt no longer leaks into the user message  -  it lives
 	// in the system slot now. The ONLY content we expect here is the
 	// Task header + instructions.
 	if strings.Contains(got, "You are a senior engineer.") {
-		t.Error("agent.Prompt leaked into user-message; should be system-only after Z.7.4")
+		t.Error("agent.Prompt leaked into user-message;")
 	}
 	if strings.Contains(got, "## Agent Role") {
-		t.Error("'## Agent Role' header should not appear after Z.7.4 migration")
+		t.Error("'## Agent Role' header")
 	}
 	if !strings.Contains(got, "## Task") {
 		t.Error("missing '## Task' section")
@@ -59,7 +59,7 @@ func TestAssemblePrompt_OnlyInstructions(t *testing.T) {
 }
 
 func TestAssemblePrompt_OnlyRoleProducesEmptyUserMessage(t *testing.T) {
-	// Post-: when only agent.Prompt is set, the user message is
+	// Post-Z.7.4: when only agent.Prompt is set, the user message is
 	// empty (no "## Agent Role" section, no Task section). The role
 	// flows to system via executor_step.go's runner construction.
 	agent := AgentConfig{Prompt: "You are an architect."}
@@ -68,10 +68,10 @@ func TestAssemblePrompt_OnlyRoleProducesEmptyUserMessage(t *testing.T) {
 	got, _ := AssemblePrompt(agent, step, "", nil)
 
 	if strings.Contains(got, "## Agent Role") {
-		t.Error("'## Agent Role' header should not appear after Z.7.4 migration")
+		t.Error("'## Agent Role' header")
 	}
 	if strings.Contains(got, "You are an architect.") {
-		t.Error("agent.Prompt leaked into user-message after Z.7.4 migration")
+		t.Error("agent.Prompt leaked into user-message")
 	}
 	if strings.Contains(got, "## Task") {
 		t.Error("should not have '## Task' when no instructions")

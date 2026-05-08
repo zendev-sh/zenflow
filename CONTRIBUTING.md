@@ -161,7 +161,7 @@ the diff before running `make zenflow-publish`:
   repo (the canonical edit) before re-running the export.
 - **Comments with intermixed semantic + marker context.** The scrub
   preserves semantic content and excises marker fragments, but a
-  comment that reads `// Tweak per Z.6.36.B's namespace fix` becomes
+  comment that reads `// Tweak per the namespace fix` becomes
   `// Tweak per's namespace fix` after strip - grammatically valid
   but semantically confusing. Reword the comment in the source repo.
 

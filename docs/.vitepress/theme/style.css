@@ -27,7 +27,7 @@
   --zf-muted-fg:     hsl(222, 20%, 50%);
   --zf-accent:       hsl(220, 25%, 93%);
   --zf-accent-fg:    hsl(222, 47%, 15%);
-  /* Round 8f -- borders nudged lighter again. Light variant moves
+  /* -- borders nudged lighter again. Light variant moves
    * from L:93% → L:95% (3% step from bg=98%). Hover-border lifted
    * the same way so the hover state is *softer* than rest, not
    * darker. Strokes read as suggestions rather than outlines. */
@@ -88,7 +88,7 @@
   --zf-muted-fg:     hsl(0, 0%, 63.9%);
   --zf-accent:       hsl(222, 47%, 20%);
   --zf-accent-fg:    hsl(0, 0%, 98%);
-  /* Round 8f -- see light-mode comment above. Dark border further
+  /* -- see light-mode comment above. Dark border further
    * softened (18% → 16%) so it sits ~2% above the card surface
    * instead of ~4%. Cards effectively float. Hover-border is
    * slightly LIGHTER than rest, matching the light-mode treatment
@@ -101,7 +101,7 @@
 
   --zf-t-prompt: hsl(210, 60%, 60%);
   --zf-t-cmd:    hsl(0, 0%, 98%);
-  /* Round 8 -- `--zf-t-flag` migrated from warm orange/gold to
+  /* -- `--zf-t-flag` migrated from warm orange/gold to
    * brand-cyan. Light + dark are now both in the 190 hue family,
    * synced with the CLI's `\033[36m` Cyan ANSI code that dominates
    * the runtime experience. Old dark value `hsl(40, 80%, 60%)` was
@@ -184,7 +184,7 @@ body {
   max-width: 32em;
   letter-spacing: -0.005em;
 }
-/* Round 8f -- inline link inside the hero tagline, used for the
+/* -- inline link inside the hero tagline, used for the
  * `multi-agent orchestration` deep-link to the architecture page. */
 .VPHero .tagline .zf-hero-link {
   color: var(--zf-fg);
@@ -372,7 +372,7 @@ body {
  * ============================================================ */
 
 /* Override VitePress's flex-based items grid with a strict 3-col
- * grid at desktop width. Round 8 -- 6 cards now flow as a clean
+ * grid at desktop width. -- 6 cards now flow as a clean
  * 3 + 3, so the orphan-row override that pinned cards 4-5 at 50%
  * width is gone. */
 .VPHome .VPFeatures .container {
@@ -413,7 +413,7 @@ body {
   }
 }
 
-/* Round 8h -- borderless cards with thick cyan top-bar animation.
+/* -- borderless cards with thick cyan top-bar animation.
  *
  * Going back to the original "candy-bar" effect from the very first
  * homepage draft (when --zf-t-flag was warm yellow). The bar is
@@ -832,7 +832,7 @@ body {
 /* ============================================================
  * "See it run" -- Mac-style terminal frame wrapping the GIF
  *
- * Round 8d (2026-05-04) -- earlier draft tried to replay the cast
+ * Note (2026-05-04) -- earlier draft tried to replay the cast
  * via pure HTML/CSS line stagger; the user preferred the real
  * GIF inside the same Mac-style frame. We keep the chrome (3
  * dots + tab title) so it reads as "this is a terminal" without
@@ -845,7 +845,7 @@ body {
   border-radius: var(--radius);
   overflow: hidden;
   border: 1px solid var(--zf-border);
-  /* Round 8e -- terminal frame tone matches the GIF body so the
+  /* -- terminal frame tone matches the GIF body so the
    * Mac chrome doesn't read as a different surface. The cast was
    * recorded against #1c1c1c (xterm-default-ish dark grey); we
    * use the same so header + body look like one continuous
@@ -1083,7 +1083,7 @@ body {
 /* ============================================================
  * Agent Orchestration page (/agent-orchestration)
  *
- * Round 8 -- dedicated infographic page. Stage-numbered cards
+ * -- dedicated infographic page. Stage-numbered cards
  * with a side rail (number + tick), a runtime topology SVG, a
  * tool primitives grid, and a pill-row of related concepts.
  * Color-coded categories tap the same terminal-syntax accents

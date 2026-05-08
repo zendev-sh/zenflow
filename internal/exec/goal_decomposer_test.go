@@ -137,9 +137,9 @@ func TestParseCoordinatorResponse_ValidationError(t *testing.T) {
 }
 
 // TestJSONParseError_Error_UnmarshalTypeError covers the
-// json.UnmarshalTypeError branch of (*JSONParseError).Error
+// json.UnmarshalTypeError branch of (*JSONParseError).Error()
 // (goal_decomposer.go:88-91). A type-mismatch JSON (e.g. number where
-// string expected) produces *json.UnmarshalTypeError; the Error
+// string expected) produces *json.UnmarshalTypeError; the Error()
 // formatter must emit "json parse at offset N".
 func TestJSONParseError_Error_UnmarshalTypeError(t *testing.T) {
 	// Workflow.Name is a string; supply a JSON number to trigger
@@ -206,7 +206,7 @@ func TestParseCoordinatorResponse_TooLarge(t *testing.T) {
 // "style-review") together with CEL expressions like
 // "steps.style-review.result.approved" - CEL does not allow hyphens in
 // identifier chains, so the workflow fails to compile at runtime with
-// "invalid argument to has macro". Observed on G2_chain/azure-gpt5 during
+// "invalid argument to has() macro". Observed on G2_chain/azure-gpt5 during
 // E2E. ParseCoordinatorResponse must reject hyphenated step IDs
 // through the coordinator validation retry path so the LLM re-emits with
 // CEL-safe IDs.
@@ -344,6 +344,7 @@ func TestValidateToolNames_WildcardRejected(t *testing.T) {
 // sampling parameters (notably Azure gpt-5, which rejects any temperature
 // other than 1, causing `zenflow goal --model azure-deployment/gpt-5` to
 // fail 100% before the strip landed).
+//
 // ParseCoordinatorResponse must strip Model/Temperature/TopP from every
 // agent so the orchestrator's defaults take effect.
 func TestParseCoordinatorResponse_StripsModelAndSamplingParams(t *testing.T) {
@@ -1138,9 +1139,9 @@ func TestStripStepTimeouts_Nested(t *testing.T) {
 
 func TestCoordinatorPrompt_NoUnsupportedSection(t *testing.T) {
 	prompt := CoordinatorPrompt("Build something", "- **read**: read files")
-	// After update, the "NOT YET Supported" section should be removed.
+	// After Phase 7 update, the "NOT YET Supported" section should be removed.
 	if strings.Contains(prompt, "NOT YET Supported") {
-		t.Error("coordinator prompt should not contain 'NOT YET Supported' section after Phase 7 update")
+		t.Error("coordinator prompt should not contain 'NOT YET Supported'")
 	}
 	// All previously unsupported features should now appear in supported section.
 	for _, feature := range []string{"forEach", "condition", "include", "scheduler", "isolation"} {
