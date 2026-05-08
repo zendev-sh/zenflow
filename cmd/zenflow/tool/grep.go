@@ -15,8 +15,6 @@ import (
 const grepTimeout = 30 * time.Second
 const grepMaxOutput = 1 << 20 // 1 MB
 
-func grepTool() goai.Tool { return grepToolIn("") }
-
 // grepToolIn returns a grep tool optionally confined to workdir. When workdir
 // is non-empty, p.Path is rooted and validated under workdir before being
 // passed to the subprocess; patterns that escape the workdir are rejected.

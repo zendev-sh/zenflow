@@ -10,8 +10,6 @@ import (
 	"github.com/zendev-sh/goai"
 )
 
-func globTool() goai.Tool { return globToolIn("") }
-
 // globToolIn returns a glob tool confined to workdir. When workdir is
 // non-empty, absolute patterns and patterns starting with ".." are rejected
 // immediately, and the pattern is rooted under workdir. Each match is then

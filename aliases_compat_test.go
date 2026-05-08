@@ -36,6 +36,7 @@ var (
 // type at runtime in addition to the compile-time aliases above. If
 // router.NewRouter ever changes return type, this test fails to compile.
 func TestNewMessageRouterReturnsExpectedType(t *testing.T) {
+	//nolint:staticcheck // QF1011: explicit type IS the assertion; inferring it defeats the test.
 	var _ *zenflow.MessageRouter = zenflow.NewMessageRouter()
 }
 
