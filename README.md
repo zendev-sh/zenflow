@@ -1,8 +1,5 @@
 <p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: light)" srcset="docs/public/zenflow-banner.png">
-    <img src="docs/public/zenflow-banner-dark.png" alt="zenflow" width="600">
-  </picture>
+  <img src="docs/public/zenflow-banner-dark.png" alt="zenflow" width="600">
 </p>
 
 <h1 align="center">zenflow</h1>
@@ -12,7 +9,6 @@
 <p align="center">Declarative YAML agent workflows. An LLM coordinator routes events through hub-and-spoke mailboxes with race-safe delivery and zero-data-loss recovery. One YAML file, one ~20 MB Go binary. Runs on any provider <a href="https://goai.sh">goai</a> supports.</p>
 
 <p align="center">
-  <a href="https://github.com/zendev-sh/zenflow/actions/workflows/ci.yml"><img src="https://github.com/zendev-sh/zenflow/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="https://codecov.io/gh/zendev-sh/zenflow"><img src="https://codecov.io/gh/zendev-sh/zenflow/branch/main/graph/badge.svg" alt="Codecov"></a>
   <a href="https://github.com/zendev-sh/zenflow/releases/latest"><img src="https://img.shields.io/github/v/release/zendev-sh/zenflow" alt="Release"></a>
   <a href="https://pkg.go.dev/github.com/zendev-sh/zenflow"><img src="https://pkg.go.dev/badge/github.com/zendev-sh/zenflow.svg" alt="Go Reference"></a>

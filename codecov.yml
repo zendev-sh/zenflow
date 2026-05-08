@@ -1,21 +1,15 @@
-# Codecov config for zenflow.
-#
-# Coverage status: informational (does NOT gate PRs initially)  -  the repo
-# already enforces 100% per-function coverage at pre-commit time, so the
-# Codecov gate is purely for trend visualisation and reviewer
-# convenience. Flip `informational` to false once the per-package
-# coverage policy stabilises post-OSS launch.
+# Codecov config for zenflow. Thresholds match goai's setup so the two
+# sister repos report on the same gate.
 
 coverage:
   status:
     project:
       default:
-        informational: true
-        threshold: 1%
+        target: 90%
+        threshold: 2%
     patch:
       default:
-        informational: true
-        threshold: 1%
+        target: 90%
 
 comment:
   layout: "diff"
@@ -23,7 +17,7 @@ comment:
   require_changes: false
 
 ignore:
-  # Generated example mains  -  //go:build example, never executed in CI.
+  # Example mains - //go:build example, never executed in CI.
   - "examples/"
   # Workflow conformance fixtures (YAML inputs, not Go).
   - "spec/v1/testcases/"
