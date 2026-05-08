@@ -344,7 +344,6 @@ func TestValidateToolNames_WildcardRejected(t *testing.T) {
 // sampling parameters (notably Azure gpt-5, which rejects any temperature
 // other than 1, causing `zenflow goal --model azure-deployment/gpt-5` to
 // fail 100% before the strip landed).
-//
 // ParseCoordinatorResponse must strip Model/Temperature/TopP from every
 // agent so the orchestrator's defaults take effect.
 func TestParseCoordinatorResponse_StripsModelAndSamplingParams(t *testing.T) {
@@ -1139,7 +1138,7 @@ func TestStripStepTimeouts_Nested(t *testing.T) {
 
 func TestCoordinatorPrompt_NoUnsupportedSection(t *testing.T) {
 	prompt := CoordinatorPrompt("Build something", "- **read**: read files")
-	// After Phase 7 update, the "NOT YET Supported" section should be removed.
+	// After update, the "NOT YET Supported" section should be removed.
 	if strings.Contains(prompt, "NOT YET Supported") {
 		t.Error("coordinator prompt should not contain 'NOT YET Supported'")
 	}

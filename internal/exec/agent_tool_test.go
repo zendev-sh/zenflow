@@ -334,7 +334,7 @@ func TestAgentSpawner_ChildWithPrompt(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	// Z.7.3: subagent role (cfg.Prompt) now flows to system slot via
+	// : subagent role (cfg.Prompt) now flows to system slot via
 	// goai.WithSystem. The user message carries ONLY the task
 	// instructions; role text must NOT appear there.
 	calls := model.getCalls()
