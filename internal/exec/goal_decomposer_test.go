@@ -137,9 +137,9 @@ func TestParseCoordinatorResponse_ValidationError(t *testing.T) {
 }
 
 // TestJSONParseError_Error_UnmarshalTypeError covers the
-// json.UnmarshalTypeError branch of (*JSONParseError).Error()
+// json.UnmarshalTypeError branch of (*JSONParseError).Error
 // (goal_decomposer.go:88-91). A type-mismatch JSON (e.g. number where
-// string expected) produces *json.UnmarshalTypeError; the Error()
+// string expected) produces *json.UnmarshalTypeError; the Error
 // formatter must emit "json parse at offset N".
 func TestJSONParseError_Error_UnmarshalTypeError(t *testing.T) {
 	// Workflow.Name is a string; supply a JSON number to trigger
@@ -206,7 +206,7 @@ func TestParseCoordinatorResponse_TooLarge(t *testing.T) {
 // "style-review") together with CEL expressions like
 // "steps.style-review.result.approved" - CEL does not allow hyphens in
 // identifier chains, so the workflow fails to compile at runtime with
-// "invalid argument to has() macro". Observed on G2_chain/azure-gpt5 during
+// "invalid argument to has macro". Observed on G2_chain/azure-gpt5 during
 // E2E. ParseCoordinatorResponse must reject hyphenated step IDs
 // through the coordinator validation retry path so the LLM re-emits with
 // CEL-safe IDs.

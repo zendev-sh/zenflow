@@ -3,7 +3,7 @@ import { defineConfig } from 'vitepress'
 export default defineConfig({
   title: 'zenflow',
   description:
-    'Multi-agent orchestration engine for Go. Declarative YAML agent workflows with hub-and-spoke messaging, race-safe delivery, and zero-data-loss recovery.',
+    'Multi-agent orchestration engine for Go. Declarative YAML agent workflows with hub-and-spoke messaging and race-safe delivery.',
   base: process.env.VITEPRESS_BASE || '/',
   // Round 8 -- default to dark theme (still toggleable). Site visuals
   // were tuned against the dark canvas first; the OG image and CLI
@@ -99,7 +99,7 @@ export default defineConfig({
             'agent orchestration engine',
           ],
           description:
-            'Multi-agent orchestration engine for Go. Declarative YAML agent workflows with an LLM coordinator, hub-and-spoke messaging, race-safe Mailbox+Wake delivery, and zero-data-loss recovery. Runs on any provider goai supports.',
+            'Multi-agent orchestration engine for Go. Declarative YAML agent workflows with an LLM coordinator, hub-and-spoke messaging, and race-safe Mailbox+Wake delivery. Runs on any provider goai supports.',
           url: 'https://zenflow.sh',
           downloadUrl: 'https://github.com/zendev-sh/zenflow',
           applicationCategory: 'DeveloperApplication',

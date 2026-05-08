@@ -279,7 +279,7 @@ func TestAgentRunner_PermissionError(t *testing.T) {
 	}
 	result, err := runner.Run(t.Context(), AgentConfig{}, "do", "gpt-4o", tools)
 	if err != nil {
-		// If goai propagates permission errors as fatal, that's also acceptable.
+ // If goai propagates permission errors as fatal, that's also acceptable.
 		if !strings.Contains(err.Error(), "permission system broken") {
 			t.Errorf("error = %v, want 'permission system broken'", err)
 		}
@@ -311,7 +311,7 @@ func TestAgentRunner_NoMailbox_RunsWithoutMessaging(t *testing.T) {
 	runner := &AgentRunner{
 		model: model,
 		tools: tools,
-		// Mailbox + Wake intentionally nil → mailbox mode disabled.
+ // Mailbox + Wake intentionally nil → mailbox mode disabled.
 	}
 
 	result, err := runner.Run(t.Context(), AgentConfig{}, "do", "gpt-4o", tools)
@@ -454,7 +454,7 @@ func TestAgentRunner_AssistantMessageIncludesToolCalls(t *testing.T) {
 	foundAssistantWithTools := false
 	for _, m := range calls[1].Messages {
 		if m.Role == provider.RoleAssistant {
-			// Check if the message has tool-call parts
+ // Check if the message has tool-call parts
 			for _, p := range m.Content {
 				if p.Type == provider.PartToolCall {
 					foundAssistantWithTools = true
@@ -792,7 +792,7 @@ func TestAgentRunner_Streaming_InitError(t *testing.T) {
 }
 
 func TestAgentRunner_Streaming_StreamError(t *testing.T) {
-	// Stream produces ChunkError → stream.Err() non-nil after consumption.
+	// Stream produces ChunkError → stream.Err non-nil after consumption.
 	model := &errorStreamModel{text: "partial", err: fmt.Errorf("mid-stream failure")}
 	runner := &AgentRunner{
 		model:     model,
@@ -813,14 +813,13 @@ func TestAgentRunner_Streaming_StreamError(t *testing.T) {
 // onto the mailbox path (Mailbox+Wake fields). Each test now stages
 // messages by Append-ing into a MailboxStore before/after Run starts,
 // triggering the wake-driven continuation via the per-step Wake chan.
-//
 // Behaviour preserved:
-//   - pre-start drain (was "initial drain")
-//   - pre-start cancel short-circuit
-//   - mid-execution wake + drain (was "OnBeforeStep drain")
-//   - post-primary continuation drain (was "late drain")
-//   - cancel during continuation
-//   - continuation error fallback to primary result
+// - pre-start drain (was "initial drain")
+// - pre-start cancel short-circuit
+// - mid-execution wake + drain (was "OnBeforeStep drain")
+// - post-primary continuation drain (was "late drain")
+// - cancel during continuation
+// - continuation error fallback to primary result
 
 // newMailboxRunnerEnv builds a runner wired into a fresh
 // InMemoryMailboxStore + cap-1 Wake chan, returning the runner, the
@@ -902,7 +901,7 @@ func TestAgentRunner_PreStartMailboxDrain_Cancel(t *testing.T) {
 }
 
 // TestAgentRunner_PreStartMailboxDrain_GateCtxCancel_EmitsResidualDrops
-// covers the pre-loop early-return at the preStartDrainGate ctx.Done()
+// covers the pre-loop early-return at the preStartDrainGate ctx.Done
 // branch. Messages buffered before the wake loop starts MUST surface as
 // EventMessageDropped (reason=WorkflowCancelled) instead of being silently
 // dropped when the gate observes ctx cancel.
@@ -1022,7 +1021,7 @@ func TestAgentRunner_WakeDrain_ContinuesOnNewMessages(t *testing.T) {
 			textResult("processed late msg", 10, 5),
 		},
 		afterFirst: func() {
-			// Simulate the delivery engine: append + wake.
+ // Simulate the delivery engine: append + wake.
 			_, _ = mb.Append(stepID, RouterMessage{From: "coordinator", Content: "late context"})
 			select {
 			case wake <- struct{}{}:
@@ -1096,11 +1095,10 @@ func TestAgentRunner_WakeDrain_Cancel(t *testing.T) {
 // (after drainMailboxIntoMessages returns cancelled=true on a wake
 // re-entry). drainMailboxIntoMessages MarkReads only up to the cancel
 // marker (consumed = cancelIdx+1); any messages that were Unread AFTER
-// the marker - or appended between the Unread() snapshot and cancel
+// the marker - or appended between the Unread snapshot and cancel
 // detection - remain unread. They MUST surface as EventMessageDropped
 // with reason=WorkflowCancelled instead of being silently abandoned by
 // the cancelled-exit return path.
-//
 // Mirrors the pre-loop sibling test
 // TestAgentRunner_PreStartMailboxDrain_CancelMessage_EmitsResidualDrops
 // but exercises the wake-loop continuation drain instead of the
@@ -1116,9 +1114,9 @@ func TestAgentRunner_WakeLoopDrainCancel_EmitsResidualDrops(t *testing.T) {
 			textResult("should not be reached", 10, 5),
 		},
 		afterFirst: func() {
-			// Order matters: msg1 (consumed), then cancel (triggers
-			// cancelled=true, MarkReads pending[:cancelIdx+1]), then
-			// msg2 + msg3 which remain Unread and must surface as drops.
+ // Order matters: msg1 (consumed), then cancel (triggers
+ // cancelled=true, MarkReads pending[:cancelIdx+1]), then
+ // msg2 + msg3 which remain Unread and must surface as drops.
 			_, _ = mb.Append(stepID, RouterMessage{From: "coordinator", Content: "msg-1"})
 			_, _ = mb.Append(stepID, RouterMessage{Type: router.MessageCancel, From: "parent"})
 			_, _ = mb.Append(stepID, RouterMessage{From: "coordinator", Content: "after-cancel-1"})
@@ -1524,10 +1522,9 @@ func TestAgentRunner_MidLoopCancel_ViaToolExecution(t *testing.T) {
 // TestAgentRunner_MaxWakeCycles_EmitsWarningAndDrops verifies B3:
 // once the wake loop reaches the configured MaxWakeCycles cap with
 // pending mailbox messages, the runner MUST:
-//  1. emit EventMaxWakeCyclesWarning at >=80% of the cap (once)
-//  2. emit one EventMessageDropped{reason:"max-wake-cycles"} per
-//     message remaining in the mailbox after the cap fires
-//
+// 1. emit EventMaxWakeCyclesWarning at >=80% of the cap (once)
+// 2. emit one EventMessageDropped{reason:"max-wake-cycles"} per
+// message remaining in the mailbox after the cap fires
 // (i.e. zero silent drops even on pathological wake-loop hot-loops).
 func TestAgentRunner_MaxWakeCycles_EmitsWarningAndDrops(t *testing.T) {
 	stepID := "step-cap"
@@ -1619,14 +1616,14 @@ func TestAgentRunner_CtxCancelDrop_UsesWorkflowCancelledReason(t *testing.T) {
 	// mailbox message at the START of the second DoGenerate call, then
 	// signals "ready" + blocks until ctx is cancelled. The test cancels
 	// only after receiving the ready signal, so:
-	//   - iter=0: call 1 returns success quickly. result!=nil. Loop
-	//     drains the pre-existing message and re-enters.
-	//   - iter=1: call 2 appends a NEW message, signals ready, blocks
-	//     on ctx.Done. Test cancels ctx. DoGenerate returns ctx.Err
-	//     but result!=nil so the runner breaks out of the loop (NOT
-	//     the early-return path at line ~1070).
-	//   - Post-loop drain sees the call-2 message and MUST emit a drop
-	//     with reason=workflow-cancelled (NOT max-wake-cycles).
+	// - iter=0: call 1 returns success quickly. result!=nil. Loop
+	// drains the pre-existing message and re-enters.
+	// - iter=1: call 2 appends a NEW message, signals ready, blocks
+	// on ctx.Done. Test cancels ctx. DoGenerate returns ctx.Err
+	// but result!=nil so the runner breaks out of the loop (NOT
+	// the early-return path at line ~1070).
+	// - Post-loop drain sees the call-2 message and MUST emit a drop
+	// with reason=workflow-cancelled (NOT max-wake-cycles).
 	// Without the synchronization, ctx could cancel before call 2
 	// reaches Append, leaving the mailbox empty and skipping the drop
 	// emit path entirely - which is what produced the original SKIP.
@@ -1654,10 +1651,10 @@ func TestAgentRunner_CtxCancelDrop_UsesWorkflowCancelledReason(t *testing.T) {
 	// ready signal somehow doesn't arrive (e.g. future refactor breaks
 	// the call-2 path) so the test fails fast instead of hanging.
 	go func() {
-		// Wait for the model's call-2 to finish appending its message
-		// AND to be parked on ctx.Done. Then cancel - this guarantees
-		// the post-loop drain will see the call-2 message and emit a
-		// workflow-cancelled drop.
+ // Wait for the model's call-2 to finish appending its message
+ // AND to be parked on ctx.Done. Then cancel - this guarantees
+ // the post-loop drain will see the call-2 message and emit a
+ // workflow-cancelled drop.
 		select {
 		case <-ready:
 			cancel()
@@ -1690,19 +1687,18 @@ func TestAgentRunner_CtxCancelDrop_UsesWorkflowCancelledReason(t *testing.T) {
 // the runner takes the early-return path inside the wake loop and
 // previously skipped the post-loop drain entirely - silently dropping any
 // mailbox messages already delivered before cancel.
-//
 // Deterministic synchronization (mirrors RTL5-G pattern):
-//   - The model's FIRST DoGenerate appends a residue message, signals
-//     `ready` (blocking), then blocks on ctx.Done.
-//   - The test waits for `ready`, then cancels ctx. Because we only
-//     proceed past `ready` after the residue is in the mailbox AND the
-//     model is parked on ctx.Done, the runner is GUARANTEED to:
-//       1) take the early-return path (result==nil + genErr==ctx.Err)
-//       2) observe the residue in r.mailbox.Unread(stepID)
-//   - Without the fix, the early-return at agent_runner.go ~1070
-//     skips the post-loop drain - test observes 0 drops.
-//   - With the fix, emitResidualDrops runs before the early-return -
-//     test observes >=1 drop with reason=workflow-cancelled.
+// - The model's FIRST DoGenerate appends a residue message, signals
+// `ready` (blocking), then blocks on ctx.Done.
+// - The test waits for `ready`, then cancels ctx. Because we only
+// proceed past `ready` after the residue is in the mailbox AND the
+// model is parked on ctx.Done, the runner is GUARANTEED to:
+// 1) take the early-return path (result==nil + genErr==ctx.Err)
+// 2) observe the residue in r.mailbox.Unread(stepID)
+// - Without the fix, the early-return at agent_runner.go ~1070
+// skips the post-loop drain - test observes 0 drops.
+// - With the fix, emitResidualDrops runs before the early-return -
+// test observes >=1 drop with reason=workflow-cancelled.
 func TestAgentRunner_CtxCancelDrop_FirstCallEmitsResidualDrops(t *testing.T) {
 	stepID := "step-first-cancel"
 	mb := NewInMemoryMailboxStore()
@@ -1760,10 +1756,9 @@ func TestAgentRunner_CtxCancelDrop_FirstCallEmitsResidualDrops(t *testing.T) {
 }
 
 // firstCallCancelModel forces the FIRST DoGenerate call to:
-//  1. Append a residue mailbox message
-//  2. Signal `ready` so the test can cancel deterministically
-//  3. Block on ctx.Done so DoGenerate returns ctx.Err with result==nil
-//
+// 1. Append a residue mailbox message
+// 2. Signal `ready` so the test can cancel deterministically
+// 3. Block on ctx.Done so DoGenerate returns ctx.Err with result==nil
 // This exercises the early-return path at agent_runner.go ~1070
 // (genErr != nil && result == nil) where the post-loop drain was
 // previously skipped.
@@ -1898,7 +1893,6 @@ func (m *noisyProducerModel) DoStream(_ context.Context, _ provider.GeneratePara
 }
 
 // TestRunAgent_SendMessageToolInjected - named test.
-//
 // When AgentRunner.Run is invoked on a runner with a non-nil Router,
 // the `send_message` tool MUST be auto-injected into the tool list
 // passed to goai.GenerateText so step agents can message the coord
@@ -1906,11 +1900,9 @@ func (m *noisyProducerModel) DoStream(_ context.Context, _ provider.GeneratePara
 // when Router is nil, send_message MUST NOT be injected (Q4 - the
 // no-coord drop is observable but the tool itself should not appear
 // when no coord is configured).
-//
 // Auto-injection is skipped when send_message is already present in
 // the caller-supplied tools list (so a caller who wants to override
 // the default - e.g. with a custom Description or Execute - wins).
-//
 // Verification mechanism: the mockModel records every GenerateParams
 // it was called with. We inspect params.Tools to confirm a tool named
 // "send_message" appears (or doesn't) per the expected matrix.
@@ -1959,7 +1951,7 @@ func TestRunAgent_SendMessageToolInjected(t *testing.T) {
 		runner := &AgentRunner{
 			model:  model,
 			stepID: "agent-A",
-			// Router intentionally nil.
+ // Router intentionally nil.
 		}
 		_, err := runner.Run(t.Context(), AgentConfig{}, "hi", "mock", nil)
 		if err != nil {
@@ -1975,10 +1967,10 @@ func TestRunAgent_SendMessageToolInjected(t *testing.T) {
 	})
 
 	t.Run("caller_provided_send_message_wins", func(t *testing.T) {
-		// A caller-supplied send_message must NOT be replaced. We
-		// detect this by giving the caller's send_message a unique
-		// Description and asserting the tool the model sees still
-		// carries that description (not the auto-injected default).
+ // A caller-supplied send_message must NOT be replaced. We
+ // detect this by giving the caller's send_message a unique
+ // Description and asserting the tool the model sees still
+ // carries that description (not the auto-injected default).
 		const sentinel = "CALLER-OVERRIDE-MARKER"
 		callerTool := goai.Tool{
 			Name:        "send_message",
@@ -2008,8 +2000,8 @@ func TestRunAgent_SendMessageToolInjected(t *testing.T) {
 		if len(calls) == 0 {
 			t.Fatalf("model not called")
 		}
-		// Count how many send_message tools appear; assert exactly one
-		// AND that it's the caller's (sentinel description).
+ // Count how many send_message tools appear; assert exactly one
+ // AND that it's the caller's (sentinel description).
 		var sendMessageCount int
 		var sawSentinel bool
 		for _, td := range calls[0].Tools {
@@ -2281,19 +2273,18 @@ func TestAgentRunner_Getters(t *testing.T) {
 // labelling the residue as "workflow-cancelled" lies about the run's
 // outcome and confuses operators who interpret that reason as "the
 // workflow was torn down mid-execution".
-//
 // Deterministic flow:
-//  1. The model's DoGenerate appends a residual mailbox message BEFORE
-//     returning the submit_result tool call. By the time AgentRunner
-//     finishes processing the response and reaches the
-//     `if submitDone.Load() { break }` check, the mailbox holds one
-//     unread residue message that was NOT drained into this iteration.
-//  2. The submit_result tool call fires OnBeforeToolExecute -> the
-//     handler flips submitDone to true.
-//  3. Loop hits `if submitDone.Load() { break }` and exits.
-//  4. Post-loop drain MUST emit one EventMessageDropped with
-//     reason=target-terminal (the run is done, not cancelled, not
-//     wake-cap exhausted).
+// 1. The model's DoGenerate appends a residual mailbox message BEFORE
+// returning the submit_result tool call. By the time AgentRunner
+// finishes processing the response and reaches the
+// `if submitDone.Load { break }` check, the mailbox holds one
+// unread residue message that was NOT drained into this iteration.
+// 2. The submit_result tool call fires OnBeforeToolExecute -> the
+// handler flips submitDone to true.
+// 3. Loop hits `if submitDone.Load { break }` and exits.
+// 4. Post-loop drain MUST emit one EventMessageDropped with
+// reason=target-terminal (the run is done, not cancelled, not
+// wake-cap exhausted).
 func TestAgentRunner_SubmitDoneDrop_UsesTargetTerminalReason(t *testing.T) {
 	stepID := "step-submit-done"
 	mb := NewInMemoryMailboxStore()
@@ -2360,14 +2351,13 @@ func TestAgentRunner_SubmitDoneDrop_UsesTargetTerminalReason(t *testing.T) {
 
 // submitDoneResidueModel deterministically exercises the
 // "submitDone-break with mailbox residue" exit path of AgentRunner.Run.
-//
 // First (and only) DoGenerate call:
-//  1. Append a fresh mailbox message - residue that the runner CANNOT
-//     have drained yet (we are mid-call; the next drain point would be
-//     line ~1184 which is unreachable once submitDone breaks at ~1129).
-//  2. Return a submit_result tool call. AgentRunner's OnBeforeToolExecute
-//     handler will recognise it, validate against the schema, and flip
-//     submitDone -> true. The post-iteration check breaks the loop.
+// 1. Append a fresh mailbox message - residue that the runner CANNOT
+// have drained yet (we are mid-call; the next drain point would be
+// line ~1184 which is unreachable once submitDone breaks at ~1129).
+// 2. Return a submit_result tool call. AgentRunner's OnBeforeToolExecute
+// handler will recognise it, validate against the schema, and flip
+// submitDone -> true. The post-iteration check breaks the loop.
 type submitDoneResidueModel struct {
 	mailbox MailboxStore
 	stepID  string

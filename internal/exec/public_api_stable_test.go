@@ -20,8 +20,6 @@ import (
 // stableWithFunctions enumerates every With* helper classified Stable.
 // Excludes:
 // - WithVerbose (not in any Stable table)
-// - WithStreamingBool, WithMailboxDeliveryBool (Deprecated wrappers - not
-// part of the Stable surface; carry // Deprecated: doc comment only)
 // - WithMaxWakeCycles, WithHoldTimeout, WithProgressBufferSize,
 // WithRouterObserver (Experimental). `withClock` is package-private
 // and is trivially excluded from the public stable list regardless.

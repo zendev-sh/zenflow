@@ -940,9 +940,9 @@ body::after {
 })();
 </script>
 <!-- Google Analytics 4. Mirrors the VitePress-injected tag on the
-     rest of the site. This page is a static asset under docs/public/
-     so VitePress doesn't auto-inject; the script lives inline.
-     Measurement ID is the same as the rest of the site. -->
+ rest of the site. This page is a static asset under docs/public/
+ so VitePress doesn't auto-inject; the script lives inline.
+ Measurement ID is the same as the rest of the site. -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-KJP3V6GDWH"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
@@ -958,7 +958,7 @@ body::after {
 <div class="brand-watermark" aria-hidden="true"></div>
 
 <!-- =================================================================== -->
-<!-- SITE HEADER                                                          -->
+<!-- SITE HEADER -->
 <!-- =================================================================== -->
 <header class="site-header">
   <div class="site-header-inner">
@@ -1001,7 +1001,7 @@ body::after {
 </header>
 
 <!-- =================================================================== -->
-<!-- HERO                                                                 -->
+<!-- HERO -->
 <!-- =================================================================== -->
 <section class="hero">
   <p class="hero-eyebrow">multi-agent · orchestration · workflow</p>
@@ -1011,9 +1011,9 @@ body::after {
 
 <div class="content">
 
-  <!-- =================================================================== -->
-  <!-- LEGEND                                                               -->
-  <!-- =================================================================== -->
+ <!-- =================================================================== -->
+ <!-- LEGEND -->
+ <!-- =================================================================== -->
   <div class="legend" role="region" aria-label="Diagram legend">
     <div class="legend-block">
       <span class="legend-block-title">edges</span>
@@ -1056,27 +1056,27 @@ body::after {
     </div>
   </div>
 
-  <!-- =================================================================== -->
-  <!-- DIAGRAM                                                              -->
-  <!-- =================================================================== -->
-  <!--
-    Layout: vertical hub-and-spoke. Y-zones:
-      INPUT                  y =   0..70
-      ORCHESTRATOR           y = 110..170
-      COORD (left) | EXEC (right)   y = 230..360
-      AGENTS (3 in a row)    y = 460..560
-      PROVIDER (centered)    y = 660..720
+ <!-- =================================================================== -->
+ <!-- DIAGRAM -->
+ <!-- =================================================================== -->
+ <!--
+ Layout: vertical hub-and-spoke. Y-zones:
+ INPUT y = 0..70
+ ORCHESTRATOR y = 110..170
+ COORD (left) | EXEC (right) y = 230..360
+ AGENTS (3 in a row) y = 460..560
+ PROVIDER (centered) y = 660..720
 
-    Edge classes:
-      .svg-edge-fn   (solid green)  : function calls inside the process
-      .svg-edge-tool (solid amber)  : LLM tool loop (external API)
-      .svg-edge-msg  (dashed cyan)  : mailbox message delivery (animated)
-      .svg-edge-data (dashed muted) : input data flow
+ Edge classes:
+ .svg-edge-fn (solid green) : function calls inside the process
+ .svg-edge-tool (solid amber) : LLM tool loop (external API)
+ .svg-edge-msg (dashed cyan) : mailbox message delivery (animated)
+ .svg-edge-data (dashed muted) : input data flow
 
-    All curves are cubic bezier (C cx1,cy1 cx2,cy2 x,y). Control points
-    are placed perpendicular to the start/end tangents so paths transition
-    smoothly into the connected nodes -- no jagged 90° turns.
-  -->
+ All curves are cubic bezier (C cx1,cy1 cx2,cy2 x,y). Control points
+ are placed perpendicular to the start/end tangents so paths transition
+ smoothly into the connected nodes -- no jagged 90° turns.
+ -->
   <div class="diagram-wrap">
     <p class="diagram-title">runtime topology</p>
 
@@ -1099,90 +1099,90 @@ body::after {
         </marker>
       </defs>
 
-      <!-- ============================================================ -->
-      <!-- EDGES (drawn first, behind nodes)                              -->
-      <!-- ============================================================ -->
+ <!-- ============================================================ -->
+ <!-- EDGES (drawn first, behind nodes) -->
+ <!-- ============================================================ -->
 
-      <!-- (1) INPUT → ORCH (data, dashed muted, vertical).
-            Orch box now starts at y=100 (was 110). -->
+ <!-- (1) INPUT → ORCH (data, dashed muted, vertical).
+ Orch box now starts at y=100 (was 110). -->
       <path class="svg-edge-data" d="M 600 70 C 600 80, 600 90, 600 100" marker-end="url(#ar-data)"/>
       <rect class="svg-label-bg" x="546" y="76" width="108" height="20"/>
       <text x="600" y="90" text-anchor="middle" class="svg-edge-label svg-edge-label-data">load + validate</text>
 
-      <!-- (2) ORCH → COORD (function call, solid green, smooth curve down-left).
-            Origin moved to y=210 to match the taller orch box. -->
+ <!-- (2) ORCH → COORD (function call, solid green, smooth curve down-left).
+ Origin moved to y=210 to match the taller orch box. -->
       <path class="svg-edge-fn" d="M 510 210 C 440 224, 360 230, 320 240" marker-end="url(#ar-fn)"/>
       <rect class="svg-label-bg" x="346" y="220" width="124" height="20"/>
       <text x="408" y="234" text-anchor="middle" class="svg-edge-label svg-edge-label-fn">hosts coordinator</text>
 
-      <!-- (3) ORCH → EXEC (function call, solid green, smooth curve down-right). -->
+ <!-- (3) ORCH → EXEC (function call, solid green, smooth curve down-right). -->
       <path class="svg-edge-fn" d="M 690 210 C 760 224, 840 230, 880 240" marker-end="url(#ar-fn)"/>
       <rect class="svg-label-bg" x="730" y="220" width="106" height="20"/>
       <text x="783" y="234" text-anchor="middle" class="svg-edge-label svg-edge-label-fn">RunFlow(ctx)</text>
 
-      <!-- (4) EXEC → 3 AGENTS (function call, solid green, fan-out) -->
-      <!-- exec(880,360) → agent-pro(220,460) -->
+ <!-- (4) EXEC → 3 AGENTS (function call, solid green, fan-out) -->
+ <!-- exec(880,360) → agent-pro(220,460) -->
       <path class="svg-edge-fn" d="M 870 360 C 720 400, 480 420, 230 460" marker-end="url(#ar-fn)"/>
-      <!-- exec(880,360) → agent-con(600,460) -->
+ <!-- exec(880,360) → agent-con(600,460) -->
       <path class="svg-edge-fn" d="M 880 360 C 800 400, 700 430, 600 460" marker-end="url(#ar-fn)"/>
-      <!-- exec(880,360) → agent-judge(960,460) -->
+ <!-- exec(880,360) → agent-judge(960,460) -->
       <path class="svg-edge-fn" d="M 920 360 C 940 400, 950 430, 960 460" marker-end="url(#ar-fn)"/>
-      <!-- spawn step label (groups the fan-out) -->
+ <!-- spawn step label (groups the fan-out) -->
       <rect class="svg-label-bg" x="836" y="384" width="92" height="20"/>
       <text x="882" y="398" text-anchor="middle" class="svg-edge-label svg-edge-label-fn">spawn step</text>
 
-      <!-- (5) COORD ⇄ AGENTS (message delivery, dashed cyan, animated) -->
-      <!--      Each agent has a downward-arriving "forward_to_agent" curve
-                from the coord, plus an upward-departing "send_message" curve
-                to the coord. Curves use mirrored handles to read as a tidy
-                lobe rather than two crossing lines. -->
+ <!-- (5) COORD ⇄ AGENTS (message delivery, dashed cyan, animated) -->
+ <!-- Each agent has a downward-arriving "forward_to_agent" curve
+ from the coord, plus an upward-departing "send_message" curve
+ to the coord. Curves use mirrored handles to read as a tidy
+ lobe rather than two crossing lines. -->
 
-      <!-- coord(320, 360 lower-edge) → agent-pro(220, 460 top-edge): forward_to_agent -->
+ <!-- coord(320, 360 lower-edge) → agent-pro(220, 460 top-edge): forward_to_agent -->
       <path class="svg-edge-msg" d="M 290 360 C 270 400, 240 430, 215 460" marker-end="url(#ar-msg)"/>
-      <!-- agent-pro(245, 460) → coord(335, 360): send_message (offset to avoid overlap) -->
+ <!-- agent-pro(245, 460) → coord(335, 360): send_message (offset to avoid overlap) -->
       <path class="svg-edge-msg" d="M 245 460 C 280 425, 320 400, 340 360" marker-end="url(#ar-msg)"/>
 
-      <!-- coord(335, 360 lower-edge) → agent-con(575, 460): forward_to_agent -->
+ <!-- coord(335, 360 lower-edge) → agent-con(575, 460): forward_to_agent -->
       <path class="svg-edge-msg" d="M 335 360 C 420 410, 510 435, 580 460" marker-end="url(#ar-msg)"/>
-      <!-- agent-con(620, 460) → coord(345, 360): send_message -->
+ <!-- agent-con(620, 460) → coord(345, 360): send_message -->
       <path class="svg-edge-msg" d="M 620 460 C 540 420, 440 395, 360 360" marker-end="url(#ar-msg)"/>
 
-      <!-- coord(335, 360) → agent-judge(945, 460): forward_to_agent -->
+ <!-- coord(335, 360) → agent-judge(945, 460): forward_to_agent -->
       <path class="svg-edge-msg" d="M 335 360 C 580 400, 800 430, 945 460" marker-end="url(#ar-msg)"/>
-      <!-- agent-judge(975, 460) → coord(355, 360): send_message -->
+ <!-- agent-judge(975, 460) → coord(355, 360): send_message -->
       <path class="svg-edge-msg" d="M 975 460 C 740 420, 540 395, 365 360" marker-end="url(#ar-msg)"/>
 
-      <!-- Single grouped label for ALL the message-delivery lobes between coord ⇄ agents.
-           Sits midway down between coord and agent row, slightly above. -->
+ <!-- Single grouped label for ALL the message-delivery lobes between coord ⇄ agents.
+ Sits midway down between coord and agent row, slightly above. -->
       <rect class="svg-label-bg" x="448" y="400" width="178" height="20"/>
       <text x="537" y="414" text-anchor="middle" class="svg-edge-label svg-edge-label-msg">forward_to_agent · send_message</text>
 
-      <!-- (6) AGENTS → PROVIDER (tool loop, solid amber, fan-in) -->
-      <!-- agent-pro(220,580) → provider(540, 660) -->
+ <!-- (6) AGENTS → PROVIDER (tool loop, solid amber, fan-in) -->
+ <!-- agent-pro(220,580) → provider(540, 660) -->
       <path class="svg-edge-tool" d="M 220 585 C 280 615, 460 635, 540 660" marker-end="url(#ar-tool)"/>
-      <!-- agent-con(600,580) → provider(600, 660) -->
+ <!-- agent-con(600,580) → provider(600, 660) -->
       <path class="svg-edge-tool" d="M 600 585 C 600 610, 600 635, 600 660" marker-end="url(#ar-tool)"/>
-      <!-- agent-judge(960,580) → provider(660, 660) -->
+ <!-- agent-judge(960,580) → provider(660, 660) -->
       <path class="svg-edge-tool" d="M 960 585 C 900 615, 720 635, 660 660" marker-end="url(#ar-tool)"/>
-      <!-- tool loop label -->
+ <!-- tool loop label -->
       <rect class="svg-label-bg" x="556" y="610" width="88" height="20"/>
       <text x="600" y="624" text-anchor="middle" class="svg-edge-label svg-edge-label-tool">tool loop</text>
 
 
-      <!-- ============================================================ -->
-      <!-- NODES                                                          -->
-      <!-- ============================================================ -->
+ <!-- ============================================================ -->
+ <!-- NODES -->
+ <!-- ============================================================ -->
 
-      <!-- INPUT -->
+ <!-- INPUT -->
       <g>
         <rect class="svg-frame svg-frame-lav" x="490" y="20" width="220" height="50"/>
         <text x="600" y="42" text-anchor="middle" class="svg-cat svg-cat-lav">INPUT</text>
         <text x="600" y="60" text-anchor="middle" class="svg-name">YAML · Goal · Agent</text>
       </g>
 
-      <!-- ORCHESTRATOR (taller -- was h=58, now h=110 to match the
-            visual weight of Coord/Exec below and to fit content
-            that distinguishes it from those two roles) -->
+ <!-- ORCHESTRATOR (taller -- was h=58, now h=110 to match the
+ visual weight of Coord/Exec below and to fit content
+ that distinguishes it from those two roles) -->
       <g class="svg-node-cyan">
         <rect class="svg-frame svg-frame-cyan" x="440" y="100" width="320" height="110"/>
         <text x="600" y="124" text-anchor="middle" class="svg-cat svg-cat-cyan">ORCHESTRATOR</text>
@@ -1191,7 +1191,7 @@ body::after {
         <text x="600" y="190" text-anchor="middle" class="svg-detail">entry points: RunFlow · RunGoal · RunAgent</text>
       </g>
 
-      <!-- COORDINATOR (left) -->
+ <!-- COORDINATOR (left) -->
       <g class="svg-node-cyan">
         <rect class="svg-frame svg-frame-cyan" x="160" y="240" width="280" height="120"/>
         <text x="300" y="262" text-anchor="middle" class="svg-cat svg-cat-cyan">COORDINATOR</text>
@@ -1201,7 +1201,7 @@ body::after {
         <text x="300" y="338" text-anchor="middle" class="svg-tools-list">finalize</text>
       </g>
 
-      <!-- EXECUTOR (right) -->
+ <!-- EXECUTOR (right) -->
       <g class="svg-node-green">
         <rect class="svg-frame svg-frame-green" x="760" y="240" width="280" height="120"/>
         <text x="900" y="262" text-anchor="middle" class="svg-cat svg-cat-green">EXECUTOR</text>
@@ -1211,7 +1211,7 @@ body::after {
         <text x="900" y="344" text-anchor="middle" class="svg-detail">retries · cancellation</text>
       </g>
 
-      <!-- AGENT 1: pro (left) -->
+ <!-- AGENT 1: pro (left) -->
       <g>
         <rect class="svg-frame svg-frame-teal" x="80"  y="460" width="280" height="120"/>
         <text x="220" y="482" text-anchor="middle" class="svg-cat svg-cat-teal">AGENT · STEP</text>
@@ -1222,7 +1222,7 @@ body::after {
         <text x="220" y="572" text-anchor="middle" class="svg-tools-list">tools: send_message</text>
       </g>
 
-      <!-- AGENT 2: con (center) -->
+ <!-- AGENT 2: con (center) -->
       <g>
         <rect class="svg-frame svg-frame-teal" x="460" y="460" width="280" height="120"/>
         <text x="600" y="482" text-anchor="middle" class="svg-cat svg-cat-teal">AGENT · STEP</text>
@@ -1233,7 +1233,7 @@ body::after {
         <text x="600" y="572" text-anchor="middle" class="svg-tools-list">tools: send_message</text>
       </g>
 
-      <!-- AGENT 3: judge (right) -->
+ <!-- AGENT 3: judge (right) -->
       <g>
         <rect class="svg-frame svg-frame-teal" x="840" y="460" width="280" height="120"/>
         <text x="980" y="482" text-anchor="middle" class="svg-cat svg-cat-teal">AGENT · STEP</text>
@@ -1244,7 +1244,7 @@ body::after {
         <text x="980" y="572" text-anchor="middle" class="svg-tools-list">tools: send_message</text>
       </g>
 
-      <!-- PROVIDER (bottom, blue, centered + wide) -->
+ <!-- PROVIDER (bottom, blue, centered + wide) -->
       <g class="svg-node-blue">
         <rect class="svg-frame svg-frame-blue" x="400" y="660" width="400" height="78"/>
         <text x="600" y="682" text-anchor="middle" class="svg-cat svg-cat-blue">PROVIDER · GOAI SDK</text>
@@ -1259,11 +1259,11 @@ body::after {
     </p>
   </div>
 
-  <!-- ========== Section 0: Three roles (NEW) ============================
-       Sits right after the diagram so readers learn the distinction
-       between the three top-level boxes (Orchestrator vs Coordinator
-       vs Executor) before they go any deeper. Cards are parallel-
-       structured so the diff is easy to skim. -->
+ <!-- ========== Section 0: Three roles (NEW) ============================
+ Sits right after the diagram so readers learn the distinction
+ between the three top-level boxes (Orchestrator vs Coordinator
+ vs Executor) before they go any deeper. Cards are parallel-
+ structured so the diff is easy to skim. -->
   <p class="section-eyebrow stagger s-1">Three roles you keep meeting</p>
   <h2 class="section-h2 stagger s-1">Orchestrator · Coordinator · Executor</h2>
 
@@ -1305,7 +1305,7 @@ body::after {
     </article>
   </div>
 
-  <!-- ========== Section 1: Three entrypoints ========== -->
+ <!-- ========== Section 1: Three entrypoints ========== -->
   <p class="section-eyebrow stagger s-1">Three modes, one engine</p>
   <h2 class="section-h2 stagger s-1">How a workflow starts</h2>
 
@@ -1344,7 +1344,7 @@ body::after {
     </article>
   </div>
 
-  <!-- ========== Section 2: Coordinator tools ========== -->
+ <!-- ========== Section 2: Coordinator tools ========== -->
   <p class="section-eyebrow stagger s-2">Hub-side primitives</p>
   <h2 class="section-h2 stagger s-2">Coordinator message tools</h2>
   <p class="stagger s-2" style="max-width:72ch;color:var(--text-2);font-size:0.95rem;line-height:1.65;margin-bottom:18px;">The coordinator wires three tools: <code>forward_to_agent</code> for routing, <code>narrate</code> for progress events, and <code>finalize</code> for terminal synthesis. Its agent-side counterpart, <code>send_message</code>, is documented in the next section.</p>
@@ -1372,7 +1372,7 @@ body::after {
     </article>
   </div>
 
-  <!-- ========== Section 2b: Agent-side tools ========== -->
+ <!-- ========== Section 2b: Agent-side tools ========== -->
   <p class="section-eyebrow stagger s-3">Auto-injected on the spoke</p>
   <h2 class="section-h2 stagger s-3">Agent-side tools</h2>
 
@@ -1399,7 +1399,7 @@ body::after {
     </article>
   </div>
 
-  <!-- ========== Section 3: Messaging guarantees ========== -->
+ <!-- ========== Section 3: Messaging guarantees ========== -->
   <p class="section-eyebrow stagger s-3">Delivery contract</p>
   <h2 class="section-h2 stagger s-3">Race-safe Mailbox + Wake</h2>
 
@@ -1440,7 +1440,7 @@ body::after {
     </article>
   </div>
 
-  <!-- ========== Section 4: Lifecycle ========== -->
+ <!-- ========== Section 4: Lifecycle ========== -->
   <p class="section-eyebrow stagger s-4">Lifecycle &amp; recovery</p>
   <h2 class="section-h2 stagger s-4">From plan to result</h2>
 
@@ -1468,7 +1468,7 @@ body::after {
     </article>
   </div>
 
-  <!-- ========== Pill row ========== -->
+ <!-- ========== Pill row ========== -->
   <div class="pills">
     <p class="pills-label">go deeper</p>
     <div class="pills-row">
@@ -1489,7 +1489,7 @@ body::after {
 </div>
 
 <!-- =================================================================== -->
-<!-- SITE FOOTER                                                          -->
+<!-- SITE FOOTER -->
 <!-- =================================================================== -->
 <footer class="site-footer">
   <div class="site-footer-inner">

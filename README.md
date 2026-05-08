@@ -6,7 +6,7 @@
 
 <p align="center"><em><a href="https://zenflow.sh/agent-orchestration.html">Multi-agent orchestration & workflow engine.</a></em></p>
 
-<p align="center">Declarative YAML agent workflows. An LLM coordinator routes events through hub-and-spoke mailboxes with race-safe delivery and zero-data-loss recovery. One YAML file, one Go binary. Runs on any provider <a href="https://goai.sh">goai</a> supports.</p>
+<p align="center">Declarative YAML agent workflows. An LLM coordinator routes events through hub-and-spoke mailboxes with race-safe delivery. One YAML file, one Go binary. Runs on any provider <a href="https://goai.sh">goai</a> supports.</p>
 
 <p align="center">
   <a href="https://codecov.io/gh/zendev-sh/zenflow"><img src="https://codecov.io/gh/zendev-sh/zenflow/branch/main/graph/badge.svg" alt="Codecov"></a>
@@ -26,6 +26,7 @@
 
 ---
 
+> [!IMPORTANT]
 > **Status:** zenflow is extremely new and under active development; APIs and the YAML schema may change before v1.0.
 
 ## See it run

@@ -7,7 +7,7 @@ description: Multi-agent orchestration engine for Go. Declarative YAML agent wor
 hero:
   name: zenflow
   text: Let agents flow.
-  tagline: A <a href="/agent-orchestration.html" class="zf-hero-link">multi-agent orchestration</a> engine that turns declarative YAML agent workflows into a running plan. An LLM coordinator routes events through hub-and-spoke mailboxes with race-safe delivery and zero-data-loss recovery. Runs on any provider goai supports.
+  tagline: A <a href="/agent-orchestration.html" class="zf-hero-link">multi-agent orchestration</a> engine that turns declarative YAML agent workflows into a running plan. An LLM coordinator routes events through hub-and-spoke mailboxes with race-safe delivery. Runs on any provider goai supports.
   image:
     light: /zenflow-icon.png
     dark: /zenflow-icon-dark.png

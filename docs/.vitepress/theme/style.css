@@ -15,7 +15,7 @@
 :root {
   --radius: 0.5rem;
 
-  /* Light mode (default) */
+ /* Light mode (default) */
   --zf-bg:           hsl(220, 30%, 98%);
   --zf-bg-alt:       hsl(220, 30%, 95%);
   --zf-fg:           hsl(222, 30%, 15%);
@@ -27,22 +27,22 @@
   --zf-muted-fg:     hsl(222, 20%, 50%);
   --zf-accent:       hsl(220, 25%, 93%);
   --zf-accent-fg:    hsl(222, 47%, 15%);
-  /* -- borders nudged lighter again. Light variant moves
-   * from L:93% → L:95% (3% step from bg=98%). Hover-border lifted
-   * the same way so the hover state is *softer* than rest, not
-   * darker. Strokes read as suggestions rather than outlines. */
+ /* -- borders nudged lighter again. Light variant moves
+ * from L:93% → L:95% (3% step from bg=98%). Hover-border lifted
+ * the same way so the hover state is *softer* than rest, not
+ * darker. Strokes read as suggestions rather than outlines. */
   --zf-border:       hsl(220, 14%, 95%);
   --zf-ring:         hsl(222, 47%, 25%);
   --zf-highlight-bg: hsl(220, 30%, 95%);
   --zf-highlight-border: hsl(222, 47%, 70%);
   --zf-card-hover-border: hsl(220, 14%, 92%);
 
-  /* Terminal syntax accents - serve as the cool accents
-   * across the brand. The brand-cyan `t-flag` doubles as the
-   * link + hover accent and is synced with the CLI's `\033[36m`
-   * Cyan ANSI code (the dominant color users see when running
-   * zenflow: `▸ Starting workflow`, `↻ wake`, step headers).
-   */
+ /* Terminal syntax accents - serve as the cool accents
+ * across the brand. The brand-cyan `t-flag` doubles as the
+ * link + hover accent and is synced with the CLI's `\033[36m`
+ * Cyan ANSI code (the dominant color users see when running
+ * zenflow: `▸ Starting workflow`, `↻ wake`, step headers).
+ */
   --zf-t-prompt: hsl(222, 60%, 45%);
   --zf-t-cmd:    hsl(222, 30%, 15%);
   --zf-t-flag:   hsl(190, 65%, 38%);
@@ -50,7 +50,7 @@
   --zf-t-ok:     hsl(150, 50%, 35%);
   --zf-t-url:    hsl(210, 60%, 45%);
 
-  /* Map -> VitePress tokens */
+ /* Map -> VitePress tokens */
   --vp-c-brand-1: var(--zf-primary);
   --vp-c-brand-2: hsl(222, 47%, 28%);
   --vp-c-brand-3: hsl(222, 47%, 35%);
@@ -88,11 +88,11 @@
   --zf-muted-fg:     hsl(0, 0%, 63.9%);
   --zf-accent:       hsl(222, 47%, 20%);
   --zf-accent-fg:    hsl(0, 0%, 98%);
-  /* -- see light-mode comment above. Dark border further
-   * softened (18% → 16%) so it sits ~2% above the card surface
-   * instead of ~4%. Cards effectively float. Hover-border is
-   * slightly LIGHTER than rest, matching the light-mode treatment
-   * (suggestion not outline). */
+ /* -- see light-mode comment above. Dark border further
+ * softened (18% → 16%) so it sits ~2% above the card surface
+ * instead of ~4%. Cards effectively float. Hover-border is
+ * slightly LIGHTER than rest, matching the light-mode treatment
+ * (suggestion not outline). */
   --zf-border:       hsl(222, 32%, 16%);
   --zf-ring:         hsl(0, 0%, 83.1%);
   --zf-highlight-bg: hsl(222, 47%, 16%);
@@ -101,12 +101,12 @@
 
   --zf-t-prompt: hsl(210, 60%, 60%);
   --zf-t-cmd:    hsl(0, 0%, 98%);
-  /* -- `--zf-t-flag` migrated from warm orange/gold to
-   * brand-cyan. Light + dark are now both in the 190 hue family,
-   * synced with the CLI's `\033[36m` Cyan ANSI code that dominates
-   * the runtime experience. Old dark value `hsl(40, 80%, 60%)` was
-   * fine in isolation but the warm/cool split between light and
-   * dark broke single-source-of-truth color theming. */
+ /* -- `--zf-t-flag` migrated from warm orange/gold to
+ * brand-cyan. Light + dark are now both in the 190 hue family,
+ * synced with the CLI's `\033[36m` Cyan ANSI code that dominates
+ * the runtime experience. Old dark value `hsl(40, 80%, 60%)` was
+ * fine in isolation but the warm/cool split between light and
+ * dark broke single-source-of-truth color theming. */
   --zf-t-flag:   hsl(190, 75%, 65%);
   --zf-t-string: hsl(190, 60%, 70%);
   --zf-t-ok:     hsl(150, 60%, 55%);
@@ -309,8 +309,8 @@ body {
   padding: 0 22px;
   height: 46px;
   font-size: 0.95rem;
-  /* Force text vertical-center; VitePress's default line-height
-   * + padding leaves text drifting up in pill buttons. */
+ /* Force text vertical-center; VitePress's default line-height
+ * + padding leaves text drifting up in pill buttons. */
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
@@ -419,33 +419,33 @@ body {
  * homepage draft (when --zf-t-flag was warm yellow). The bar is
  * now cyan to match the rest of the brand. Standing border is
  * dropped entirely; the card surface relies on:
- *   - an elevation shadow at rest (so the card lifts off the bg
- *     even without a stroke -- important in light mode where
- *     bg=98% and card=100% are nearly indistinguishable)
- *   - hover = lift +3px + thicker shadow + cyan top-bar that
- *     scales 0→1 from the left edge
- *   - overflow: hidden clips the top-bar to the rounded corners
+ * - an elevation shadow at rest (so the card lifts off the bg
+ * even without a stroke -- important in light mode where
+ * bg=98% and card=100% are nearly indistinguishable)
+ * - hover = lift +3px + thicker shadow + cyan top-bar that
+ * scales 0→1 from the left edge
+ * - overflow: hidden clips the top-bar to the rounded corners
  */
 
 .VPFeature {
   background: var(--zf-card);
-  /* `!important` is required: VitePress's component-scoped CSS
-   * ships `.VPFeature { border: 1px solid var(--vp-c-bg-soft) }`
-   * with the same specificity AND loads after our theme override,
-   * so a plain `border: none` lost the cascade fight and a 1px
-   * outline survived in the rendered card. */
+ /* `!important` is required: VitePress's component-scoped CSS
+ * ships `.VPFeature { border: 1px solid var(--vp-c-bg-soft) }`
+ * with the same specificity AND loads after our theme override,
+ * so a plain `border: none` lost the cascade fight and a 1px
+ * outline survived in the rendered card. */
   border: 0 !important;
   border-radius: var(--radius);
   transition: transform 0.28s cubic-bezier(0.2, 0.6, 0.2, 1),
               box-shadow 0.28s cubic-bezier(0.2, 0.6, 0.2, 1);
   position: relative;
   overflow: hidden;
-  height: 100%;          /* equal-height cards within grid row */
+ height: 100%; /* equal-height cards within grid row */
   display: flex;
   flex-direction: column;
-  /* Resting elevation -- soft shadow gives the card a "lifted"
-   * silhouette without an outline stroke. Tuned so the card
-   * reads as a surface in both themes. */
+ /* Resting elevation -- soft shadow gives the card a "lifted"
+ * silhouette without an outline stroke. Tuned so the card
+ * reads as a surface in both themes. */
   box-shadow:
     0 1px 2px hsla(220, 30%, 20%, 0.04),
     0 8px 22px -10px hsla(220, 30%, 20%, 0.06);
@@ -461,7 +461,7 @@ body {
   flex: 1;
 }
 .VPFeature .details {
-  flex: 1;               /* push link-text to the bottom of every card */
+ flex: 1; /* push link-text to the bottom of every card */
 }
 
 /* Thick cyan top-bar that scales in from the left on hover. */
@@ -482,8 +482,8 @@ body {
 
 .VPFeature:hover {
   transform: translateY(-3px);
-  /* Hover elevation -- deeper shadow + a subtle cyan tint
-   * underneath that ties the lift back to the top-bar accent. */
+ /* Hover elevation -- deeper shadow + a subtle cyan tint
+ * underneath that ties the lift back to the top-bar accent. */
   box-shadow:
     0 4px 10px hsla(220, 30%, 20%, 0.06),
     0 22px 44px -14px hsla(190, 65%, 38%, 0.16);
@@ -525,11 +525,11 @@ body {
 /* ============================================================
  * Diagram figures - architecture-blueprint style
  *
- *   - dark slate canvas with subtle grid overlay
- *   - color-coded node categories (terminal-syntax palette)
- *   - dashed connector lines that flow via stroke-dashoffset
- *   - glow drop-shadow on category frames
- *   - mono labels everywhere
+ * - dark slate canvas with subtle grid overlay
+ * - color-coded node categories (terminal-syntax palette)
+ * - dashed connector lines that flow via stroke-dashoffset
+ * - glow drop-shadow on category frames
+ * - mono labels everywhere
  * ============================================================ */
 
 .zf-diagram {
@@ -544,7 +544,7 @@ body {
 }
 
 .zf-diagram::before {
-  /* 60px square grid overlay, faint */
+ /* 60px square grid overlay, faint */
   content: '';
   position: absolute;
   inset: 0;
@@ -558,7 +558,7 @@ body {
 }
 
 .zf-diagram::after {
-  /* Multi-color radial atmosphere using terminal-syntax accents */
+ /* Multi-color radial atmosphere using terminal-syntax accents */
   content: '';
   position: absolute;
   inset: 0;
@@ -845,13 +845,13 @@ body {
   border-radius: var(--radius);
   overflow: hidden;
   border: 1px solid var(--zf-border);
-  /* -- terminal frame tone matches the GIF body so the
-   * Mac chrome doesn't read as a different surface. The cast was
-   * recorded against #1c1c1c (xterm-default-ish dark grey); we
-   * use the same so header + body look like one continuous
-   * terminal. Pure black would clash with the cast's actual
-   * background, hence #1c1c1c not #000.
-   */
+ /* -- terminal frame tone matches the GIF body so the
+ * Mac chrome doesn't read as a different surface. The cast was
+ * recorded against #1c1c1c (xterm-default-ish dark grey); we
+ * use the same so header + body look like one continuous
+ * terminal. Pure black would clash with the cast's actual
+ * background, hence #1c1c1c not #000.
+ */
   background: #1c1c1c;
   box-shadow:
     0 1px 0 var(--zf-border),
@@ -870,8 +870,8 @@ body {
   align-items: center;
   gap: 7px;
   padding: 12px 16px;
-  /* Match the terminal body tone exactly (no separate header
-   * shade) so the chrome reads as a single continuous surface. */
+ /* Match the terminal body tone exactly (no separate header
+ * shade) so the chrome reads as a single continuous surface. */
   background: #1c1c1c;
   border-bottom: 1px solid #2a2a2a;
 }
@@ -899,7 +899,7 @@ body {
   width: 100%;
   height: auto;
   margin: 0;
-  /* override VitePress's default img styling that adds spacing */
+ /* override VitePress's default img styling that adds spacing */
   border-radius: 0;
 }
 

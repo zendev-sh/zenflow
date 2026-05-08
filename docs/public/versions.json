@@ -1,26 +1,7 @@
 {
-  "latest": "v0.1.2",
+  "latest": "v0.1.0-pre",
   "versions": [
-    {
-      "tag": "v0.1.2",
-      "date": "2026-05-08",
-      "label": "v0.1.2 (latest)"
-    },
-    {
-      "tag": "v0.1.1",
-      "date": "2026-05-08",
-      "label": "v0.1.1"
-    },
-    {
-      "tag": "v0.1.0",
-      "date": "2026-05-08",
-      "label": "v0.1.0"
-    },
-    {
-      "tag": "v0.1.0-pre",
-      "date": "2026-05-07",
-      "label": "v0.1.0-pre"
-    }
+    {"tag": "v0.1.0-pre", "date": "2026-05-07", "label": "v0.1.0-pre (latest)"}
   ],
   "_comment": "Updated by .github/workflows/release.yml on each tag push. Do not hand-edit."
 }

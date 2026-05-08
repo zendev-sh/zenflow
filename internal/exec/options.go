@@ -247,15 +247,6 @@ func WithoutStreaming() Option {
 	return func(o *Orchestrator) { o.streaming = false }
 }
 
-// WithStreamingBool toggles streaming based on a boolean.
-// Deprecated: use WithStreaming/WithoutStreaming. Will be removed before v1.0.
-func WithStreamingBool(enabled bool) Option {
-	if enabled {
-		return WithStreaming()
-	}
-	return WithoutStreaming()
-}
-
 // WithVerbose enables agent output display.
 // When enabled, agent LLM responses are shown in addition to events and narration.
 // Without verbose, only workflow events (▸, ✓) and coordinator narration (≋) are shown.
@@ -268,15 +259,6 @@ func WithVerbose() Option {
 // Stable.
 func WithoutVerbose() Option {
 	return func(o *Orchestrator) { o.verbose = false }
-}
-
-// WithVerboseBool toggles verbose output based on a boolean.
-// Deprecated: use WithVerbose/WithoutVerbose. Will be removed before v1.0.
-func WithVerboseBool(enabled bool) Option {
-	if enabled {
-		return WithVerbose()
-	}
-	return WithoutVerbose()
 }
 
 // WithMaxWakeCycles caps the number of wake-driven re-entries into goai
@@ -378,15 +360,6 @@ func WithoutMailboxDelivery() Option {
 		v := false
 		o.mailboxDeliveryEnabled = &v
 	}
-}
-
-// WithMailboxDeliveryBool toggles mailbox delivery based on a boolean.
-// Deprecated: use WithMailboxDelivery/WithoutMailboxDelivery. Will be removed before v1.0.
-func WithMailboxDeliveryBool(enabled bool) Option {
-	if enabled {
-		return WithMailboxDelivery()
-	}
-	return WithoutMailboxDelivery()
 }
 
 // withClock substitutes the engine + lifecycle tick source. Test-only
@@ -503,15 +476,6 @@ func WithTruncationOnCapReached() Option {
 // operators can detect and investigate the cap.
 func WithoutTruncationOnCapReached() Option {
 	return func(o *Orchestrator) { o.truncateOnCapReached = false }
-}
-
-// WithTruncationOnCapReachedBool toggles cap-reached truncation based on a boolean.
-// Deprecated: use WithTruncationOnCapReached/WithoutTruncationOnCapReached. Will be removed before v1.0.
-func WithTruncationOnCapReachedBool(enabled bool) Option {
-	if enabled {
-		return WithTruncationOnCapReached()
-	}
-	return WithoutTruncationOnCapReached()
 }
 
 // WithRouterObserver registers a callback invoked once per RunAgent /

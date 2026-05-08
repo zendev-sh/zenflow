@@ -19,27 +19,8 @@ func TestWithStreaming(t *testing.T) {
 }
 
 // TestWithStreaming_Pair exercises WithStreaming and WithoutStreaming
-// as the canonical no-arg pair (API stability improvement).
+// in combination, asserting last-write-wins semantics.
 func TestWithStreaming_Pair(t *testing.T) {
-	// WithStreaming sets streaming=true.
-	on := New(WithStreaming())
-	if !on.streaming {
-		t.Error("WithStreaming() should set streaming=true")
-	}
-	// WithoutStreaming sets streaming=false.
-	off := New(WithoutStreaming())
-	if off.streaming {
-		t.Error("WithoutStreaming() should set streaming=false")
-	}
-	// WithStreamingBool acts as deprecated thin wrapper.
-	boolOn := New(WithStreamingBool(true))
-	if !boolOn.streaming {
-		t.Error("WithStreamingBool(true) should set streaming=true")
-	}
-	boolOff := New(WithStreamingBool(false))
-	if boolOff.streaming {
-		t.Error("WithStreamingBool(false) should set streaming=false")
-	}
 	// Last write wins - WithoutStreaming after WithStreaming.
 	overrideOff := New(WithStreaming(), WithoutStreaming())
 	if overrideOff.streaming {
@@ -58,100 +39,48 @@ func TestWithVerbose(t *testing.T) {
 	}
 }
 
-// TestWithVerbose_Pair verifies WithVerbose/WithoutVerbose produce the same
-// state as the deprecated WithVerboseBool(true/false) forms.
+// TestWithVerbose_Pair exercises WithVerbose and WithoutVerbose in
+// combination, asserting last-write-wins semantics.
 func TestWithVerbose_Pair(t *testing.T) {
-	// WithVerbose and WithVerboseBool(true) should both set verbose=true.
-	o1 := New(WithVerbose())
-	o2 := New(WithVerboseBool(true))
-	if o1.verbose != o2.verbose {
-		t.Errorf("WithVerbose() verbose=%v, WithVerboseBool(true) verbose=%v - must match", o1.verbose, o2.verbose)
-	}
-	if !o1.verbose {
-		t.Error("WithVerbose() should set verbose=true")
-	}
-
-	// WithoutVerbose and WithVerboseBool(false) should both set verbose=false.
-	o3 := New(WithoutVerbose())
-	o4 := New(WithVerboseBool(false))
-	if o3.verbose != o4.verbose {
-		t.Errorf("WithoutVerbose() verbose=%v, WithVerboseBool(false) verbose=%v - must match", o3.verbose, o4.verbose)
-	}
-	if o3.verbose {
-		t.Error("WithoutVerbose() should set verbose=false")
-	}
-
-	// Last write wins - WithoutVerbose after WithVerbose.
 	overrideOff := New(WithVerbose(), WithoutVerbose())
 	if overrideOff.verbose {
 		t.Error("WithoutVerbose after WithVerbose should set verbose=false")
 	}
 }
 
-// TestWithMailboxDelivery_Pair verifies WithMailboxDelivery/WithoutMailboxDelivery
-// produce the same state as the deprecated WithMailboxDeliveryBool(true/false) forms.
+// TestWithMailboxDelivery_Pair verifies WithMailboxDelivery and
+// WithoutMailboxDelivery set the underlying tri-state pointer to
+// non-nil pointer-to-true / pointer-to-false respectively.
 func TestWithMailboxDelivery_Pair(t *testing.T) {
-	// WithMailboxDelivery and WithMailboxDeliveryBool(true) should both set mailboxDeliveryEnabled to pointer-to-true.
-	o1 := New(WithMailboxDelivery())
-	o2 := New(WithMailboxDeliveryBool(true))
-	if o1.mailboxDeliveryEnabled == nil {
+	on := New(WithMailboxDelivery())
+	if on.mailboxDeliveryEnabled == nil {
 		t.Fatal("WithMailboxDelivery() should set mailboxDeliveryEnabled to non-nil")
 	}
-	if o2.mailboxDeliveryEnabled == nil {
-		t.Fatal("WithMailboxDeliveryBool(true) should set mailboxDeliveryEnabled to non-nil")
-	}
-	if *o1.mailboxDeliveryEnabled != *o2.mailboxDeliveryEnabled {
-		t.Errorf("WithMailboxDelivery() *mailboxDeliveryEnabled=%v, WithMailboxDeliveryBool(true)=%v - must match",
-			*o1.mailboxDeliveryEnabled, *o2.mailboxDeliveryEnabled)
-	}
-	if !*o1.mailboxDeliveryEnabled {
+	if !*on.mailboxDeliveryEnabled {
 		t.Error("WithMailboxDelivery() should set *mailboxDeliveryEnabled=true")
 	}
 
-	// WithoutMailboxDelivery and WithMailboxDeliveryBool(false) should both set mailboxDeliveryEnabled to pointer-to-false.
-	o3 := New(WithoutMailboxDelivery())
-	o4 := New(WithMailboxDeliveryBool(false))
-	if o3.mailboxDeliveryEnabled == nil {
+	off := New(WithoutMailboxDelivery())
+	if off.mailboxDeliveryEnabled == nil {
 		t.Fatal("WithoutMailboxDelivery() should set mailboxDeliveryEnabled to non-nil")
 	}
-	if o4.mailboxDeliveryEnabled == nil {
-		t.Fatal("WithMailboxDeliveryBool(false) should set mailboxDeliveryEnabled to non-nil")
-	}
-	if *o3.mailboxDeliveryEnabled != *o4.mailboxDeliveryEnabled {
-		t.Errorf("WithoutMailboxDelivery() *mailboxDeliveryEnabled=%v, WithMailboxDeliveryBool(false)=%v - must match",
-			*o3.mailboxDeliveryEnabled, *o4.mailboxDeliveryEnabled)
-	}
-	if *o3.mailboxDeliveryEnabled {
+	if *off.mailboxDeliveryEnabled {
 		t.Error("WithoutMailboxDelivery() should set *mailboxDeliveryEnabled=false")
 	}
 }
 
-// TestWithTruncationOnCapReached_Pair verifies WithTruncationOnCapReached/WithoutTruncationOnCapReached
-// produce the same state as the deprecated WithTruncationOnCapReachedBool(true/false) forms.
+// TestWithTruncationOnCapReached_Pair verifies WithTruncationOnCapReached
+// and WithoutTruncationOnCapReached set truncateOnCapReached, asserting
+// last-write-wins semantics.
 func TestWithTruncationOnCapReached_Pair(t *testing.T) {
-	// WithTruncationOnCapReached and WithTruncationOnCapReachedBool(true) should both set truncateOnCapReached=true.
-	o1 := New(WithTruncationOnCapReached())
-	o2 := New(WithTruncationOnCapReachedBool(true))
-	if o1.truncateOnCapReached != o2.truncateOnCapReached {
-		t.Errorf("WithTruncationOnCapReached() truncateOnCapReached=%v, WithTruncationOnCapReachedBool(true)=%v - must match",
-			o1.truncateOnCapReached, o2.truncateOnCapReached)
-	}
-	if !o1.truncateOnCapReached {
+	on := New(WithTruncationOnCapReached())
+	if !on.truncateOnCapReached {
 		t.Error("WithTruncationOnCapReached() should set truncateOnCapReached=true")
 	}
-
-	// WithoutTruncationOnCapReached and WithTruncationOnCapReachedBool(false) should both set truncateOnCapReached=false.
-	o3 := New(WithoutTruncationOnCapReached())
-	o4 := New(WithTruncationOnCapReachedBool(false))
-	if o3.truncateOnCapReached != o4.truncateOnCapReached {
-		t.Errorf("WithoutTruncationOnCapReached() truncateOnCapReached=%v, WithTruncationOnCapReachedBool(false)=%v - must match",
-			o3.truncateOnCapReached, o4.truncateOnCapReached)
-	}
-	if o3.truncateOnCapReached {
+	off := New(WithoutTruncationOnCapReached())
+	if off.truncateOnCapReached {
 		t.Error("WithoutTruncationOnCapReached() should set truncateOnCapReached=false")
 	}
-
-	// Last write wins - WithoutTruncationOnCapReached after WithTruncationOnCapReached.
 	overrideOff := New(WithTruncationOnCapReached(), WithoutTruncationOnCapReached())
 	if overrideOff.truncateOnCapReached {
 		t.Error("WithoutTruncationOnCapReached after WithTruncationOnCapReached should set truncateOnCapReached=false")

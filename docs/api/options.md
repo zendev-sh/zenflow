@@ -731,7 +731,6 @@ orch := zenflow.New(
 )
 ```
 
-For dynamic toggling, the deprecated `WithStreamingBool(enabled bool)` shim accepts a bool but will be removed before v1.0.
 
 ### `WithVerbose`
 
@@ -752,7 +751,6 @@ orch := zenflow.New(
 )
 ```
 
-For dynamic toggling, the deprecated `WithVerboseBool(enabled bool)` shim accepts a bool but will be removed before v1.0.
 
 ### `WithOutputTransform`
 
@@ -902,10 +900,10 @@ result, err := orch.RunGoal(ctx,
 A few options exist for advanced use cases or testing infrastructure:
 
 - **`WithMailboxStore(factory)`** - replace the default `InMemoryMailboxStore` with a custom backend (e.g., SQLite for multi-process workflows). Factory is invoked once per run.
-- **`WithMailboxDelivery()` / `WithoutMailboxDelivery()`** - toggle the entire mailbox + delivery engine stack. Defaults to enabled. Mostly used by tests that exercise the scheduler path without messaging machinery. Deprecated `WithMailboxDeliveryBool(enabled bool)` shim accepts a bool but will be removed before v1.0.
+- **`WithMailboxDelivery()` / `WithoutMailboxDelivery()`** - toggle the entire mailbox + delivery engine stack. Defaults to enabled. Mostly used by tests that exercise the scheduler path without messaging machinery.
 - **`WithExternalInbox(ids...)`** - pre-register non-step sender inboxes (e.g., `"coordinator"`) on the MessageRouter so reverse-routed responses don't drop with `DropReasonUnknownStep`.
 - **`WithModelResolver(r)`** - install a `ModelResolver` consulted by the resume path when a saved transcript references a model identifier different from the executor's default.
-- **`WithTruncationOnCapReached()` / `WithoutTruncationOnCapReached()`** - configure the resume path to fall back to a truncated load when a sealed transcript hits its cap. Default disabled (sealed transcripts fail the resume loudly). Deprecated `WithTruncationOnCapReachedBool(enabled bool)` shim accepts a bool but will be removed before v1.0.
+- **`WithTruncationOnCapReached()` / `WithoutTruncationOnCapReached()`** - configure the resume path to fall back to a truncated load when a sealed transcript hits its cap. Default disabled (sealed transcripts fail the resume loudly).
 - **`WithRunID(runID string)`** - pin the orchestrator's run identifier. Without this, zenflow generates a fresh ID internally; useful when an HTTP server has already returned a run ID to the caller and needs the emitted events to carry the same ID.
 
 ## Coordinator-loop options

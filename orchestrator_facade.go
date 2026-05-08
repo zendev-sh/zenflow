@@ -68,10 +68,8 @@ var (
 	WithOutputTransform            = exec.WithOutputTransform
 	WithStreaming                  = exec.WithStreaming
 	WithoutStreaming               = exec.WithoutStreaming
-	WithStreamingBool              = exec.WithStreamingBool //nolint:staticcheck // SA1019: intentional re-export of deprecated bool shim until v1.0
 	WithVerbose                    = exec.WithVerbose
 	WithoutVerbose                 = exec.WithoutVerbose
-	WithVerboseBool                = exec.WithVerboseBool //nolint:staticcheck // SA1019: intentional re-export of deprecated bool shim until v1.0
 	WithMaxWakeCycles              = exec.WithMaxWakeCycles
 	WithHoldTimeout                = exec.WithHoldTimeout
 	WithAgentHandleTTL             = exec.WithAgentHandleTTL
@@ -81,7 +79,6 @@ var (
 	WithMailboxStore               = exec.WithMailboxStore
 	WithMailboxDelivery            = exec.WithMailboxDelivery
 	WithoutMailboxDelivery         = exec.WithoutMailboxDelivery
-	WithMailboxDeliveryBool        = exec.WithMailboxDeliveryBool //nolint:staticcheck // SA1019: intentional re-export of deprecated bool shim until v1.0
 	WithProgressBufferSize         = exec.WithProgressBufferSize
 	WithTranscriptStore            = exec.WithTranscriptStore
 	WithMaxTranscriptMessages      = exec.WithMaxTranscriptMessages
@@ -90,7 +87,6 @@ var (
 	WithModelResolver              = exec.WithModelResolver
 	WithTruncationOnCapReached     = exec.WithTruncationOnCapReached
 	WithoutTruncationOnCapReached  = exec.WithoutTruncationOnCapReached
-	WithTruncationOnCapReachedBool = exec.WithTruncationOnCapReachedBool //nolint:staticcheck // SA1019: intentional re-export of deprecated bool shim until v1.0
 	WithRouterObserver             = exec.WithRouterObserver
 	WithRunID                      = exec.WithRunID
 	WithFlowContext                = exec.WithFlowContext
