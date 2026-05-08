@@ -45,7 +45,7 @@ jobs:
           agents:
             writer:
               description: writer agent
-              model: google/gemini-2.0-flash-lite-001
+              model: google/gemini-2.5-flash-lite
               prompt: write something
           steps:
             - id: first
@@ -98,7 +98,7 @@ jobs:
           agents:
             writer:
               description: writer agent
-              model: google/gemini-2.0-flash-lite-001
+              model: google/gemini-2.5-flash-lite
               prompt: write something
           steps:
             - id: first
@@ -173,7 +173,7 @@ jobs:
           agents:
             scribe:
               description: writes one short fact to disk
-              model: google/gemini-2.0-flash-lite-001
+              model: google/gemini-2.5-flash-lite
               prompt: |
                 You are a careful scribe. Use the write tool to create
                 a file `note.txt` containing the literal string
@@ -200,7 +200,7 @@ jobs:
           agents:
             scribe:
               description: writes one short fact to disk
-              model: google/gemini-2.0-flash-lite-001
+              model: google/gemini-2.5-flash-lite
               prompt: |
                 You are a careful scribe. Use the write tool to create
                 a file `note.txt` containing the literal string
@@ -228,7 +228,7 @@ jobs:
           export PATH="$HOME/.local/bin:$PATH"
           cd /tmp/zf-tool
           set +e
-          zenflow flow flow.yaml --workdir /tmp/zf-tool --yolo --model google/gemini-2.0-flash-lite-001
+          zenflow flow flow.yaml --workdir /tmp/zf-tool --yolo --model google/gemini-2.5-flash-lite
           set -e
           if [ ! -f /tmp/zf-tool/note.txt ]; then
             echo "note.txt was not created by the write tool" >&2
@@ -253,7 +253,7 @@ jobs:
           $env:Path = "$InstallDir;$env:Path"
           Set-Location C:\zf-tool
           $ErrorActionPreference = 'Continue'
-          zenflow flow flow.yaml --workdir C:\zf-tool --yolo --model google/gemini-2.0-flash-lite-001
+          zenflow flow flow.yaml --workdir C:\zf-tool --yolo --model google/gemini-2.5-flash-lite
           $ErrorActionPreference = 'Stop'
           if (-not (Test-Path C:\zf-tool\note.txt)) {
             Write-Error "note.txt was not created by the write tool"
