@@ -1,0 +1,19 @@
+name: simple-chain
+description: A simple 3-step chain workflow
+
+agents:
+  coder:
+    description: "Writes code"
+    prompt: "You are a coder"
+    model: gpt-4o
+
+steps:
+  - id: design
+    instructions: "Design the system"
+  - id: implement
+    agent: coder
+    dependsOn: [design]
+    instructions: "Implement the design"
+  - id: review
+    dependsOn: [implement]
+    instructions: "Review the code"

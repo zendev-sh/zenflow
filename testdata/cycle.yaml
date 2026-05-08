@@ -1,0 +1,8 @@
+name: cycle-test
+steps:
+  - id: a
+    dependsOn: [c]
+  - id: b
+    dependsOn: [a]
+  - id: c
+    dependsOn: [b]

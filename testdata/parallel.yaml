@@ -1,0 +1,29 @@
+name: parallel-acceptance
+description: Parallel steps execute simultaneously
+
+agents:
+  worker:
+    description: "Worker agent"
+    prompt: "You are a worker."
+
+steps:
+  - id: setup
+    instructions: "Set up the environment"
+
+  - id: backend
+    agent: worker
+    dependsOn: [setup]
+    instructions: "Implement backend"
+
+  - id: frontend
+    agent: worker
+    dependsOn: [setup]
+    instructions: "Implement frontend"
+
+  - id: integrate
+    dependsOn: [backend, frontend]
+    instructions: "Integrate backend and frontend"
+
+options:
+  maxConcurrency: 2
+  onStepFailure: cascade
