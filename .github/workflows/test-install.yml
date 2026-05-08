@@ -38,6 +38,7 @@ jobs:
           name: smoke-flow
           agents:
             writer:
+              description: writer agent
               model: google/gemini-3-flash-preview
               prompt: write something
           steps:
@@ -46,7 +47,7 @@ jobs:
               instructions: produce a one-line summary
             - id: second
               agent: writer
-              depends_on: [first]
+              dependsOn: [first]
               instructions: extend the summary
           EOF
 
@@ -84,6 +85,7 @@ jobs:
           name: smoke-flow
           agents:
             writer:
+              description: writer agent
               model: google/gemini-3-flash-preview
               prompt: write something
           steps:
@@ -92,7 +94,7 @@ jobs:
               instructions: produce a one-line summary
             - id: second
               agent: writer
-              depends_on: [first]
+              dependsOn: [first]
               instructions: extend the summary
           '@ | Set-Content -Path C:\zenflow-smoke\sample.yaml -Encoding utf8
 
