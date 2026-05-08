@@ -186,7 +186,7 @@ jobs:
           $InstallDir = Join-Path $env:LOCALAPPDATA 'Programs\zenflow'
           $env:Path = "$InstallDir;$env:Path"
           Set-Location C:\zf-tool
-          zenflow flow flow.yaml --workdir C:\zf-tool --yolo
+          zenflow flow flow.yaml --workdir C:\zf-tool --yolo --model google/gemini-3-flash-preview
           if (-not (Test-Path C:\zf-tool\note.txt)) {
             Write-Error "note.txt was not created by the write tool"
             exit 1
