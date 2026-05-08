@@ -42,7 +42,12 @@ jobs:
         run: go build ./cmd/zenflow/
 
       - name: Test (race)
-        run: go test -race -coverprofile=coverage.txt -covermode=atomic ./...
+        # `coverage.out` (not `coverage.txt`) avoids a PowerShell
+        # argument-parsing quirk on `windows-latest` that splits
+        # `-coverprofile=coverage.txt` and feeds `.txt` to go test as
+        # a phantom package, yielding `FAIL .txt [setup failed]`.
+        # `.out` matches goai's convention.
+        run: go test -race -coverprofile=coverage.out -covermode=atomic ./...
 
       - name: Smoke-check examples
         if: runner.os != 'Windows'
@@ -51,15 +56,20 @@ jobs:
       - name: Coverage summary
         if: runner.os == 'Linux'
         run: |
-          total=$(go tool cover -func=coverage.txt | grep ^total | awk '{print $3}')
+          total=$(go tool cover -func=coverage.out | grep ^total | awk '{print $3}')
           echo "Coverage: $total"
 
       - name: Upload to Codecov
+        # `fail_ci_if_error: false` for now: the repo is private during
+        # the soak window and the org-level CODECOV_TOKEN does not yet
+        # exist on `zendev-sh/zenflow`. Coverage upload is a signal,
+        # not a gate; flipping back to true is a follow-up once the
+        # repo is public and the token is in place.
         if: runner.os == 'Linux'
         uses: codecov/codecov-action@75cd11691c0faa626561e295848008c8a7dddffe # v5.5.4
         with:
-          files: coverage.txt
-          fail_ci_if_error: true
+          files: coverage.out
+          fail_ci_if_error: false
           token: ${{ secrets.CODECOV_TOKEN }}
 
   lint:
