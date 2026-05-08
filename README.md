@@ -26,6 +26,8 @@
 
 ---
 
+> **Status:** zenflow is extremely new and under active development; APIs and the YAML schema may change before v1.0.
+
 ## See it run
 
 <p align="center">
