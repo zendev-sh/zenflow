@@ -12,6 +12,8 @@ zenflow's CLI is designed to drop into shell pipelines and child-process invocat
 
 This page covers bash, Node.js, and Python patterns for invoking zenflow as a subprocess.
 
+All snippets below assume `GEMINI_API_KEY` (or another provider key your `WithModel` choice needs) plus `ZENFLOW_MODEL=PROVIDER/MODEL` (e.g. `google/gemini-2.0-flash`) are exported in the environment. Without `ZENFLOW_MODEL` you would need a per-command `--model PROVIDER/MODEL` flag instead. See [Quick start](../getting-started/quick-start) for the full setup.
+
 ## Bash
 
 The simplest case is "run the workflow, do something with the events":

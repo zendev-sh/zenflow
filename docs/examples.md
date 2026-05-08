@@ -12,12 +12,15 @@ Every example has the same shape:
 - A YAML file at `spec/v1/examples/<name>.yaml` you can run from the CLI.
 - A Go embedding at `examples/<name>/main.go` you can run with `go run`.
 
-To run an example from the CLI, set an API key and point `zenflow flow` at the YAML:
+To run an example from the CLI, set an API key + default model, then point `zenflow flow` at the YAML:
 
 ```bash
 export GEMINI_API_KEY=...
+export ZENFLOW_MODEL=google/gemini-2.0-flash    # or another PROVIDER/MODEL your key supports
 zenflow flow spec/v1/examples/<name>.yaml
 ```
+
+Each `Run:` line below shows the YAML path only; the same `GEMINI_API_KEY` + `ZENFLOW_MODEL` pair (or a per-command `--model` flag) applies to every example.
 
 To run the Go embedding:
 

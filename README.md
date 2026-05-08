@@ -65,7 +65,10 @@ Other options:
 ```bash
 # Docker (linux/amd64 + linux/arm64 multi-arch image on GHCR)
 docker pull ghcr.io/zendev-sh/zenflow:latest
-docker run --rm -e GEMINI_API_KEY -v "$PWD":/wd -w /wd \
+docker run --rm \
+  -e GEMINI_API_KEY \
+  -e ZENFLOW_MODEL=google/gemini-2.0-flash \
+  -v "$PWD":/wd -w /wd \
   ghcr.io/zendev-sh/zenflow:latest flow workflow.yaml
 
 # Homebrew (macOS / Linux)

@@ -14,7 +14,7 @@ This page shows four full pipelines: GitHub Actions, GitLab CI, CircleCI, and Az
 Three pieces are common to every system:
 
 1. **Install the binary.** Either `go install github.com/zendev-sh/zenflow/cmd/zenflow@latest` (needs Go 1.25+ on the runner) or download a release artifact from `https://github.com/zendev-sh/zenflow/releases`.
-2. **Set provider API keys as secrets.** zenflow reads `GEMINI_API_KEY`, `AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY`/`AWS_REGION`, `AZURE_OPENAI_API_KEY`/`AZURE_RESOURCE_NAME`, etc. from the environment. Pick whichever provider matches your `WithModel` choice in the workflow.
+2. **Set provider API keys + a default model.** zenflow reads `GEMINI_API_KEY`, `AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY`/`AWS_REGION`, `AZURE_OPENAI_API_KEY`/`AZURE_RESOURCE_NAME`, etc. from the environment, plus `ZENFLOW_MODEL=PROVIDER/MODEL` (or pass `--model PROVIDER/MODEL` per command). Without one of those, `zenflow flow` fails fast with `no LLM model configured`.
 3. **Capture the JSON event stream.** Run with `--json` so stdout is parseable NDJSON. Either save it as an artifact for later inspection, or pipe it through `jq` to extract the bits you care about (failed steps, token counts, final summary).
 
 ## GitHub Actions
@@ -51,6 +51,7 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_REGION: us-east-1
+          ZENFLOW_MODEL: google/gemini-2.0-flash
         run: |
           zenflow flow .zenflow/review.yaml --json \
             > zenflow-events.ndjson
