@@ -242,14 +242,3 @@ main module only when the submodule receives a real change.
 
 By contributing, you agree that your contributions will be licensed
 under the [Apache 2.0 License](LICENSE).
-
-A Developer Certificate of Origin (DCO) sign-off is required on
-every commit. Add it with `git commit -s`:
-
-```
-Signed-off-by: Your Name <your.email@example.com>
-```
-
-By signing, you affirm the [DCO](https://developercertificate.org/)
-- the contribution is yours to give and you license it under the
-project's license.
