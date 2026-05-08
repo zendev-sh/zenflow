@@ -237,3 +237,17 @@ If you have high workflow throughput and need to drop some, `ParentBased(TraceID
 If you don't want to wire OTel at all, the NDJSON event stream from `--json` carries equivalent information for most diagnostic needs: per-step start and end events with status, duration, and token counts. It is plain text, easy to grep, and works in CI without any extra infrastructure.
 
 OTel becomes worth the setup once you have multiple long-running services, want flame-graph timing across step parallelism, or need to tie zenflow runs into an existing observability stack.
+
+## CLI `--trace` and the `otel` build tag
+
+The Go API patterns above work on every distribution path - the small tracer interface lives in the default build. The CLI `--trace` flag, however, is gated behind the `otel` build tag because wiring up the full OTel SDK + OTLP exporter would otherwise pull a large dependency graph into every `go install` consumer.
+
+Pre-built binaries (`install.sh`, Homebrew, Docker) all ship with `-tags otel` baked in, so `--trace` works on those paths out of the box.
+
+Source builds via `go install` default to no build tag and `--trace` is a runtime no-op there. To get a binary with `--trace` wired up, install or build with the tag:
+
+```bash
+go install -tags otel github.com/zendev-sh/zenflow/cmd/zenflow@latest
+```
+
+The Go API path (`WithTracer(...)`) is unaffected by the build tag - if you embed zenflow as a library, you can wire any OTel-compatible tracer without rebuilding.

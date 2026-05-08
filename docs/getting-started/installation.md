@@ -89,6 +89,19 @@ go install github.com/zendev-sh/zenflow/cmd/zenflow@latest
 Pin a specific version with `@v0.1.0-pre` instead of `@latest`. The
 binary lands in `$(go env GOPATH)/bin`. Requires Go 1.25+.
 
+The default `go install` build excludes the OpenTelemetry runtime
+to keep dependency closures small; the `--trace` CLI flag becomes a
+runtime no-op. To get a binary with `--trace` wired to the OTel
+exporter, install with the build tag instead:
+
+```bash
+go install -tags otel github.com/zendev-sh/zenflow/cmd/zenflow@latest
+```
+
+The pre-built binaries shipped via the install script, Homebrew, and
+Docker images all carry `-tags otel` already, so `--trace` works out
+of the box on those paths.
+
 ## Manual download
 
 Pre-built archives for every supported platform live on the
