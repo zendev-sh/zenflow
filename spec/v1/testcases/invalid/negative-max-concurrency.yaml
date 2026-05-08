@@ -1,0 +1,11 @@
+description: "maxConcurrency must be a positive integer (minimum 1)"
+input: |
+  name: negative-concurrency
+  steps:
+    - id: work
+      instructions: "Do some work"
+  options:
+    maxConcurrency: -5
+expected:
+  valid: false
+  error: negative_value

@@ -1,0 +1,1555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agent Orchestration Architecture · zenflow</title>
+<meta name="description" content="Multi-agent orchestration architecture diagram for zenflow -- how YAML agent workflows turn into a running plan via the LLM coordinator, hub-and-spoke messaging, race-safe Mailbox+Wake delivery, and structured output.">
+<meta name="keywords" content="multi-agent, agent orchestration, agent workflow, multi-agent workflow, multi-agent orchestration, llm coordinator, agent workflow engine, declarative workflows, yaml workflows, go agent framework">
+<meta property="og:title" content="Agent Orchestration Architecture · zenflow">
+<meta property="og:description" content="How zenflow turns a YAML agent workflow into a running plan -- coordinator, executor, mailbox, hub-and-spoke messaging.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://zenflow.sh/agent-orchestration.html">
+<meta property="og:image" content="https://zenflow.sh/og-image.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="canonical" href="https://zenflow.sh/agent-orchestration.html">
+<link rel="icon" type="image/x-icon" href="/favicon.ico">
+<link rel="icon" type="image/png" sizes="128x128" href="/zenflow-icon-128-dark.png" media="(prefers-color-scheme: dark)">
+<link rel="icon" type="image/png" sizes="128x128" href="/zenflow-icon-128.png"      media="(prefers-color-scheme: light)">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
+/* ========================================================================
+ * Theme tokens. The page supports both light and dark, switched by the
+ * `data-theme="..."` attribute on <html>. The OS preference seeds the
+ * initial value; the toggle button in the header overrides it and
+ * persists to localStorage.
+ * ======================================================================== */
+
+:root,
+:root[data-theme="light"] {
+  --bg:           hsl(220, 30%, 98%);
+  --bg-soft:      hsl(220, 30%, 95%);
+  --bg-card:      hsl(220, 30%, 100%);
+  --bg-card-2:    hsl(220, 25%, 96%);
+  --border:       hsl(220, 14%, 90%);
+  --border-soft:  hsl(220, 14%, 94%);
+  --border-glow:  hsl(220, 16%, 80%);
+
+  --text:         hsl(222, 30%, 15%);
+  --text-2:       hsl(222, 18%, 42%);
+  --text-3:       hsl(222, 14%, 60%);
+
+  --cyan:         hsl(190, 70%, 38%);
+  --cyan-soft:    hsla(190, 70%, 38%, 0.12);
+  --cyan-glow:    hsla(190, 70%, 38%, 0.18);
+
+  --green:        hsl(150, 56%, 32%);
+  --green-soft:   hsla(150, 56%, 32%, 0.10);
+  --green-glow:   hsla(150, 56%, 32%, 0.16);
+
+  --teal:         hsl(178, 50%, 32%);
+  --teal-soft:    hsla(178, 50%, 32%, 0.10);
+
+  --blue:         hsl(214, 70%, 44%);
+  --blue-soft:    hsla(214, 70%, 44%, 0.10);
+
+  --amber:        hsl(28, 70%, 42%);
+  --amber-soft:   hsla(28, 70%, 42%, 0.10);
+
+  --lavender:     hsl(228, 22%, 50%);
+  --lavender-soft:hsla(228, 22%, 50%, 0.10);
+
+  --grid-stroke:  hsla(220, 14%, 80%, 0.5);
+  --shadow-card:  0 18px 40px -16px hsla(220, 30%, 30%, 0.10);
+  --shadow-frame: 0 22px 60px -16px hsla(220, 30%, 30%, 0.12);
+
+  --radius: 10px;
+}
+
+:root[data-theme="dark"] {
+  --bg:           hsl(222, 47%, 9%);
+  --bg-soft:      hsl(222, 47%, 7%);
+  --bg-card:      hsl(222, 40%, 12%);
+  --bg-card-2:    hsl(222, 35%, 15%);
+  --border:       hsl(222, 32%, 16%);
+  --border-soft:  hsl(222, 32%, 13%);
+  --border-glow:  hsl(222, 32%, 26%);
+
+  --text:         hsl(0, 0%, 96%);
+  --text-2:       hsl(220, 14%, 64%);
+  --text-3:       hsl(220, 14%, 44%);
+
+  --cyan:         hsl(190, 75%, 65%);
+  --cyan-soft:    hsla(190, 75%, 65%, 0.12);
+  --cyan-glow:    hsla(190, 75%, 65%, 0.20);
+
+  --green:        hsl(150, 60%, 56%);
+  --green-soft:   hsla(150, 60%, 56%, 0.10);
+  --green-glow:   hsla(150, 60%, 56%, 0.18);
+
+  --teal:         hsl(178, 56%, 56%);
+  --teal-soft:    hsla(178, 56%, 56%, 0.10);
+
+  --blue:         hsl(214, 80%, 64%);
+  --blue-soft:    hsla(214, 80%, 64%, 0.10);
+
+  --amber:        hsl(30, 80%, 60%);
+  --amber-soft:   hsla(30, 80%, 60%, 0.10);
+
+  --lavender:     hsl(228, 28%, 70%);
+  --lavender-soft:hsla(228, 28%, 70%, 0.10);
+
+  --grid-stroke:  hsla(222, 32%, 22%, 0.55);
+  --shadow-card:  0 22px 56px rgba(0, 0, 0, 0.45);
+  --shadow-frame: 0 28px 72px rgba(0, 0, 0, 0.55);
+}
+
+/* Inline-script seeds the theme before paint to avoid FOUC; if for any
+ * reason the script is blocked, fall back to OS preference. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    color-scheme: dark;
+    --bg:           hsl(222, 47%, 9%);
+    --bg-soft:      hsl(222, 47%, 7%);
+    --bg-card:      hsl(222, 40%, 12%);
+    --bg-card-2:    hsl(222, 35%, 15%);
+    --border:       hsl(222, 32%, 16%);
+    --border-soft:  hsl(222, 32%, 13%);
+    --border-glow:  hsl(222, 32%, 26%);
+    --text:         hsl(0, 0%, 96%);
+    --text-2:       hsl(220, 14%, 64%);
+    --text-3:       hsl(220, 14%, 44%);
+    --cyan:         hsl(190, 75%, 65%);
+    --cyan-soft:    hsla(190, 75%, 65%, 0.12);
+    --cyan-glow:    hsla(190, 75%, 65%, 0.20);
+    --green:        hsl(150, 60%, 56%);
+    --green-soft:   hsla(150, 60%, 56%, 0.10);
+    --green-glow:   hsla(150, 60%, 56%, 0.18);
+    --teal:         hsl(178, 56%, 56%);
+    --teal-soft:    hsla(178, 56%, 56%, 0.10);
+    --blue:         hsl(214, 80%, 64%);
+    --blue-soft:    hsla(214, 80%, 64%, 0.10);
+    --amber:        hsl(30, 80%, 60%);
+    --amber-soft:   hsla(30, 80%, 60%, 0.10);
+    --lavender:     hsl(228, 28%, 70%);
+    --lavender-soft:hsla(228, 28%, 70%, 0.10);
+    --grid-stroke:  hsla(222, 32%, 22%, 0.55);
+    --shadow-card:  0 22px 56px rgba(0, 0, 0, 0.45);
+    --shadow-frame: 0 28px 72px rgba(0, 0, 0, 0.55);
+  }
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; color-scheme: light dark; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: 'kern', 'liga', 'cv11';
+  letter-spacing: -0.005em;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+/* atmospheric background */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(var(--grid-stroke) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-stroke) 1px, transparent 1px);
+  background-size: 56px 56px;
+  opacity: 0.5;
+  pointer-events: none;
+  z-index: 0;
+}
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 50% 0%, var(--cyan-glow) 0%, transparent 55%),
+    radial-gradient(ellipse at 0% 90%, var(--blue-soft) 0%, transparent 50%),
+    radial-gradient(ellipse at 100% 50%, var(--green-soft) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.page { position: relative; z-index: 1; }
+
+/* ========================================================================
+ * Brand watermark -- large ensō calligraphy positioned at the upper-right,
+ * partially clipping off the viewport edge for an off-center, Japanese-art
+ * composition. Symbolically apt: the ensō is a single circular calligraphy
+ * stroke that almost closes -- the same "flow" the diagram represents.
+ *
+ * Implementation notes:
+ *   - opacity 4-5% so it's "felt" not "seen"
+ *   - 0.5px blur softens PNG pixel edges and prevents the mark from
+ *     reading as a sharp UI element
+ *   - 80s drift animation: imperceptible motion that keeps the mark
+ *     feeling alive without ever crossing into "spinning" territory
+ *   - bg-image swaps between the light and dark variants so the ink
+ *     stroke is never the wrong polarity vs. the page bg
+ *   - aria-hidden -- pure decoration
+ * ======================================================================== */
+.brand-watermark {
+  /* fixed = the ensō stays parked in the viewport while the page
+   * scrolls past it. It becomes a constant brand presence, like a
+   * stamp on the parchment that the content slides over. */
+  position: fixed;
+  top: 80px;
+  right: -160px;
+  width: clamp(420px, 56vw, 780px);
+  aspect-ratio: 1 / 1;
+  background: url('/zenflow-icon-dark.png') no-repeat center / contain;
+  opacity: 0.05;
+  pointer-events: none;
+  z-index: 0;
+  filter: blur(0.5px);
+  animation: watermarkDrift 80s ease-in-out infinite alternate;
+  transform-origin: 60% 50%;
+  user-select: none;
+  /* hint to the compositor that this layer is independent -- keeps
+   * the page-scroll smooth on mobile where fixed bg can repaint. */
+  will-change: transform;
+}
+[data-theme="light"] .brand-watermark {
+  background-image: url('/zenflow-icon.png');
+  opacity: 0.045;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) .brand-watermark {
+    background-image: url('/zenflow-icon.png');
+    opacity: 0.045;
+  }
+}
+@keyframes watermarkDrift {
+  from { transform: translate3d(0, 0, 0)       rotate(-2deg); }
+  to   { transform: translate3d(-32px, 14px, 0) rotate(6deg); }
+}
+@media (max-width: 760px) {
+  .brand-watermark {
+    width: clamp(280px, 84vw, 460px);
+    right: -150px;
+    top: 50px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .brand-watermark { animation: none; }
+}
+
+/* The page's content sections sit above the watermark. The sticky
+ * header and footer already have z-index; hero/content/footer get
+ * an explicit relative+1 so the watermark stays behind. */
+.hero, .content, .site-footer { position: relative; z-index: 1; }
+
+/* ======================================================================== */
+/* HEADER -- matching the docs site brand */
+/* ======================================================================== */
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  background: color-mix(in srgb, var(--bg) 85%, transparent);
+  backdrop-filter: saturate(140%) blur(12px);
+  -webkit-backdrop-filter: saturate(140%) blur(12px);
+  border-bottom: 1px solid var(--border-soft);
+}
+.site-header-inner {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 14px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: var(--text);
+  font-family: 'Outfit', sans-serif;
+  font-weight: 500;
+  font-size: 17px;
+  letter-spacing: -0.01em;
+  transition: opacity 0.18s ease;
+}
+.brand:hover { opacity: 0.75; }
+.brand-mark {
+  width: 28px;
+  height: 28px;
+  display: block;
+}
+.brand-mark.in-light,
+[data-theme="dark"] .brand-mark.in-light,
+.brand-mark.in-dark,
+[data-theme="light"] .brand-mark.in-dark { display: none; }
+[data-theme="light"] .brand-mark.in-light,
+[data-theme="dark"] .brand-mark.in-dark { display: block; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .brand-mark.in-light { display: none; }
+  :root:not([data-theme]) .brand-mark.in-dark { display: block; }
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) .brand-mark.in-dark { display: none; }
+  :root:not([data-theme]) .brand-mark.in-light { display: block; }
+}
+
+.site-nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+}
+.site-nav a {
+  display: inline-flex;
+  align-items: center;
+  height: 34px;
+  padding: 0 12px;
+  border-radius: 6px;
+  color: var(--text-2);
+  text-decoration: none;
+  transition: color 0.18s ease, background 0.18s ease;
+}
+.site-nav a:hover { color: var(--text); background: var(--bg-soft); }
+.site-nav a.is-current { color: var(--text); }
+.site-nav a.is-current::after {
+  content: '';
+  position: absolute;
+}
+
+.site-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-2);
+  cursor: pointer;
+  transition: color 0.18s ease, background 0.18s ease, border-color 0.18s ease;
+}
+.icon-btn:hover {
+  color: var(--text);
+  border-color: var(--border-glow);
+  background: var(--bg-soft);
+}
+.icon-btn svg { width: 16px; height: 16px; display: block; }
+.theme-toggle .sun { display: none; }
+.theme-toggle .moon { display: block; }
+[data-theme="dark"] .theme-toggle .sun { display: block; }
+[data-theme="dark"] .theme-toggle .moon { display: none; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .theme-toggle .sun { display: block; }
+  :root:not([data-theme]) .theme-toggle .moon { display: none; }
+}
+
+.nav-toggle { display: none; }
+
+@media (max-width: 760px) {
+  .site-header-inner { padding: 12px 18px; gap: 12px; }
+  .nav-toggle { display: inline-flex; }
+  .site-nav {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    padding: 8px 12px 12px;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border-soft);
+    box-shadow: 0 12px 24px -12px rgba(0, 0, 0, 0.25);
+    display: none;
+  }
+  .site-header.nav-open .site-nav { display: flex; }
+  .site-nav a {
+    height: 40px;
+    padding: 0 14px;
+    border-radius: 8px;
+    font-size: 15px;
+  }
+}
+
+/* ======================================================================== */
+/* HERO */
+/* ======================================================================== */
+.hero {
+  text-align: center;
+  padding: 90px 28px 56px;
+  position: relative;
+}
+.hero::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(78%, 720px);
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border-glow), transparent);
+}
+.hero-eyebrow {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.36em;
+  text-transform: uppercase;
+  color: var(--cyan);
+  margin-bottom: 18px;
+  opacity: 0;
+  animation: fadeUp 0.6s ease forwards;
+}
+.hero h1 {
+  font-family: 'Outfit', sans-serif;
+  font-size: clamp(2.4rem, 5.5vw, 4rem);
+  font-weight: 500;
+  line-height: 1.02;
+  letter-spacing: -0.04em;
+  color: var(--text);
+  margin-bottom: 18px;
+  opacity: 0;
+  animation: fadeUp 0.7s 0.08s ease forwards;
+}
+.hero p {
+  max-width: 60ch;
+  margin: 0 auto;
+  font-size: 1.05rem;
+  line-height: 1.7;
+  color: var(--text-2);
+  opacity: 0;
+  animation: fadeUp 0.7s 0.18s ease forwards;
+}
+.hero p a { color: var(--cyan); text-decoration: none; border-bottom: 1px solid var(--cyan-soft); }
+.hero p a:hover { border-bottom-color: var(--cyan); }
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ======================================================================== */
+/* CONTENT */
+/* ======================================================================== */
+.content {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 56px 28px 100px;
+}
+
+/* ===== Edge legend ===== */
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 22px 32px;
+  padding: 22px 26px;
+  margin-bottom: 56px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--text-2);
+  letter-spacing: 0.02em;
+  opacity: 0;
+  animation: fadeUp 0.6s 0.3s ease forwards;
+  box-shadow: var(--shadow-card);
+}
+.legend-block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.legend-block-title {
+  font-size: 10px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.legend-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px 20px;
+}
+.legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+}
+.legend-item svg { display: block; flex-shrink: 0; }
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+/* ======================================================================== */
+/* DIAGRAM */
+/* ======================================================================== */
+.diagram-wrap {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 36px 26px 28px;
+  margin-bottom: 72px;
+  position: relative;
+  overflow: hidden;
+  opacity: 0;
+  animation: fadeUp 0.8s 0.4s ease forwards;
+  box-shadow: var(--shadow-frame);
+}
+.diagram-wrap::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 50% 0%, var(--cyan-glow), transparent 55%),
+    radial-gradient(ellipse at 50% 100%, var(--blue-soft), transparent 55%);
+  pointer-events: none;
+}
+.diagram-wrap > * { position: relative; z-index: 1; }
+.diagram-title {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  text-align: center;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+}
+.diagram-title::before,
+.diagram-title::after {
+  content: '';
+  display: inline-block;
+  width: 32px;
+  height: 1px;
+  background: var(--text-3);
+  opacity: 0.5;
+}
+
+.diagram {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+}
+
+/* SVG-internal styles */
+.svg-frame {
+  fill: var(--bg-card-2);
+  stroke-width: 1.4;
+  rx: 12;
+  transition: filter 0.3s ease;
+}
+.svg-frame-cyan   { stroke: var(--cyan); }
+.svg-frame-green  { stroke: var(--green); }
+.svg-frame-teal   { stroke: var(--teal); }
+.svg-frame-blue   { stroke: var(--blue); }
+.svg-frame-amber  { stroke: var(--amber); }
+.svg-frame-lav    { stroke: var(--lavender); }
+.svg-node-cyan  rect.svg-frame { filter: drop-shadow(0 0 5px var(--cyan-glow)); }
+.svg-node-green rect.svg-frame { filter: drop-shadow(0 0 5px var(--green-glow)); }
+.svg-node-blue  rect.svg-frame { filter: drop-shadow(0 0 5px var(--blue-soft)); }
+
+.svg-cat {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+}
+.svg-cat-cyan  { fill: var(--cyan); }
+.svg-cat-green { fill: var(--green); }
+.svg-cat-teal  { fill: var(--teal); }
+.svg-cat-blue  { fill: var(--blue); }
+.svg-cat-amber { fill: var(--amber); }
+.svg-cat-lav   { fill: var(--lavender); }
+
+.svg-name {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  font-weight: 700;
+  fill: var(--text);
+}
+.svg-detail {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10.5px;
+  fill: var(--text-3);
+}
+.svg-tools-list {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  fill: var(--text-2);
+}
+
+/* === EDGE TAXONOMY ===
+ * Two distinct visual classes:
+ *   .svg-edge-fn   -- solid line, no animation. "function call" /
+ *                    structural wiring. Direction = method invocation.
+ *   .svg-edge-msg  -- dashed cyan line, animated stroke-dashoffset.
+ *                    "message delivery" through the mailbox bus.
+ * A third sub-type for the LLM tool loop (.svg-edge-tool) uses solid
+ * amber to distinguish "external API call" from internal function
+ * calls that stay inside the process. */
+.svg-edge-fn {
+  fill: none;
+  stroke: var(--green);
+  stroke-width: 1.5;
+  opacity: 0.85;
+}
+.svg-edge-tool {
+  fill: none;
+  stroke: var(--amber);
+  stroke-width: 1.5;
+  opacity: 0.85;
+}
+.svg-edge-msg {
+  fill: none;
+  stroke: var(--cyan);
+  stroke-width: 1.4;
+  opacity: 0.95;
+  stroke-dasharray: 5 4;
+  animation: dashFlow 2.6s linear infinite;
+}
+.svg-edge-data {
+  fill: none;
+  stroke: var(--lavender);
+  stroke-width: 1.3;
+  opacity: 0.7;
+  stroke-dasharray: 3 3;
+}
+@keyframes dashFlow { to { stroke-dashoffset: -18; } }
+
+.svg-edge-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10.5px;
+  font-weight: 500;
+}
+.svg-edge-label-fn    { fill: var(--green); }
+.svg-edge-label-tool  { fill: var(--amber); }
+.svg-edge-label-msg   { fill: var(--cyan); }
+.svg-edge-label-data  { fill: var(--lavender); }
+
+.svg-label-bg {
+  fill: var(--bg-card);
+  stroke: var(--border);
+  stroke-width: 0.5;
+  rx: 4;
+}
+
+/* === Section titles === */
+.section-eyebrow {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin: 0 0 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.section-eyebrow::before {
+  content: '';
+  display: inline-block;
+  width: 18px;
+  height: 1px;
+  background: var(--text-3);
+}
+.section-h2 {
+  font-family: 'Outfit', sans-serif;
+  font-size: clamp(1.6rem, 3vw, 2.1rem);
+  font-weight: 500;
+  letter-spacing: -0.025em;
+  color: var(--text);
+  margin: 0 0 32px;
+}
+
+/* === Card grids === */
+.grid-3 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 18px;
+  margin-bottom: 56px;
+}
+.grid-2 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+  gap: 18px;
+  margin-bottom: 56px;
+}
+.grid-4 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 18px;
+  margin-bottom: 56px;
+}
+
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px 26px;
+  transition: transform 0.25s cubic-bezier(0.2, 0.6, 0.2, 1),
+              box-shadow 0.25s cubic-bezier(0.2, 0.6, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+.card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 22px 44px -16px hsla(200, 30%, 30%, 0.18);
+}
+[data-theme="dark"] .card:hover {
+  box-shadow: 0 24px 48px -14px hsla(200, 35%, 50%, 0.22);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) .card:hover {
+    box-shadow: 0 24px 48px -14px hsla(200, 35%, 50%, 0.22);
+  }
+}
+
+.card-rule { color: var(--text); }
+.card-rule::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 3px;
+  height: 100%;
+  background: currentColor;
+  opacity: 0.7;
+}
+.card-cyan  { color: var(--cyan); }
+.card-green { color: var(--green); }
+.card-teal  { color: var(--teal); }
+.card-blue  { color: var(--blue); }
+.card-amber { color: var(--amber); }
+
+.card-tag {
+  display: inline-block;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 4px;
+  margin-bottom: 14px;
+  color: currentColor;
+}
+.tag-cyan  { background: var(--cyan-soft); }
+.tag-green { background: var(--green-soft); }
+.tag-teal  { background: var(--teal-soft); }
+.tag-blue  { background: var(--blue-soft); }
+.tag-amber { background: var(--amber-soft); }
+
+.card h3 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.18rem;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: -0.018em;
+  color: var(--text);
+  margin-bottom: 10px;
+}
+.card p {
+  font-size: 0.94rem;
+  line-height: 1.65;
+  color: var(--text-2);
+  margin: 0;
+}
+.card p code,
+.card h3 code,
+.card .meta code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.86em;
+  background: var(--bg-soft);
+  padding: 0.1em 0.4em;
+  border-radius: 3px;
+  color: var(--text);
+  border: 1px solid var(--border-soft);
+}
+.card .sig {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--text-3);
+  margin-bottom: 10px;
+}
+.card .meta {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-soft);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11.5px;
+  color: var(--text-3);
+  display: grid;
+  grid-template-columns: 80px 1fr;
+  gap: 4px 12px;
+}
+.card .meta dt {
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  font-size: 10px;
+  padding-top: 2px;
+  color: var(--text-3);
+}
+.card .meta dd { margin: 0; color: var(--text); }
+
+/* Stagger animations */
+.stagger { opacity: 0; animation: fadeUp 0.55s ease forwards; }
+.s-1 { animation-delay: 0.45s; }
+.s-2 { animation-delay: 0.55s; }
+.s-3 { animation-delay: 0.65s; }
+.s-4 { animation-delay: 0.75s; }
+.s-5 { animation-delay: 0.85s; }
+
+/* === Pill row === */
+.pills {
+  margin-top: 64px;
+  text-align: center;
+}
+.pills-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin-bottom: 18px;
+}
+.pills-row {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  max-width: 820px;
+}
+.pill {
+  display: inline-flex;
+  align-items: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11.5px;
+  font-weight: 500;
+  padding: 7px 14px;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+  text-decoration: none;
+  transition: background 0.18s ease, transform 0.18s ease;
+}
+.pill:hover { transform: translateY(-1px); }
+.pill-cyan  { color: var(--cyan); }
+.pill-cyan:hover  { background: var(--cyan-soft); }
+.pill-green { color: var(--green); }
+.pill-green:hover { background: var(--green-soft); }
+.pill-teal  { color: var(--teal); }
+.pill-teal:hover  { background: var(--teal-soft); }
+.pill-blue  { color: var(--blue); }
+.pill-blue:hover  { background: var(--blue-soft); }
+.pill-amber { color: var(--amber); }
+.pill-amber:hover { background: var(--amber-soft); }
+
+/* ======================================================================== */
+/* FOOTER */
+/* ======================================================================== */
+.site-footer {
+  border-top: 1px solid var(--border-soft);
+  padding: 36px 28px 48px;
+  background: var(--bg-soft);
+}
+.site-footer-inner {
+  max-width: 1280px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  align-items: center;
+  text-align: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--text-3);
+  letter-spacing: 0.04em;
+}
+.footer-links {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 20px;
+}
+.footer-links a {
+  color: var(--text-2);
+  text-decoration: none;
+  transition: color 0.18s ease;
+}
+.footer-links a:hover { color: var(--cyan); }
+.footer-meta { display: flex; flex-direction: column; gap: 4px; }
+
+/* === Responsive === */
+@media (max-width: 760px) {
+  .hero { padding: 56px 24px 36px; }
+  .content { padding: 32px 18px 80px; }
+  .legend { gap: 14px 24px; padding: 16px 18px; }
+  .grid-3, .grid-2, .grid-4 { grid-template-columns: 1fr; }
+  .diagram-wrap { padding: 20px 8px 18px; overflow-x: auto; }
+  .card .meta { grid-template-columns: 1fr; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .svg-edge-msg { animation: none !important; }
+  .stagger, .hero-eyebrow, .hero h1, .hero p, .legend, .diagram-wrap {
+    opacity: 1 !important;
+    animation: none !important;
+  }
+}
+</style>
+<script>
+// Theme bootstrap -- runs synchronously before paint to avoid FOUC.
+// Default = dark. The user's explicit toggle persists in localStorage
+// and overrides; OS preference is intentionally ignored on this page.
+(function () {
+  try {
+    var key = 'zf-theme';
+    var stored = localStorage.getItem(key);
+    if (stored === 'light' || stored === 'dark') {
+      document.documentElement.setAttribute('data-theme', stored);
+    } else {
+      document.documentElement.setAttribute('data-theme', 'dark');
+    }
+  } catch (e) {
+    document.documentElement.setAttribute('data-theme', 'dark');
+  }
+})();
+</script>
+</head>
+<body>
+<div class="page">
+
+<!-- Decorative ensō watermark -- see .brand-watermark in <style>. -->
+<div class="brand-watermark" aria-hidden="true"></div>
+
+<!-- =================================================================== -->
+<!-- SITE HEADER                                                          -->
+<!-- =================================================================== -->
+<header class="site-header">
+  <div class="site-header-inner">
+    <a href="/" class="brand" aria-label="zenflow homepage">
+      <img class="brand-mark in-light" src="/zenflow-icon-128.png"      alt="" width="28" height="28">
+      <img class="brand-mark in-dark"  src="/zenflow-icon-128-dark.png" alt="" width="28" height="28">
+      <span>zenflow</span>
+    </a>
+    <nav class="site-nav" aria-label="Primary">
+      <a href="/getting-started/installation">Guide</a>
+      <a href="/agent-orchestration.html" class="is-current">Blueprint</a>
+      <a href="/architecture">Architecture</a>
+      <a href="/examples">Examples</a>
+      <a href="/concepts/">Reference</a>
+    </nav>
+    <div class="site-actions">
+      <button class="icon-btn nav-toggle" type="button" aria-label="Toggle navigation" aria-expanded="false" data-nav-toggle>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="3" y1="6" x2="21" y2="6"/>
+          <line x1="3" y1="12" x2="21" y2="12"/>
+          <line x1="3" y1="18" x2="21" y2="18"/>
+        </svg>
+      </button>
+      <button class="icon-btn theme-toggle" type="button" aria-label="Toggle theme" data-theme-toggle>
+        <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+        <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="4"/>
+          <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
+        </svg>
+      </button>
+      <a class="icon-btn" href="https://github.com/zendev-sh/zenflow" target="_blank" rel="noopener" aria-label="zenflow on GitHub">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.1.79-.25.79-.55 0-.27-.01-1.16-.02-2.1-3.2.7-3.87-1.36-3.87-1.36-.52-1.32-1.27-1.67-1.27-1.67-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.02 1.75 2.68 1.24 3.34.95.1-.74.4-1.24.72-1.53-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.18-3.1-.12-.29-.51-1.46.11-3.04 0 0 .96-.31 3.16 1.18a10.92 10.92 0 0 1 5.75 0c2.2-1.49 3.16-1.18 3.16-1.18.62 1.58.23 2.75.11 3.04.74.81 1.18 1.84 1.18 3.1 0 4.42-2.69 5.39-5.26 5.68.41.36.78 1.06.78 2.13 0 1.54-.01 2.78-.01 3.16 0 .31.21.66.8.55C20.21 21.39 23.5 17.08 23.5 12 23.5 5.65 18.35.5 12 .5z"/>
+        </svg>
+      </a>
+    </div>
+  </div>
+</header>
+
+<!-- =================================================================== -->
+<!-- HERO                                                                 -->
+<!-- =================================================================== -->
+<section class="hero">
+  <p class="hero-eyebrow">multi-agent · orchestration · workflow</p>
+  <h1>Agent Orchestration Architecture</h1>
+  <p>How zenflow turns a YAML agent workflow into a running plan. An LLM coordinator routes events between agents through hub-and-spoke mailboxes; the executor schedules a DAG of steps; <a href="https://goai.sh">goai</a> handles the tool loop. Every box, arrow, and label below is a real component you can grep for in <a href="https://github.com/zendev-sh/zenflow">the source</a>.</p>
+</section>
+
+<div class="content">
+
+  <!-- =================================================================== -->
+  <!-- LEGEND                                                               -->
+  <!-- =================================================================== -->
+  <div class="legend" role="region" aria-label="Diagram legend">
+    <div class="legend-block">
+      <span class="legend-block-title">edges</span>
+      <div class="legend-row">
+        <span class="legend-item">
+          <svg width="34" height="10" aria-hidden="true">
+            <line x1="2" y1="5" x2="32" y2="5" stroke="currentColor" stroke-width="1.5" style="color:var(--green)"/>
+          </svg>
+          function call
+        </span>
+        <span class="legend-item">
+          <svg width="34" height="10" aria-hidden="true">
+            <line x1="2" y1="5" x2="32" y2="5" stroke="currentColor" stroke-width="1.5" style="color:var(--amber)"/>
+          </svg>
+          tool loop · llm call
+        </span>
+        <span class="legend-item">
+          <svg width="34" height="10" aria-hidden="true">
+            <line x1="2" y1="5" x2="32" y2="5" stroke="currentColor" stroke-width="1.4" stroke-dasharray="5 4" style="color:var(--cyan)"/>
+          </svg>
+          message delivery (mailbox)
+        </span>
+        <span class="legend-item">
+          <svg width="34" height="10" aria-hidden="true">
+            <line x1="2" y1="5" x2="32" y2="5" stroke="currentColor" stroke-width="1.3" stroke-dasharray="3 3" style="color:var(--lavender)"/>
+          </svg>
+          data / setup
+        </span>
+      </div>
+    </div>
+    <div class="legend-block">
+      <span class="legend-block-title">nodes</span>
+      <div class="legend-row">
+        <span class="legend-item"><span class="legend-dot" style="background:var(--lavender)"></span>input</span>
+        <span class="legend-item"><span class="legend-dot" style="background:var(--cyan)"></span>coordinator</span>
+        <span class="legend-item"><span class="legend-dot" style="background:var(--green)"></span>executor</span>
+        <span class="legend-item"><span class="legend-dot" style="background:var(--teal)"></span>agent · mailbox</span>
+        <span class="legend-item"><span class="legend-dot" style="background:var(--blue)"></span>provider · llm</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- =================================================================== -->
+  <!-- DIAGRAM                                                              -->
+  <!-- =================================================================== -->
+  <!--
+    Layout: vertical hub-and-spoke. Y-zones:
+      INPUT                  y =   0..70
+      ORCHESTRATOR           y = 110..170
+      COORD (left) | EXEC (right)   y = 230..360
+      AGENTS (3 in a row)    y = 460..560
+      PROVIDER (centered)    y = 660..720
+
+    Edge classes:
+      .svg-edge-fn   (solid green)  : function calls inside the process
+      .svg-edge-tool (solid amber)  : LLM tool loop (external API)
+      .svg-edge-msg  (dashed cyan)  : mailbox message delivery (animated)
+      .svg-edge-data (dashed muted) : input data flow
+
+    All curves are cubic bezier (C cx1,cy1 cx2,cy2 x,y). Control points
+    are placed perpendicular to the start/end tangents so paths transition
+    smoothly into the connected nodes -- no jagged 90° turns.
+  -->
+  <div class="diagram-wrap">
+    <p class="diagram-title">runtime topology</p>
+
+    <svg class="diagram" viewBox="0 0 1200 760" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="diagramTitle" aria-describedby="diagramDesc">
+      <title id="diagramTitle">zenflow runtime topology</title>
+      <desc id="diagramDesc">A diagram showing the flow from user input through the orchestrator, splitting into the coordinator and executor, fanning out to three agents which all call the provider for their tool loop. Function calls are solid green; messages flowing through the mailbox are dashed cyan and animated; the LLM tool loop is solid amber.</desc>
+
+      <defs>
+        <marker id="ar-fn"   viewBox="0 0 10 6" refX="10" refY="3" markerWidth="7" markerHeight="6" orient="auto-start-reverse">
+          <path d="M0,0 L10,3 L0,6 Z" fill="var(--green)"/>
+        </marker>
+        <marker id="ar-tool" viewBox="0 0 10 6" refX="10" refY="3" markerWidth="7" markerHeight="6" orient="auto-start-reverse">
+          <path d="M0,0 L10,3 L0,6 Z" fill="var(--amber)"/>
+        </marker>
+        <marker id="ar-msg"  viewBox="0 0 10 6" refX="10" refY="3" markerWidth="7" markerHeight="6" orient="auto-start-reverse">
+          <path d="M0,0 L10,3 L0,6 Z" fill="var(--cyan)"/>
+        </marker>
+        <marker id="ar-data" viewBox="0 0 10 6" refX="10" refY="3" markerWidth="7" markerHeight="6" orient="auto-start-reverse">
+          <path d="M0,0 L10,3 L0,6 Z" fill="var(--lavender)" opacity="0.85"/>
+        </marker>
+      </defs>
+
+      <!-- ============================================================ -->
+      <!-- EDGES (drawn first, behind nodes)                              -->
+      <!-- ============================================================ -->
+
+      <!-- (1) INPUT → ORCH (data, dashed muted, vertical).
+            Orch box now starts at y=100 (was 110). -->
+      <path class="svg-edge-data" d="M 600 70 C 600 80, 600 90, 600 100" marker-end="url(#ar-data)"/>
+      <rect class="svg-label-bg" x="546" y="76" width="108" height="20"/>
+      <text x="600" y="90" text-anchor="middle" class="svg-edge-label svg-edge-label-data">load + validate</text>
+
+      <!-- (2) ORCH → COORD (function call, solid green, smooth curve down-left).
+            Origin moved to y=210 to match the taller orch box. -->
+      <path class="svg-edge-fn" d="M 510 210 C 440 224, 360 230, 320 240" marker-end="url(#ar-fn)"/>
+      <rect class="svg-label-bg" x="346" y="220" width="124" height="20"/>
+      <text x="408" y="234" text-anchor="middle" class="svg-edge-label svg-edge-label-fn">hosts coordinator</text>
+
+      <!-- (3) ORCH → EXEC (function call, solid green, smooth curve down-right). -->
+      <path class="svg-edge-fn" d="M 690 210 C 760 224, 840 230, 880 240" marker-end="url(#ar-fn)"/>
+      <rect class="svg-label-bg" x="730" y="220" width="106" height="20"/>
+      <text x="783" y="234" text-anchor="middle" class="svg-edge-label svg-edge-label-fn">RunFlow(ctx)</text>
+
+      <!-- (4) EXEC → 3 AGENTS (function call, solid green, fan-out) -->
+      <!-- exec(880,360) → agent-pro(220,460) -->
+      <path class="svg-edge-fn" d="M 870 360 C 720 400, 480 420, 230 460" marker-end="url(#ar-fn)"/>
+      <!-- exec(880,360) → agent-con(600,460) -->
+      <path class="svg-edge-fn" d="M 880 360 C 800 400, 700 430, 600 460" marker-end="url(#ar-fn)"/>
+      <!-- exec(880,360) → agent-judge(960,460) -->
+      <path class="svg-edge-fn" d="M 920 360 C 940 400, 950 430, 960 460" marker-end="url(#ar-fn)"/>
+      <!-- spawn step label (groups the fan-out) -->
+      <rect class="svg-label-bg" x="836" y="384" width="92" height="20"/>
+      <text x="882" y="398" text-anchor="middle" class="svg-edge-label svg-edge-label-fn">spawn step</text>
+
+      <!-- (5) COORD ⇄ AGENTS (message delivery, dashed cyan, animated) -->
+      <!--      Each agent has a downward-arriving "forward_to_agent" curve
+                from the coord, plus an upward-departing "send_message" curve
+                to the coord. Curves use mirrored handles to read as a tidy
+                lobe rather than two crossing lines. -->
+
+      <!-- coord(320, 360 lower-edge) → agent-pro(220, 460 top-edge): forward_to_agent -->
+      <path class="svg-edge-msg" d="M 290 360 C 270 400, 240 430, 215 460" marker-end="url(#ar-msg)"/>
+      <!-- agent-pro(245, 460) → coord(335, 360): send_message (offset to avoid overlap) -->
+      <path class="svg-edge-msg" d="M 245 460 C 280 425, 320 400, 340 360" marker-end="url(#ar-msg)"/>
+
+      <!-- coord(335, 360 lower-edge) → agent-con(575, 460): forward_to_agent -->
+      <path class="svg-edge-msg" d="M 335 360 C 420 410, 510 435, 580 460" marker-end="url(#ar-msg)"/>
+      <!-- agent-con(620, 460) → coord(345, 360): send_message -->
+      <path class="svg-edge-msg" d="M 620 460 C 540 420, 440 395, 360 360" marker-end="url(#ar-msg)"/>
+
+      <!-- coord(335, 360) → agent-judge(945, 460): forward_to_agent -->
+      <path class="svg-edge-msg" d="M 335 360 C 580 400, 800 430, 945 460" marker-end="url(#ar-msg)"/>
+      <!-- agent-judge(975, 460) → coord(355, 360): send_message -->
+      <path class="svg-edge-msg" d="M 975 460 C 740 420, 540 395, 365 360" marker-end="url(#ar-msg)"/>
+
+      <!-- Single grouped label for ALL the message-delivery lobes between coord ⇄ agents.
+           Sits midway down between coord and agent row, slightly above. -->
+      <rect class="svg-label-bg" x="448" y="400" width="178" height="20"/>
+      <text x="537" y="414" text-anchor="middle" class="svg-edge-label svg-edge-label-msg">forward_to_agent · send_message</text>
+
+      <!-- (6) AGENTS → PROVIDER (tool loop, solid amber, fan-in) -->
+      <!-- agent-pro(220,580) → provider(540, 660) -->
+      <path class="svg-edge-tool" d="M 220 585 C 280 615, 460 635, 540 660" marker-end="url(#ar-tool)"/>
+      <!-- agent-con(600,580) → provider(600, 660) -->
+      <path class="svg-edge-tool" d="M 600 585 C 600 610, 600 635, 600 660" marker-end="url(#ar-tool)"/>
+      <!-- agent-judge(960,580) → provider(660, 660) -->
+      <path class="svg-edge-tool" d="M 960 585 C 900 615, 720 635, 660 660" marker-end="url(#ar-tool)"/>
+      <!-- tool loop label -->
+      <rect class="svg-label-bg" x="556" y="610" width="88" height="20"/>
+      <text x="600" y="624" text-anchor="middle" class="svg-edge-label svg-edge-label-tool">tool loop</text>
+
+
+      <!-- ============================================================ -->
+      <!-- NODES                                                          -->
+      <!-- ============================================================ -->
+
+      <!-- INPUT -->
+      <g>
+        <rect class="svg-frame svg-frame-lav" x="490" y="20" width="220" height="50"/>
+        <text x="600" y="42" text-anchor="middle" class="svg-cat svg-cat-lav">INPUT</text>
+        <text x="600" y="60" text-anchor="middle" class="svg-name">YAML · Goal · Agent</text>
+      </g>
+
+      <!-- ORCHESTRATOR (taller -- was h=58, now h=110 to match the
+            visual weight of Coord/Exec below and to fit content
+            that distinguishes it from those two roles) -->
+      <g class="svg-node-cyan">
+        <rect class="svg-frame svg-frame-cyan" x="440" y="100" width="320" height="110"/>
+        <text x="600" y="124" text-anchor="middle" class="svg-cat svg-cat-cyan">ORCHESTRATOR</text>
+        <text x="600" y="148" text-anchor="middle" class="svg-name">zenflow.New(opts...)</text>
+        <text x="600" y="170" text-anchor="middle" class="svg-detail">holds: model · sinks · storage · coord runner</text>
+        <text x="600" y="190" text-anchor="middle" class="svg-detail">entry points: RunFlow · RunGoal · RunAgent</text>
+      </g>
+
+      <!-- COORDINATOR (left) -->
+      <g class="svg-node-cyan">
+        <rect class="svg-frame svg-frame-cyan" x="160" y="240" width="280" height="120"/>
+        <text x="300" y="262" text-anchor="middle" class="svg-cat svg-cat-cyan">COORDINATOR</text>
+        <text x="300" y="284" text-anchor="middle" class="svg-name">LLM hub</text>
+        <text x="300" y="306" text-anchor="middle" class="svg-tools-list">tools:</text>
+        <text x="300" y="322" text-anchor="middle" class="svg-tools-list">forward_to_agent · narrate</text>
+        <text x="300" y="338" text-anchor="middle" class="svg-tools-list">finalize</text>
+      </g>
+
+      <!-- EXECUTOR (right) -->
+      <g class="svg-node-green">
+        <rect class="svg-frame svg-frame-green" x="760" y="240" width="280" height="120"/>
+        <text x="900" y="262" text-anchor="middle" class="svg-cat svg-cat-green">EXECUTOR</text>
+        <text x="900" y="284" text-anchor="middle" class="svg-name">DAG scheduler</text>
+        <text x="900" y="308" text-anchor="middle" class="svg-detail">topo sort · loops · includes</text>
+        <text x="900" y="326" text-anchor="middle" class="svg-detail">forEach · maxConcurrency</text>
+        <text x="900" y="344" text-anchor="middle" class="svg-detail">retries · cancellation</text>
+      </g>
+
+      <!-- AGENT 1: pro (left) -->
+      <g>
+        <rect class="svg-frame svg-frame-teal" x="80"  y="460" width="280" height="120"/>
+        <text x="220" y="482" text-anchor="middle" class="svg-cat svg-cat-teal">AGENT · STEP</text>
+        <text x="220" y="504" text-anchor="middle" class="svg-name">pro · arguer</text>
+        <rect x="100" y="518" width="240" height="30" rx="4" fill="var(--teal-soft)" stroke="var(--teal)" stroke-width="0.7"/>
+        <text x="115" y="538" class="svg-detail">▢ mailbox</text>
+        <text x="325" y="538" text-anchor="end" class="svg-detail" fill="var(--teal)">unread: 0/10000</text>
+        <text x="220" y="572" text-anchor="middle" class="svg-tools-list">tools: send_message</text>
+      </g>
+
+      <!-- AGENT 2: con (center) -->
+      <g>
+        <rect class="svg-frame svg-frame-teal" x="460" y="460" width="280" height="120"/>
+        <text x="600" y="482" text-anchor="middle" class="svg-cat svg-cat-teal">AGENT · STEP</text>
+        <text x="600" y="504" text-anchor="middle" class="svg-name">con · arguer</text>
+        <rect x="480" y="518" width="240" height="30" rx="4" fill="var(--teal-soft)" stroke="var(--teal)" stroke-width="0.7"/>
+        <text x="495" y="538" class="svg-detail">▢ mailbox</text>
+        <text x="705" y="538" text-anchor="end" class="svg-detail" fill="var(--teal)">unread: 1/10000</text>
+        <text x="600" y="572" text-anchor="middle" class="svg-tools-list">tools: send_message</text>
+      </g>
+
+      <!-- AGENT 3: judge (right) -->
+      <g>
+        <rect class="svg-frame svg-frame-teal" x="840" y="460" width="280" height="120"/>
+        <text x="980" y="482" text-anchor="middle" class="svg-cat svg-cat-teal">AGENT · STEP</text>
+        <text x="980" y="504" text-anchor="middle" class="svg-name">judge · summarizer</text>
+        <rect x="860" y="518" width="240" height="30" rx="4" fill="var(--teal-soft)" stroke="var(--teal)" stroke-width="0.7"/>
+        <text x="875" y="538" class="svg-detail">▢ mailbox</text>
+        <text x="1085" y="538" text-anchor="end" class="svg-detail" fill="var(--teal)">unread: 0/10000</text>
+        <text x="980" y="572" text-anchor="middle" class="svg-tools-list">tools: send_message</text>
+      </g>
+
+      <!-- PROVIDER (bottom, blue, centered + wide) -->
+      <g class="svg-node-blue">
+        <rect class="svg-frame svg-frame-blue" x="400" y="660" width="400" height="78"/>
+        <text x="600" y="682" text-anchor="middle" class="svg-cat svg-cat-blue">PROVIDER · GOAI SDK</text>
+        <text x="600" y="704" text-anchor="middle" class="svg-name">GenerateText · StreamText</text>
+        <text x="600" y="722" text-anchor="middle" class="svg-detail">google · bedrock · azure · openai · anthropic · vertex</text>
+      </g>
+
+    </svg>
+
+    <p style="text-align:center;margin-top:18px;color:var(--text-2);font-size:0.92rem;line-height:1.65;max-width:60ch;margin-left:auto;margin-right:auto;">
+      Hub-and-spoke. Solid green = function calls inside the process. Dashed cyan = messages routed through the per-agent mailbox (animated to convey flow direction). Solid amber = the LLM tool loop running through the goai SDK. Peer agents never address each other directly -- every cross-agent message goes through the coordinator's <code style="font-family:'JetBrains Mono',monospace;font-size:0.86em;background:var(--bg-soft);padding:0.1em 0.4em;border-radius:3px;color:var(--text);border:1px solid var(--border-soft)">forward_to_agent</code> tool.
+    </p>
+  </div>
+
+  <!-- ========== Section 0: Three roles (NEW) ============================
+       Sits right after the diagram so readers learn the distinction
+       between the three top-level boxes (Orchestrator vs Coordinator
+       vs Executor) before they go any deeper. Cards are parallel-
+       structured so the diff is easy to skim. -->
+  <p class="section-eyebrow stagger s-1">Three roles you keep meeting</p>
+  <h2 class="section-h2 stagger s-1">Orchestrator · Coordinator · Executor</h2>
+
+  <div class="grid-3 stagger s-2">
+    <article class="card card-rule card-cyan">
+      <span class="card-tag tag-cyan">the owner</span>
+      <h3>Orchestrator</h3>
+      <p>The public Go type. One instance per process. Holds your model, progress sinks, storage, the coordinator runner, and the orchestrator-wide options. It doesn't run agents itself -- it constructs an <code>Executor</code> on each Run* call and exposes the entry points.</p>
+      <dl class="meta">
+        <dt>lifetime</dt><dd>long-lived (per process)</dd>
+        <dt>api</dt>     <dd><code>zenflow.New(opts...)</code></dd>
+        <dt>entry</dt>   <dd><code>RunFlow · RunGoal · RunAgent</code></dd>
+        <dt>source</dt>  <dd><code>zenflow.go</code></dd>
+      </dl>
+    </article>
+
+    <article class="card card-rule card-cyan">
+      <span class="card-tag tag-cyan">the hub</span>
+      <h3>Coordinator</h3>
+      <p>An LLM-backed <code>AgentRunner</code> the orchestrator hosts. Receives every cross-agent message in its own mailbox, decides where each goes (<code>forward_to_agent</code>), narrates progress (<code>narrate</code>), and may finalize the run (<code>finalize</code>). The hub of hub-and-spoke.</p>
+      <dl class="meta">
+        <dt>lifetime</dt><dd>shared across runs of one Orch</dd>
+        <dt>api</dt>     <dd><code>WithCoordinator(runner)</code></dd>
+        <dt>factory</dt> <dd><code>NewDefaultCoordRunner(...)</code></dd>
+        <dt>source</dt>  <dd><code>coord_factory.go · internal/coord/coord_tools.go · agent_runner.go</code></dd>
+      </dl>
+    </article>
+
+    <article class="card card-rule card-green">
+      <span class="card-tag tag-green">the scheduler</span>
+      <h3>Executor</h3>
+      <p>A per-run internal struct. Walks the workflow's DAG topologically, spawns one <code>AgentRunner</code> per step, owns the MessageRouter / Mailbox / delivery-engine lifecycle, and assembles the <code>WorkflowResult</code>. Lives only for the duration of one <code>Run*</code> call.</p>
+      <dl class="meta">
+        <dt>lifetime</dt><dd>per Run* call (transient)</dd>
+        <dt>api</dt>     <dd>internal -- not user-constructed</dd>
+        <dt>owns</dt>    <dd>MessageRouter · Mailbox · deliveryEngine</dd>
+        <dt>source</dt>  <dd><code>executor.go</code></dd>
+      </dl>
+    </article>
+  </div>
+
+  <!-- ========== Section 1: Three entrypoints ========== -->
+  <p class="section-eyebrow stagger s-1">Three modes, one engine</p>
+  <h2 class="section-h2 stagger s-1">How a workflow starts</h2>
+
+  <div class="grid-3 stagger s-2">
+    <article class="card card-rule card-cyan">
+      <span class="card-tag tag-cyan">flow</span>
+      <h3>Run a YAML DAG</h3>
+      <p>Run a fully-declared <code>.yaml</code> workflow end to end. The agents, dependencies, and conditions are all explicit before the first LLM call -- diffable, reviewable in a PR.</p>
+      <dl class="meta">
+        <dt>cli</dt>      <dd><code>zenflow flow workflow.yaml</code></dd>
+        <dt>library</dt>  <dd><code>orch.RunFlow(ctx, wf)</code></dd>
+        <dt>good for</dt> <dd>known plans, repeated runs</dd>
+      </dl>
+    </article>
+
+    <article class="card card-rule card-cyan">
+      <span class="card-tag tag-cyan">goal</span>
+      <h3>Decompose a goal</h3>
+      <p>Hand a single sentence to the coordinator and let it generate a workflow on the fly. The decomposition is auditable -- you can <code>--plan</code> it before approving.</p>
+      <dl class="meta">
+        <dt>cli</dt>      <dd><code>zenflow goal "ship the launch"</code></dd>
+        <dt>library</dt>  <dd><code>orch.RunGoal(ctx, goal)</code></dd>
+        <dt>good for</dt> <dd>exploratory, ad-hoc work</dd>
+      </dl>
+    </article>
+
+    <article class="card card-rule card-cyan">
+      <span class="card-tag tag-cyan">agent</span>
+      <h3>Single agent chat</h3>
+      <p>One agent, one task, one tool loop. Zero coordinator. Useful for embedded chat surfaces, quick one-shots, and the foundation that the other modes are built on.</p>
+      <dl class="meta">
+        <dt>cli</dt>      <dd><code>zenflow agent "review the diff"</code></dd>
+        <dt>library</dt>  <dd><code>orch.RunAgent(ctx, cfg)</code></dd>
+        <dt>good for</dt> <dd>chat, scripts, embedders</dd>
+      </dl>
+    </article>
+  </div>
+
+  <!-- ========== Section 2: Coordinator tools ========== -->
+  <p class="section-eyebrow stagger s-2">Hub-side primitives</p>
+  <h2 class="section-h2 stagger s-2">Coordinator message tools</h2>
+  <p class="stagger s-2" style="max-width:72ch;color:var(--text-2);font-size:0.95rem;line-height:1.65;margin-bottom:18px;">The coordinator wires three tools: <code>forward_to_agent</code> for routing, <code>narrate</code> for progress events, and <code>finalize</code> for terminal synthesis. Its agent-side counterpart, <code>send_message</code>, is documented in the next section.</p>
+
+  <div class="grid-3 stagger s-3">
+    <article class="card card-rule card-amber">
+      <span class="card-tag tag-amber">tool</span>
+      <h3>forward_to_agent</h3>
+      <p class="sig">{ target_step_id, text, kind? }</p>
+      <p>Routes a message to a step's mailbox via <code>MessageRouter.Send</code>. Wrapper steps (loop · include) are rejected at the tool boundary so the coord can't address a container that has no agent.</p>
+    </article>
+
+    <article class="card card-rule card-amber">
+      <span class="card-tag tag-amber">tool</span>
+      <h3>narrate</h3>
+      <p class="sig">{ text }</p>
+      <p>Pushes an <code>EventCoordinatorNarration</code> onto the progress sink. Stdout sink renders with <code>≋</code>; JSON sink emits a structured event for downstream observability.</p>
+    </article>
+
+    <article class="card card-rule card-amber">
+      <span class="card-tag tag-amber">tool</span>
+      <h3>finalize</h3>
+      <p class="sig">{ summary? }</p>
+      <p>Signals "the workflow is done, here's my synthesis." CLI treats it as advisory -- DAG completion is authoritative. Embedders may select on <code>runner.Done()</code> to honour it.</p>
+    </article>
+  </div>
+
+  <!-- ========== Section 2b: Agent-side tools ========== -->
+  <p class="section-eyebrow stagger s-3">Auto-injected on the spoke</p>
+  <h2 class="section-h2 stagger s-3">Agent-side tools</h2>
+
+  <div class="grid-3 stagger s-3">
+    <article class="card card-rule card-teal">
+      <span class="card-tag tag-teal">tool</span>
+      <h3>send_message</h3>
+      <p class="sig">{ text }</p>
+      <p>Auto-injected on every non-coordinator step runner that has a <code>MessageRouter</code> wired. Routes the message back to the coordinator's mailbox -- the spoke-to-hub leg of hub-and-spoke.</p>
+    </article>
+
+    <article class="card card-rule card-teal">
+      <span class="card-tag tag-teal">tool</span>
+      <h3>submit_result</h3>
+      <p class="sig">{ ...schema fields }</p>
+      <p>Auto-injected when the step's <code>cfg.ResultSchema</code> is non-nil. Returns the structured output that ends up in <code>StepResult.Output</code>; goai validates the payload against the schema before the runner accepts it.</p>
+    </article>
+
+    <article class="card card-rule card-teal">
+      <span class="card-tag tag-teal">tool</span>
+      <h3>agent</h3>
+      <p class="sig">{ name, prompt, ... }</p>
+      <p>Auto-injected when a child spawner is wired (<code>AgentToolDef</code>). Spawns a child <code>AgentRunner</code> for hierarchical decomposition -- the parent step waits on the child's result before continuing its own loop.</p>
+    </article>
+  </div>
+
+  <!-- ========== Section 3: Messaging guarantees ========== -->
+  <p class="section-eyebrow stagger s-3">Delivery contract</p>
+  <h2 class="section-h2 stagger s-3">Race-safe Mailbox + Wake</h2>
+
+  <div class="grid-2 stagger s-4">
+    <article class="card card-rule card-teal">
+      <span class="card-tag tag-teal">guarantee</span>
+      <h3>Per-agent mailbox · per-step lock</h3>
+      <p>Each step has its own <code>InMemoryMailboxStore</code> and an <code>RWMutex</code> the executor takes when transitioning lifecycle (start, idle, terminal). The delivery engine ticks every 500 ms and signals an idle agent's <code>Wake</code> channel only when its inbox grew, so we never enter <code>goai.GenerateText</code> (or <code>goai.StreamText</code> when streaming is enabled) on a still-empty queue.</p>
+      <dl class="meta">
+        <dt>store</dt>    <dd><code>MailboxStore (interface)</code></dd>
+        <dt>delivery</dt> <dd><code>deliveryEngine.tick(500ms)</code></dd>
+        <dt>wake</dt>     <dd><code>chan struct{} (cap 1)</code></dd>
+      </dl>
+    </article>
+
+    <article class="card card-rule card-teal">
+      <span class="card-tag tag-teal">contract</span>
+      <h3>Zero silent drops · typed reasons</h3>
+      <p>Every dropped message produces exactly one <code>EventMessageDropped</code> with a typed <code>DropReason</code>. The reasons cover every observable outcome: workflow-cancelled, target-terminal, unknown-step, mailbox-closed-by-finalize, max-wake-cycles, hold-timeout, mailbox-full, no-transcript, transcript-too-large, resume-shutdown, resolver-error. No message disappears without a verdict.</p>
+      <dl class="meta">
+        <dt>event</dt>  <dd><code>EventMessageDropped</code></dd>
+        <dt>reasons</dt><dd>11 typed drop categories</dd>
+        <dt>error</dt>  <dd><code>*DropError (errors.As)</code></dd>
+      </dl>
+    </article>
+
+    <article class="card card-rule card-amber">
+      <span class="card-tag tag-amber">limits</span>
+      <h3>Hard caps</h3>
+      <p>The engine enforces a small set of safety ceilings so a runaway DAG, an infinitely chatty coordinator, or a flooded mailbox can't blow past process bounds. Each cap is overrideable via the matching <code>With*</code> option where the use-case justifies it.</p>
+      <dl class="meta">
+        <dt>steps / workflow</dt>     <dd><code>MaxStepsPerWorkflow = 100</code></dd>
+        <dt>include depth</dt>        <dd><code>MaxIncludeDepth = 5</code></dd>
+        <dt>nesting depth</dt>        <dd><code>MaxNestingDepth = 20</code></dd>
+        <dt>mailbox size</dt>         <dd><code>DefaultMaxMailboxSize = 10000</code></dd>
+        <dt>coord wake cycles</dt>    <dd><code>coordDefaultMaxWakeCycles = 100</code></dd>
+      </dl>
+    </article>
+  </div>
+
+  <!-- ========== Section 4: Lifecycle ========== -->
+  <p class="section-eyebrow stagger s-4">Lifecycle &amp; recovery</p>
+  <h2 class="section-h2 stagger s-4">From plan to result</h2>
+
+  <div class="grid-2 stagger s-5">
+    <article class="card card-rule card-green">
+      <span class="card-tag tag-green">executor</span>
+      <h3>DAG scheduler · loops · includes</h3>
+      <p>Kahn-style topological scheduling over the workflow's steps, respecting <code>dependsOn</code>, <code>condition</code> (CEL), and <code>maxConcurrency</code>. Loops resolve their inner DAGs lazily; <code>includes</code> import sub-workflows; <code>forEach</code> spawns one inner DAG per item, capped at the loop's <code>maxConcurrency</code>.</p>
+      <dl class="meta">
+        <dt>schedule</dt><dd><code>topoSort(steps)</code></dd>
+        <dt>parallel</dt><dd><code>sem ← chan struct{}</code></dd>
+        <dt>loop</dt>    <dd><code>repeatUntil · forEach</code></dd>
+      </dl>
+    </article>
+
+    <article class="card card-rule card-blue">
+      <span class="card-tag tag-blue">output</span>
+      <h3>Result · transcript · OTel</h3>
+      <p>On completion the executor returns a <code>WorkflowResult</code> with per-step status, token counts, and content. A <code>TranscriptStore</code> persists every LLM turn for resume-from-checkpoint. The optional OTel adapter exports each step as a span tree so latency, errors, and token usage drop straight into your existing observability stack.</p>
+      <dl class="meta">
+        <dt>result</dt>  <dd><code>WorkflowResult</code></dd>
+        <dt>resume</dt>  <dd><code>orch.ResumeFlow(ctx, runID, wf)</code></dd>
+        <dt>trace</dt>   <dd><code>zenflow.flow · step · coord</code></dd>
+      </dl>
+    </article>
+  </div>
+
+  <!-- ========== Pill row ========== -->
+  <div class="pills">
+    <p class="pills-label">go deeper</p>
+    <div class="pills-row">
+      <a href="/architecture" class="pill pill-cyan">architecture overview</a>
+      <a href="/concepts/orchestrator" class="pill pill-cyan">orchestrator</a>
+      <a href="/concepts/coordinator" class="pill pill-cyan">coordinator</a>
+      <a href="/concepts/dag-scheduling" class="pill pill-green">dag scheduling</a>
+      <a href="/concepts/messaging" class="pill pill-teal">messaging</a>
+      <a href="/concepts/loops" class="pill pill-green">loops</a>
+      <a href="/concepts/composition" class="pill pill-cyan">composition</a>
+      <a href="/concepts/observability" class="pill pill-blue">observability</a>
+      <a href="/concepts/failure-handling" class="pill pill-amber">failure handling</a>
+      <a href="/concepts/resume" class="pill pill-teal">resume</a>
+      <a href="/yaml/" class="pill pill-cyan">yaml reference</a>
+    </div>
+  </div>
+
+</div>
+
+<!-- =================================================================== -->
+<!-- SITE FOOTER                                                          -->
+<!-- =================================================================== -->
+<footer class="site-footer">
+  <div class="site-footer-inner">
+    <div class="footer-links">
+      <a href="/">homepage</a>
+      <a href="/getting-started/quick-start">quick start</a>
+      <a href="/architecture">architecture</a>
+      <a href="/yaml/">yaml</a>
+      <a href="https://github.com/zendev-sh/zenflow">github</a>
+      <a href="https://pkg.go.dev/github.com/zendev-sh/zenflow">godoc</a>
+      <a href="https://goai.sh">goai sdk</a>
+    </div>
+    <div class="footer-meta">
+      <span>Released under the Apache 2.0 License.</span>
+      <span>Copyright © 2026 zenflow</span>
+    </div>
+  </div>
+</footer>
+
+</div>
+
+<script>
+// Theme toggle handler -- runs on click, persists to localStorage.
+(function () {
+  var KEY = 'zf-theme';
+  var root = document.documentElement;
+  function apply(theme) {
+    root.setAttribute('data-theme', theme);
+    try { localStorage.setItem(KEY, theme); } catch (e) {}
+  }
+  document.addEventListener('click', function (e) {
+    var btn = e.target.closest('[data-theme-toggle]');
+    if (!btn) return;
+    var current = root.getAttribute('data-theme');
+    if (!current) {
+      // No explicit preference yet: read what the OS resolved to.
+      current = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+    apply(current === 'dark' ? 'light' : 'dark');
+  });
+})();
+
+// Mobile nav toggle. Adds .nav-open on the <header> so the CSS overlay
+// nav slides open. Closes on outside click and on viewport resize back
+// to desktop width.
+(function () {
+  var header = document.querySelector('.site-header');
+  if (!header) return;
+  var btn = header.querySelector('[data-nav-toggle]');
+  if (!btn) return;
+  function setOpen(open) {
+    header.classList.toggle('nav-open', open);
+    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  }
+  btn.addEventListener('click', function (e) {
+    e.stopPropagation();
+    setOpen(!header.classList.contains('nav-open'));
+  });
+  document.addEventListener('click', function (e) {
+    if (!header.classList.contains('nav-open')) return;
+    if (header.contains(e.target)) return;
+    setOpen(false);
+  });
+  // Close after navigating via a nav link
+  header.querySelectorAll('.site-nav a').forEach(function (a) {
+    a.addEventListener('click', function () { setOpen(false); });
+  });
+  window.addEventListener('resize', function () {
+    if (window.innerWidth > 760) setOpen(false);
+  });
+})();
+</script>
+</body>
+</html>

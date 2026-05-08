@@ -1,0 +1,16 @@
+description: "untilAgent references an agent not defined in agents section"
+input: |
+  name: bad-untilagent
+  agents:
+    coder:
+      description: "Writes code"
+  steps:
+    - id: refine
+      agent: coder
+      instructions: "Refine the implementation"
+      loop:
+        maxIterations: 5
+        untilAgent: reviewer
+expected:
+  valid: false
+  error: untilagent_bad_ref

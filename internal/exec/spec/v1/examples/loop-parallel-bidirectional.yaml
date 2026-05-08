@@ -1,0 +1,71 @@
+# Loop parallel bidirectional: PARALLEL forEach with bidirectional messaging.
+# Multiple iterations run concurrently; each registers a NAMESPACED
+# delegation in root router so coord can address them individually
+# via `forward_to_agent("loop-stages[0].worker")`, `forward_to_agent("loop-stages[1].worker")`,
+# etc.
+#
+# Coord receives namespaced events:
+#   ⇠ [loop-stages[0].worker] sent to coordinator: stage 1 from iter 0
+#   ⇠ [loop-stages[1].worker] sent to coordinator: stage 1 from iter 1
+#   ⇠ [loop-stages[2].worker] sent to coordinator: stage 1 from iter 2
+# Coord narrates + may forward namespaced replies back to specific
+# iterations -- verifies parallel-iteration disambiguation.
+
+name: loop-parallel-bidirectional
+version: 1
+description: Parallel forEach with bidirectional messaging. Tests namespaced delegation.
+
+agents:
+  planner:
+    description: "Plans a list of 3 tasks and emits them as a structured array via submit_result."
+    resultSchema:
+      type: object
+      required: [tasks]
+      properties:
+        tasks:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              difficulty:
+                type: string
+  worker:
+    description: "Worker that handles ONE task from the plan. Sends progress to coord via send_message; reads coord inbox for context."
+  summarizer:
+    description: "Aggregates all worker outputs into a final report."
+
+steps:
+  - id: plan
+    agent: planner
+    instructions: |
+      Plan 3 tasks. Each has a name and difficulty (easy/medium/hard).
+      Call submit_result with the tasks array.
+
+  - id: loop-stages
+    dependsOn:
+      - plan
+    loop:
+      forEach: "steps.plan.result.tasks"
+      maxConcurrency: 3 # all-parallel
+      outputMode: cumulative
+      steps:
+        - id: worker
+          agent: worker
+          instructions: |
+            You handle ONE task. Read your inbox first; if coord sent you
+            context, mention it in your response.
+
+            Then call `send_message` ONCE with text:
+              "TASK_DONE: <task-name> handled successfully"
+
+            Then reply with EXACTLY: "OK".
+
+  - id: report
+    agent: summarizer
+    dependsOn:
+      - loop-stages
+    instructions: |
+      Read the cumulative results from all 3 worker iterations and
+      produce a 3-sentence summary report.

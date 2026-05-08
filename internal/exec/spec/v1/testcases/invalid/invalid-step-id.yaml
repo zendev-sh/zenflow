@@ -1,0 +1,9 @@
+description: "Step ID must match pattern ^[a-zA-Z][a-zA-Z0-9_-]*$ -- starting with a digit is invalid"
+input: |
+  name: bad-step-id
+  steps:
+    - id: "123-invalid"
+      instructions: "Do some work"
+expected:
+  valid: false
+  error: invalid_step_id

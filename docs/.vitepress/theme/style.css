@@ -1,0 +1,1570 @@
+/*
+ * zenflow VitePress theme.
+ *
+ * HSL navy palette + Outfit / JetBrains Mono pairing. Edits to the
+ * palette belong in docs/.vitepress/theme/colors.md first; propagate
+ * here second.
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+/* ============================================================
+ * Brand palette - HSL navy
+ * ============================================================ */
+
+:root {
+  --radius: 0.5rem;
+
+  /* Light mode (default) */
+  --zf-bg:           hsl(220, 30%, 98%);
+  --zf-bg-alt:       hsl(220, 30%, 95%);
+  --zf-fg:           hsl(222, 30%, 15%);
+  --zf-card:         hsl(220, 30%, 99%);
+  --zf-primary:      hsl(222, 47%, 20%);
+  --zf-primary-fg:   hsl(0, 0%, 98%);
+  --zf-secondary:    hsl(220, 25%, 93%);
+  --zf-muted:        hsl(220, 25%, 93%);
+  --zf-muted-fg:     hsl(222, 20%, 50%);
+  --zf-accent:       hsl(220, 25%, 93%);
+  --zf-accent-fg:    hsl(222, 47%, 15%);
+  /* Round 8f -- borders nudged lighter again. Light variant moves
+   * from L:93% → L:95% (3% step from bg=98%). Hover-border lifted
+   * the same way so the hover state is *softer* than rest, not
+   * darker. Strokes read as suggestions rather than outlines. */
+  --zf-border:       hsl(220, 14%, 95%);
+  --zf-ring:         hsl(222, 47%, 25%);
+  --zf-highlight-bg: hsl(220, 30%, 95%);
+  --zf-highlight-border: hsl(222, 47%, 70%);
+  --zf-card-hover-border: hsl(220, 14%, 92%);
+
+  /* Terminal syntax accents - serve as the cool accents
+   * across the brand. The brand-cyan `t-flag` doubles as the
+   * link + hover accent and is synced with the CLI's `\033[36m`
+   * Cyan ANSI code (the dominant color users see when running
+   * zenflow: `▸ Starting workflow`, `↻ wake`, step headers).
+   */
+  --zf-t-prompt: hsl(222, 60%, 45%);
+  --zf-t-cmd:    hsl(222, 30%, 15%);
+  --zf-t-flag:   hsl(190, 65%, 38%);
+  --zf-t-string: hsl(190, 50%, 35%);
+  --zf-t-ok:     hsl(150, 50%, 35%);
+  --zf-t-url:    hsl(210, 60%, 45%);
+
+  /* Map -> VitePress tokens */
+  --vp-c-brand-1: var(--zf-primary);
+  --vp-c-brand-2: hsl(222, 47%, 28%);
+  --vp-c-brand-3: hsl(222, 47%, 35%);
+  --vp-c-brand-soft: hsla(222, 47%, 20%, 0.10);
+
+  --vp-c-bg:      var(--zf-bg);
+  --vp-c-bg-alt:  var(--zf-bg-alt);
+  --vp-c-bg-soft: var(--zf-card);
+  --vp-c-bg-elv:  var(--zf-card);
+
+  --vp-c-text-1: var(--zf-fg);
+  --vp-c-text-2: var(--zf-muted-fg);
+  --vp-c-text-3: hsl(222, 20%, 65%);
+
+  --vp-c-divider: var(--zf-border);
+  --vp-c-gutter:  var(--zf-border);
+
+  --vp-c-tip-1: var(--zf-t-flag);
+  --vp-c-tip-soft: hsla(190, 65%, 38%, 0.10);
+
+  --vp-font-family-base:    'Outfit', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --vp-font-family-display: 'Outfit', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --vp-font-family-mono:    'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+}
+
+.dark {
+  --zf-bg:           hsl(222, 47%, 11%);
+  --zf-bg-alt:       hsl(222, 47%, 9%);
+  --zf-fg:           hsl(0, 0%, 98%);
+  --zf-card:         hsl(222, 47%, 14%);
+  --zf-primary:      hsl(0, 0%, 98%);
+  --zf-primary-fg:   hsl(222, 47%, 11%);
+  --zf-secondary:    hsl(222, 47%, 20%);
+  --zf-muted:        hsl(222, 47%, 20%);
+  --zf-muted-fg:     hsl(0, 0%, 63.9%);
+  --zf-accent:       hsl(222, 47%, 20%);
+  --zf-accent-fg:    hsl(0, 0%, 98%);
+  /* Round 8f -- see light-mode comment above. Dark border further
+   * softened (18% → 16%) so it sits ~2% above the card surface
+   * instead of ~4%. Cards effectively float. Hover-border is
+   * slightly LIGHTER than rest, matching the light-mode treatment
+   * (suggestion not outline). */
+  --zf-border:       hsl(222, 32%, 16%);
+  --zf-ring:         hsl(0, 0%, 83.1%);
+  --zf-highlight-bg: hsl(222, 47%, 16%);
+  --zf-highlight-border: hsl(222, 47%, 35%);
+  --zf-card-hover-border: hsl(222, 28%, 22%);
+
+  --zf-t-prompt: hsl(210, 60%, 60%);
+  --zf-t-cmd:    hsl(0, 0%, 98%);
+  /* Round 8 -- `--zf-t-flag` migrated from warm orange/gold to
+   * brand-cyan. Light + dark are now both in the 190 hue family,
+   * synced with the CLI's `\033[36m` Cyan ANSI code that dominates
+   * the runtime experience. Old dark value `hsl(40, 80%, 60%)` was
+   * fine in isolation but the warm/cool split between light and
+   * dark broke single-source-of-truth color theming. */
+  --zf-t-flag:   hsl(190, 75%, 65%);
+  --zf-t-string: hsl(190, 60%, 70%);
+  --zf-t-ok:     hsl(150, 60%, 55%);
+  --zf-t-url:    hsl(210, 70%, 65%);
+
+  --vp-c-brand-1: var(--zf-primary);
+  --vp-c-brand-2: hsl(0, 0%, 90%);
+  --vp-c-brand-3: hsl(0, 0%, 80%);
+  --vp-c-brand-soft: hsla(0, 0%, 98%, 0.10);
+
+  --vp-c-bg:      var(--zf-bg);
+  --vp-c-bg-alt:  var(--zf-bg-alt);
+  --vp-c-bg-soft: var(--zf-card);
+  --vp-c-bg-elv:  var(--zf-card);
+
+  --vp-c-text-1: var(--zf-fg);
+  --vp-c-text-2: var(--zf-muted-fg);
+  --vp-c-text-3: hsl(0, 0%, 50%);
+
+  --vp-c-divider: var(--zf-border);
+  --vp-c-gutter:  var(--zf-border);
+
+  --vp-c-tip-1: var(--zf-t-flag);
+  --vp-c-tip-soft: hsla(190, 75%, 65%, 0.14);
+}
+
+/* ============================================================
+ * Typography
+ * ============================================================ */
+
+html { font-family: var(--vp-font-family-base); }
+
+body {
+  font-feature-settings: 'kern', 'liga', 'cv11';
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Hero - Outfit weight 700-800 */
+.VPHero { padding-top: 5rem !important; padding-bottom: 1rem !important; }
+
+.VPHero .name,
+.VPHero .text {
+  font-family: var(--vp-font-family-display);
+  letter-spacing: -0.025em;
+}
+
+.VPHero .name {
+  color: var(--zf-fg) !important;
+  background: none !important;
+  -webkit-text-fill-color: var(--zf-fg) !important;
+  font-size: clamp(3rem, 7.5vw, 5rem);
+  line-height: 1;
+  font-weight: 500;
+  letter-spacing: -0.04em;
+}
+
+.VPHero .text {
+  font-size: clamp(1.4rem, 3.2vw, 2rem);
+  line-height: 1.18;
+  margin-top: 0.55em;
+  color: var(--zf-muted-fg);
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  text-transform: lowercase;
+}
+
+.VPHero .tagline {
+  font-family: var(--vp-font-family-base);
+  font-weight: 400;
+  font-size: 1.05rem;
+  line-height: 1.7;
+  color: var(--zf-muted-fg);
+  margin-top: 1.75rem;
+  max-width: 32em;
+  letter-spacing: -0.005em;
+}
+/* Round 8f -- inline link inside the hero tagline, used for the
+ * `multi-agent orchestration` deep-link to the architecture page. */
+.VPHero .tagline .zf-hero-link {
+  color: var(--zf-fg);
+  font-weight: 500;
+  text-decoration: none;
+  border-bottom: 1px solid var(--zf-t-flag);
+  transition: color 0.18s ease, background 0.18s ease;
+}
+.VPHero .tagline .zf-hero-link:hover {
+  color: var(--zf-t-flag);
+  background: var(--vp-c-tip-soft);
+}
+
+.VPHero .image-bg { display: none; }
+.VPHero .image-container { max-width: 240px; }
+.VPHero .image-src {
+  filter: drop-shadow(0 8px 22px hsla(222, 47%, 20%, 0.18));
+  max-height: 240px;
+  max-width: 240px;
+}
+.dark .VPHero .image-src {
+  filter: drop-shadow(0 8px 22px rgba(0, 0, 0, 0.5));
+}
+
+/* Doc headings */
+.vp-doc h1, .vp-doc h2, .vp-doc h3, .vp-doc h4 {
+  font-family: var(--vp-font-family-display);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  color: var(--zf-fg);
+}
+.vp-doc h1 { font-size: 2.6rem; line-height: 1.05; }
+.vp-doc h2 { font-size: 1.85rem; margin-top: 3rem; padding-top: 1.3rem; border-top: 1px solid var(--zf-border); }
+.vp-doc h3 { font-size: 1.35rem; margin-top: 2.25rem; }
+
+.vp-doc p {
+  font-size: 1.025rem;
+  line-height: 1.72;
+  color: var(--zf-fg);
+  letter-spacing: -0.005em;
+}
+
+.vp-doc strong { font-weight: 600; }
+
+.vp-doc a:not(.header-anchor) {
+  color: var(--zf-t-flag);
+  text-decoration: none;
+  border-bottom: 1px solid hsla(190, 65%, 38%, 0.22);
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.dark .vp-doc a:not(.header-anchor) {
+  border-bottom-color: hsla(190, 75%, 65%, 0.26);
+}
+.vp-doc a:not(.header-anchor):hover {
+  border-bottom-color: var(--zf-t-flag);
+  background: var(--vp-c-tip-soft);
+}
+
+/* Code */
+.vp-doc code {
+  font-family: var(--vp-font-family-mono);
+  font-feature-settings: 'liga' 0;
+  font-size: 0.88em;
+}
+.vp-doc :not(pre) > code {
+  background: var(--zf-secondary);
+  border-radius: 3px;
+  padding: 0.12em 0.42em;
+  color: var(--zf-fg);
+}
+.vp-doc div[class*='language-'] {
+  border: 1px solid var(--zf-border);
+  border-radius: var(--radius);
+  background: var(--zf-card);
+}
+
+/* Nav + sidebar */
+.VPNavBar .title,
+.VPSidebar .title-text,
+.VPSidebarItem .text {
+  font-family: var(--vp-font-family-display);
+  letter-spacing: -0.012em;
+}
+
+/* ============================================================
+ * Atmosphere - subtle gradient with t-flag warmth at top
+ * ============================================================ */
+
+body {
+  background-color: var(--zf-bg);
+  background-image:
+    radial-gradient(ellipse 60% 40% at 50% -10%, hsla(190, 70%, 45%, 0.07) 0%, transparent 70%),
+    radial-gradient(ellipse 50% 35% at 100% 25%, hsla(222, 47%, 20%, 0.04) 0%, transparent 70%);
+  background-attachment: fixed;
+}
+
+.dark body {
+  background-image:
+    radial-gradient(ellipse 60% 40% at 50% -10%, hsla(190, 75%, 65%, 0.06) 0%, transparent 70%),
+    radial-gradient(ellipse 50% 35% at 100% 25%, hsla(0, 0%, 98%, 0.03) 0%, transparent 70%);
+}
+
+/* Brushstroke divider */
+.vp-doc hr {
+  border: none;
+  height: 1px;
+  background: var(--zf-border);
+  margin: 3rem auto;
+  max-width: 60%;
+  opacity: 1;
+}
+
+/* ============================================================
+ * Buttons - flat primary, t-flag-tinted hover
+ * ============================================================ */
+
+.VPButton {
+  font-family: var(--vp-font-family-display);
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  border-radius: var(--radius);
+  padding: 0 22px;
+  height: 46px;
+  font-size: 0.95rem;
+  /* Force text vertical-center; VitePress's default line-height
+   * + padding leaves text drifting up in pill buttons. */
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  line-height: 1 !important;
+}
+
+/* Override VitePress button vars so the brand button reads correctly
+ * in both modes regardless of the default vp-button-brand-* set.
+ */
+:root {
+  --vp-button-brand-border: var(--zf-primary);
+  --vp-button-brand-text: var(--zf-primary-fg);
+  --vp-button-brand-bg: var(--zf-primary);
+  --vp-button-brand-hover-border: var(--zf-t-flag);
+  --vp-button-brand-hover-text: hsl(0, 0%, 100%);
+  --vp-button-brand-hover-bg: var(--zf-t-flag);
+  --vp-button-brand-active-border: var(--zf-t-flag);
+  --vp-button-brand-active-text: hsl(0, 0%, 100%);
+  --vp-button-brand-active-bg: var(--zf-t-flag);
+
+  --vp-button-alt-border: var(--zf-border);
+  --vp-button-alt-text: var(--zf-fg);
+  --vp-button-alt-bg: transparent;
+  --vp-button-alt-hover-border: var(--zf-card-hover-border);
+  --vp-button-alt-hover-text: var(--zf-fg);
+  --vp-button-alt-hover-bg: var(--zf-secondary);
+}
+
+.VPButton.brand {
+  background: var(--zf-primary) !important;
+  border-color: var(--zf-primary) !important;
+  color: var(--zf-primary-fg) !important;
+  transition: all 0.18s ease;
+}
+.VPButton.brand:hover {
+  background: var(--zf-t-flag) !important;
+  border-color: var(--zf-t-flag) !important;
+  color: hsl(0, 0%, 100%) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px hsla(190, 65%, 38%, 0.28);
+}
+.dark .VPButton.brand:hover {
+  box-shadow: 0 8px 24px hsla(190, 75%, 65%, 0.34);
+}
+
+.VPButton.alt {
+  background: transparent !important;
+  border: 1px solid var(--zf-border) !important;
+  color: var(--zf-fg) !important;
+}
+.VPButton.alt:hover {
+  background: var(--zf-secondary) !important;
+  border-color: var(--zf-card-hover-border) !important;
+  color: var(--zf-fg) !important;
+}
+
+/* ============================================================
+ * Feature cards - 3-column grid (6 features = 3 + 3 layout)
+ * ============================================================ */
+
+/* Override VitePress's flex-based items grid with a strict 3-col
+ * grid at desktop width. Round 8 -- 6 cards now flow as a clean
+ * 3 + 3, so the orphan-row override that pinned cards 4-5 at 50%
+ * width is gone. */
+.VPHome .VPFeatures .container {
+  max-width: 1200px;
+}
+
+/* Push cards down from the hero quick-action buttons */
+.VPHome .VPFeatures {
+  margin-top: 4rem;
+}
+
+.VPHome .VPFeatures .container .items {
+  display: flex !important;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 18px !important;
+  margin: 0 !important;
+}
+
+.VPHome .VPFeatures .container .items > [class*='grid-'] {
+  width: calc(33.333% - 12px) !important;
+  min-width: 280px;
+  padding: 0 !important;
+  margin: 0 !important;
+  flex: 0 1 calc(33.333% - 12px) !important;
+}
+
+@media (max-width: 960px) {
+  .VPHome .VPFeatures .container .items > [class*='grid-'] {
+    width: calc(50% - 9px) !important;
+    flex-basis: calc(50% - 9px) !important;
+  }
+}
+@media (max-width: 640px) {
+  .VPHome .VPFeatures .container .items > [class*='grid-'] {
+    width: 100% !important;
+    flex-basis: 100% !important;
+  }
+}
+
+/* Round 8h -- borderless cards with thick cyan top-bar animation.
+ *
+ * Going back to the original "candy-bar" effect from the very first
+ * homepage draft (when --zf-t-flag was warm yellow). The bar is
+ * now cyan to match the rest of the brand. Standing border is
+ * dropped entirely; the card surface relies on:
+ *   - an elevation shadow at rest (so the card lifts off the bg
+ *     even without a stroke -- important in light mode where
+ *     bg=98% and card=100% are nearly indistinguishable)
+ *   - hover = lift +3px + thicker shadow + cyan top-bar that
+ *     scales 0→1 from the left edge
+ *   - overflow: hidden clips the top-bar to the rounded corners
+ */
+
+.VPFeature {
+  background: var(--zf-card);
+  /* `!important` is required: VitePress's component-scoped CSS
+   * ships `.VPFeature { border: 1px solid var(--vp-c-bg-soft) }`
+   * with the same specificity AND loads after our theme override,
+   * so a plain `border: none` lost the cascade fight and a 1px
+   * outline survived in the rendered card. */
+  border: 0 !important;
+  border-radius: var(--radius);
+  transition: transform 0.28s cubic-bezier(0.2, 0.6, 0.2, 1),
+              box-shadow 0.28s cubic-bezier(0.2, 0.6, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  height: 100%;          /* equal-height cards within grid row */
+  display: flex;
+  flex-direction: column;
+  /* Resting elevation -- soft shadow gives the card a "lifted"
+   * silhouette without an outline stroke. Tuned so the card
+   * reads as a surface in both themes. */
+  box-shadow:
+    0 1px 2px hsla(220, 30%, 20%, 0.04),
+    0 8px 22px -10px hsla(220, 30%, 20%, 0.06);
+}
+.dark .VPFeature {
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.20),
+    0 12px 28px -10px rgba(0, 0, 0, 0.32);
+}
+.VPFeature .box {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+.VPFeature .details {
+  flex: 1;               /* push link-text to the bottom of every card */
+}
+
+/* Thick cyan top-bar that scales in from the left on hover. */
+.VPFeature::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--zf-t-flag);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.36s cubic-bezier(0.2, 0.6, 0.2, 1);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.VPFeature:hover {
+  transform: translateY(-3px);
+  /* Hover elevation -- deeper shadow + a subtle cyan tint
+   * underneath that ties the lift back to the top-bar accent. */
+  box-shadow:
+    0 4px 10px hsla(220, 30%, 20%, 0.06),
+    0 22px 44px -14px hsla(190, 65%, 38%, 0.16);
+}
+.dark .VPFeature:hover {
+  box-shadow:
+    0 4px 10px rgba(0, 0, 0, 0.30),
+    0 24px 48px -12px hsla(190, 75%, 65%, 0.22);
+}
+.VPFeature:hover::before {
+  transform: scaleX(1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .VPFeature,
+  .VPFeature::before { transition: none !important; }
+  .VPFeature:hover { transform: none !important; }
+  .VPFeature:hover::before { transform: scaleX(1); }
+}
+
+.VPFeature .title {
+  font-family: var(--vp-font-family-display);
+  font-weight: 700;
+  letter-spacing: -0.018em;
+  color: var(--zf-fg);
+  font-size: 1.15rem;
+}
+.VPFeature .details {
+  color: var(--zf-muted-fg);
+  line-height: 1.65;
+  font-size: 0.95rem;
+}
+.VPFeature .link-text-value {
+  font-family: var(--vp-font-family-display);
+  color: var(--zf-t-flag);
+  font-weight: 600;
+}
+
+/* ============================================================
+ * Diagram figures - architecture-blueprint style
+ *
+ *   - dark slate canvas with subtle grid overlay
+ *   - color-coded node categories (terminal-syntax palette)
+ *   - dashed connector lines that flow via stroke-dashoffset
+ *   - glow drop-shadow on category frames
+ *   - mono labels everywhere
+ * ============================================================ */
+
+.zf-diagram {
+  position: relative;
+  margin: 4rem auto;
+  max-width: 1180px;
+  padding: 28px 16px 32px;
+  background: var(--zf-card);
+  border: 1px solid var(--zf-border);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.zf-diagram::before {
+  /* 60px square grid overlay, faint */
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(var(--zf-border) 1px, transparent 1px),
+    linear-gradient(90deg, var(--zf-border) 1px, transparent 1px);
+  background-size: 60px 60px;
+  opacity: 0.4;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.zf-diagram::after {
+  /* Multi-color radial atmosphere using terminal-syntax accents */
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 0%, hsla(210, 60%, 60%, 0.08) 0%, transparent 55%),
+    radial-gradient(ellipse at 80% 30%, hsla(150, 60%, 55%, 0.06) 0%, transparent 55%),
+    radial-gradient(ellipse at 50% 100%, hsla(190, 75%, 65%, 0.06) 0%, transparent 60%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.zf-diagram > * { position: relative; z-index: 1; }
+
+.zf-diagram svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.zf-diagram figcaption {
+  margin-top: 1.5rem;
+  text-align: center;
+  font-size: 0.92rem;
+  color: var(--zf-muted-fg);
+  letter-spacing: -0.005em;
+  max-width: 60ch;
+  margin-left: auto;
+  margin-right: auto;
+  line-height: 1.55;
+  font-family: var(--vp-font-family-base);
+}
+
+.zf-diagram-title {
+  font-family: var(--vp-font-family-mono);
+  font-size: 0.72rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.32em;
+  color: var(--zf-t-prompt);
+  text-align: center;
+  margin-bottom: 1.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+}
+.zf-diagram-title::before,
+.zf-diagram-title::after {
+  content: '';
+  display: inline-block;
+  width: 28px;
+  height: 1px;
+  background: var(--zf-t-prompt);
+  opacity: 0.5;
+}
+
+/* Legend strip - small color/badge pills under the title */
+.zf-diagram-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+  font-family: var(--vp-font-family-mono);
+  font-size: 11px;
+  color: var(--zf-muted-fg);
+  letter-spacing: 0.04em;
+}
+.zf-diagram-legend-item { display: inline-flex; align-items: center; gap: 7px; }
+.zf-diagram-legend-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  display: inline-block;
+}
+
+/* ----- SVG-internal: nodes ----- */
+
+.zf-node-frame {
+  fill: var(--zf-bg);
+  stroke-width: 1;
+  rx: 10;
+  transition: filter 0.3s ease;
+}
+
+/* Bigger headline number in the corner of each top-level node */
+.zf-node-step {
+  font-family: var(--vp-font-family-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  fill: var(--zf-muted-fg);
+}
+
+/* Five color-coded node categories */
+.zf-cat-prompt   .zf-node-frame { stroke: var(--zf-t-prompt); }
+.zf-cat-ok       .zf-node-frame { stroke: var(--zf-t-ok);     }
+.zf-cat-flag     .zf-node-frame { stroke: var(--zf-t-flag);   }
+.zf-cat-string   .zf-node-frame { stroke: var(--zf-t-string); }
+.zf-cat-url      .zf-node-frame { stroke: var(--zf-t-url);    }
+.zf-cat-muted    .zf-node-frame { stroke: var(--zf-border);   }
+
+/* Glow filter via CSS drop-shadow (no SVG <filter> needed) */
+.zf-cat-prompt > rect.zf-node-frame { filter: drop-shadow(0 0 6px hsla(210, 60%, 60%, 0.18)); }
+.zf-cat-ok     > rect.zf-node-frame { filter: drop-shadow(0 0 6px hsla(150, 60%, 55%, 0.18)); }
+.zf-cat-flag   > rect.zf-node-frame { filter: drop-shadow(0 0 6px hsla(190, 75%, 65%, 0.22)); }
+.zf-cat-string > rect.zf-node-frame { filter: drop-shadow(0 0 6px hsla(190, 60%, 70%, 0.18)); }
+.zf-cat-url    > rect.zf-node-frame { filter: drop-shadow(0 0 6px hsla(210, 70%, 65%, 0.18)); }
+
+/* Inner sub-card (mailbox/LLM/etc inside a category frame).
+ * Uses --zf-secondary so the panel reads as a lifted surface
+ * against the diagram canvas (which is --zf-card).
+ */
+.zf-node-sub {
+  fill: var(--zf-secondary);
+  stroke: var(--zf-border);
+  stroke-width: 0.7;
+  rx: 6;
+}
+.zf-node-sub-strong {
+  fill: var(--zf-bg);
+  stroke: var(--zf-border);
+  stroke-width: 1;
+  rx: 6;
+}
+
+.zf-node-cat-label {
+  font-family: var(--vp-font-family-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.20em;
+  text-transform: uppercase;
+}
+.zf-cat-prompt   .zf-node-cat-label { fill: var(--zf-t-prompt); }
+.zf-cat-ok       .zf-node-cat-label { fill: var(--zf-t-ok);     }
+.zf-cat-flag     .zf-node-cat-label { fill: var(--zf-t-flag);   }
+.zf-cat-string   .zf-node-cat-label { fill: var(--zf-t-string); }
+.zf-cat-url      .zf-node-cat-label { fill: var(--zf-t-url);    }
+.zf-cat-muted    .zf-node-cat-label { fill: var(--zf-muted-fg); }
+
+.zf-node-name {
+  font-family: var(--vp-font-family-mono);
+  font-size: 14px;
+  font-weight: 700;
+  fill: var(--zf-fg);
+}
+.zf-node-name-lg {
+  font-family: var(--vp-font-family-mono);
+  font-size: 16px;
+  font-weight: 700;
+  fill: var(--zf-fg);
+}
+.zf-node-detail {
+  font-family: var(--vp-font-family-mono);
+  font-size: 11px;
+  fill: var(--zf-muted-fg);
+}
+.zf-node-key {
+  font-family: var(--vp-font-family-mono);
+  font-size: 11px;
+  fill: var(--zf-fg);
+}
+
+/* Color-coded dot icon next to a sub-item */
+.zf-dot-prompt { fill: var(--zf-t-prompt); }
+.zf-dot-ok     { fill: var(--zf-t-ok);     }
+.zf-dot-flag   { fill: var(--zf-t-flag);   }
+.zf-dot-string { fill: var(--zf-t-string); }
+.zf-dot-url    { fill: var(--zf-t-url);    }
+
+/* ----- SVG-internal: edges ----- */
+
+/* Static neutral edge */
+.zf-edge {
+  fill: none;
+  stroke: var(--zf-muted-fg);
+  stroke-width: 1.2;
+  opacity: 0.5;
+}
+
+/* Animated dashed edges - the dashes flow along the path direction */
+.zf-edge-dash {
+  fill: none;
+  stroke-width: 1.4;
+  stroke-dasharray: 6 4;
+  opacity: 0.85;
+  animation: zf-dash-flow 2s linear infinite;
+}
+.zf-edge-prompt { stroke: var(--zf-t-prompt); }
+.zf-edge-ok     { stroke: var(--zf-t-ok);     }
+.zf-edge-flag   { stroke: var(--zf-t-flag);   }
+.zf-edge-string { stroke: var(--zf-t-string); }
+.zf-edge-url    { stroke: var(--zf-t-url);    }
+
+@keyframes zf-dash-flow { to { stroke-dashoffset: -20; } }
+
+.zf-edge-label {
+  font-family: var(--vp-font-family-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.02em;
+  fill: var(--zf-muted-fg);
+}
+.zf-edge-label-prompt { fill: var(--zf-t-prompt); opacity: 0.85; }
+.zf-edge-label-ok     { fill: var(--zf-t-ok);     opacity: 0.85; }
+.zf-edge-label-flag   { fill: var(--zf-t-flag);   opacity: 0.85; }
+.zf-edge-label-string { fill: var(--zf-t-string); opacity: 0.85; }
+.zf-edge-label-url    { fill: var(--zf-t-url);    opacity: 0.85; }
+
+/* Pulse for the executor source dot */
+.zf-pulse {
+  transform-origin: center;
+  transform-box: fill-box;
+  animation: zf-pulse 2.4s ease-in-out infinite;
+}
+@keyframes zf-pulse {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50%      { opacity: 1;   transform: scale(1.5); }
+}
+
+/* Lifecycle pill ribbon under a diagram */
+.zf-lifecycle {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 1.5rem auto 0.5rem;
+  max-width: 100%;
+  padding: 0 8px;
+}
+.zf-lifecycle-pill {
+  font-family: var(--vp-font-family-mono);
+  font-size: 11.5px;
+  font-weight: 500;
+  padding: 8px 14px;
+  border-radius: 6px;
+  border: 1px solid;
+  white-space: nowrap;
+}
+.zf-lifecycle-pill.cat-prompt { color: var(--zf-t-prompt); border-color: var(--zf-t-prompt); background: hsla(210, 60%, 60%, 0.08); }
+.zf-lifecycle-pill.cat-ok     { color: var(--zf-t-ok);     border-color: var(--zf-t-ok);     background: hsla(150, 60%, 55%, 0.08); }
+.zf-lifecycle-pill.cat-flag   { color: var(--zf-t-flag);   border-color: var(--zf-t-flag);   background: hsla(190, 75%, 65%, 0.12); }
+.zf-lifecycle-pill.cat-string { color: var(--zf-t-string); border-color: var(--zf-t-string); background: hsla(190, 60%, 70%, 0.08); }
+.zf-lifecycle-pill.cat-url    { color: var(--zf-t-url);    border-color: var(--zf-t-url);    background: hsla(210, 70%, 65%, 0.08); }
+.zf-lifecycle-arrow {
+  width: 24px;
+  height: 1px;
+  position: relative;
+  background: var(--zf-muted-fg);
+  opacity: 0.6;
+}
+.zf-lifecycle-arrow::after {
+  content: '';
+  position: absolute;
+  right: -1px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: 4px solid transparent;
+  border-left: 5px solid var(--zf-muted-fg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .zf-edge-dash, .zf-pulse { animation: none !important; }
+}
+
+@media (max-width: 720px) {
+  .zf-diagram { padding: 16px 8px 20px; }
+  .zf-diagram::before { background-size: 40px 40px; opacity: 0.25; }
+}
+
+/* ============================================================
+ * "See it run" -- Mac-style terminal frame wrapping the GIF
+ *
+ * Round 8d (2026-05-04) -- earlier draft tried to replay the cast
+ * via pure HTML/CSS line stagger; the user preferred the real
+ * GIF inside the same Mac-style frame. We keep the chrome (3
+ * dots + tab title) so it reads as "this is a terminal" without
+ * leaking VitePress's image styling around the GIF.
+ * ============================================================ */
+
+.zf-term {
+  margin: 2.5rem auto;
+  max-width: 920px;
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid var(--zf-border);
+  /* Round 8e -- terminal frame tone matches the GIF body so the
+   * Mac chrome doesn't read as a different surface. The cast was
+   * recorded against #1c1c1c (xterm-default-ish dark grey); we
+   * use the same so header + body look like one continuous
+   * terminal. Pure black would clash with the cast's actual
+   * background, hence #1c1c1c not #000.
+   */
+  background: #1c1c1c;
+  box-shadow:
+    0 1px 0 var(--zf-border),
+    0 22px 60px hsla(222, 47%, 20%, 0.18);
+  position: relative;
+  isolation: isolate;
+}
+.dark .zf-term {
+  box-shadow:
+    0 1px 0 var(--zf-border),
+    0 22px 60px rgba(0, 0, 0, 0.55);
+}
+
+.zf-term-bar {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 12px 16px;
+  /* Match the terminal body tone exactly (no separate header
+   * shade) so the chrome reads as a single continuous surface. */
+  background: #1c1c1c;
+  border-bottom: 1px solid #2a2a2a;
+}
+.zf-term-dot { width: 11px; height: 11px; border-radius: 50%; }
+.zf-term-dot-r { background: #ff5f57; }
+.zf-term-dot-y { background: #febc2e; }
+.zf-term-dot-g { background: #28c840; }
+.zf-term-tab {
+  margin-left: auto;
+  font-family: var(--vp-font-family-mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: hsl(0, 0%, 64%);
+  padding: 3px 10px;
+  background: #262626;
+  border-radius: 4px;
+}
+
+.zf-term-gif {
+  background: #1c1c1c;
+  display: block;
+}
+.zf-term-gif img {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin: 0;
+  /* override VitePress's default img styling that adds spacing */
+  border-radius: 0;
+}
+
+/* ============================================================
+ * In-doc SVG diagrams (architecture.md / observability.md)
+ *
+ * Vue compiler rejects <style> inside SVG inside markdown
+ * templates ("Tags with side effect ... are ignored"). All
+ * SVG-internal styling lives here instead, scoped by class
+ * prefix (zf-trace-* / zf-stack-* / zf-life-* / zf-flow-*).
+ * ============================================================ */
+
+/* ----- OTel trace tree (observability.md) ----- */
+.zf-trace-line { fill: none; stroke: var(--zf-border); stroke-width: 1.2; }
+.zf-trace-node-flow rect { fill: var(--zf-bg); stroke: var(--zf-t-prompt); }
+.zf-trace-node-step rect { fill: var(--zf-bg); stroke: var(--zf-t-ok);     }
+.zf-trace-node-llm  rect { fill: var(--zf-bg); stroke: var(--zf-t-string); }
+.zf-trace-node-tool rect { fill: var(--zf-bg); stroke: var(--zf-t-flag);   }
+.zf-trace-name { font-family: var(--vp-font-family-mono, monospace); font-size: 13px; font-weight: 600; }
+.zf-trace-meta { font-family: var(--vp-font-family-mono, monospace); font-size: 11px; fill: var(--zf-muted-fg); }
+.zf-trace-name-flow { fill: var(--zf-t-prompt); }
+.zf-trace-name-step { fill: var(--zf-t-ok);     }
+.zf-trace-name-llm  { fill: var(--zf-t-string); }
+.zf-trace-name-tool { fill: var(--zf-t-flag);   }
+
+/* ----- 3-layer stack (architecture.md) ----- */
+.zf-stack-rect { rx: 8; }
+.zf-stack-rect-engine   { fill: var(--zf-bg); stroke: var(--zf-t-ok);     stroke-width: 1.4; }
+.zf-stack-rect-sdk      { fill: var(--zf-bg); stroke: var(--zf-t-string); stroke-width: 1.4; }
+.zf-stack-rect-provider { fill: var(--zf-bg); stroke: var(--zf-t-flag);   stroke-width: 1.4; }
+.zf-stack-label { font-family: var(--vp-font-family-mono, monospace); font-size: 10px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; }
+.zf-stack-label-engine   { fill: var(--zf-t-ok);     }
+.zf-stack-label-sdk      { fill: var(--zf-t-string); }
+.zf-stack-label-provider { fill: var(--zf-t-flag);   }
+.zf-stack-name   { font-family: var(--vp-font-family-mono, monospace); font-size: 14px; font-weight: 700; fill: var(--zf-fg); }
+.zf-stack-detail { font-family: var(--vp-font-family-mono, monospace); font-size: 12px; fill: var(--zf-muted-fg); }
+.zf-stack-arrow  { fill: none; stroke: var(--zf-muted-fg); stroke-width: 1.5; opacity: 0.55; }
+
+/* ----- Lifecycle tree (architecture.md) ----- */
+.zf-life-rect-stage { fill: var(--zf-bg); stroke: var(--zf-t-prompt); stroke-width: 1.3; rx: 6; }
+.zf-life-rect-step  { fill: var(--zf-bg); stroke: var(--zf-t-ok);     stroke-width: 1.2; rx: 6; }
+.zf-life-rect-coord { fill: var(--zf-bg); stroke: var(--zf-t-string); stroke-width: 1.2; rx: 6; }
+.zf-life-rect-tool  { fill: var(--zf-bg); stroke: var(--zf-t-flag);   stroke-width: 1.0; rx: 4; }
+.zf-life-rect-end   { fill: var(--zf-bg); stroke: var(--zf-muted-fg); stroke-width: 1.2; rx: 6; }
+.zf-life-name { font-family: var(--vp-font-family-mono, monospace); font-size: 13px; font-weight: 700; fill: var(--zf-fg); }
+.zf-life-name-stage { fill: var(--zf-t-prompt); }
+.zf-life-name-step  { fill: var(--zf-t-ok);     }
+.zf-life-name-coord { fill: var(--zf-t-string); }
+.zf-life-name-tool  { fill: var(--zf-t-flag);   }
+.zf-life-detail { font-family: var(--vp-font-family-mono, monospace); font-size: 11px; fill: var(--zf-muted-fg); }
+.zf-life-arrow { fill: none; stroke: var(--zf-muted-fg); stroke-width: 1.4; opacity: 0.55; }
+.zf-life-side-arrow       { fill: none; stroke: var(--zf-t-ok);     stroke-width: 1.2; opacity: 0.6; stroke-dasharray: 4 3; }
+.zf-life-side-arrow-coord { fill: none; stroke: var(--zf-t-string); stroke-width: 1.2; opacity: 0.6; stroke-dasharray: 4 3; }
+.zf-life-edge-label { font-family: var(--vp-font-family-mono, monospace); font-size: 10.5px; fill: var(--zf-muted-fg); }
+
+/* ----- End-to-end event flow (architecture.md) ----- */
+.zf-flow-rect-step    { fill: var(--zf-bg); stroke: var(--zf-t-ok);     stroke-width: 1.4; rx: 6; }
+.zf-flow-rect-router  { fill: var(--zf-bg); stroke: var(--zf-muted-fg); stroke-width: 1.2; rx: 6; }
+.zf-flow-rect-mailbox { fill: var(--zf-bg); stroke: var(--zf-t-string); stroke-width: 1.4; rx: 6; }
+.zf-flow-rect-llm     { fill: var(--zf-bg); stroke: var(--zf-t-string); stroke-width: 1.6; rx: 6; }
+.zf-flow-rect-tool    { fill: var(--zf-bg); stroke: var(--zf-t-flag);   stroke-width: 1.2; rx: 4; }
+.zf-flow-rect-sink    { fill: var(--zf-bg); stroke: var(--zf-muted-fg); stroke-width: 1; stroke-dasharray: 4 3; rx: 4; }
+.zf-flow-name { font-family: var(--vp-font-family-mono, monospace); font-size: 13px; font-weight: 700; fill: var(--zf-fg); }
+.zf-flow-name-step    { fill: var(--zf-t-ok);     }
+.zf-flow-name-mailbox { fill: var(--zf-t-string); }
+.zf-flow-name-tool    { fill: var(--zf-t-flag);   }
+.zf-flow-detail { font-family: var(--vp-font-family-mono, monospace); font-size: 11px; fill: var(--zf-muted-fg); }
+.zf-flow-arrow      { fill: none; stroke: var(--zf-muted-fg); stroke-width: 1.4; opacity: 0.7; }
+.zf-flow-arrow-tool { fill: none; stroke: var(--zf-t-flag);   stroke-width: 1.4; opacity: 0.7; }
+.zf-flow-edge-label      { font-family: var(--vp-font-family-mono, monospace); font-size: 10.5px; fill: var(--zf-muted-fg); }
+.zf-flow-edge-label-tool { fill: var(--zf-t-flag); opacity: 0.85; }
+
+/* ----- Execution modes decision tree (concepts/execution-modes.md) ----- */
+.zf-mode-q { fill: var(--zf-bg); stroke: var(--zf-border); stroke-width: 1.2; rx: 6; }
+.zf-mode-q-text { font-family: var(--vp-font-family-mono, monospace); font-size: 13px; font-weight: 600; fill: var(--zf-fg); }
+.zf-mode-edge { fill: none; stroke: var(--zf-muted-fg); stroke-width: 1.3; opacity: 0.55; }
+.zf-mode-edge-label { font-family: var(--vp-font-family-mono, monospace); font-size: 11px; fill: var(--zf-muted-fg); }
+.zf-mode-edge-yes { fill: var(--zf-t-ok); }
+.zf-mode-edge-no  { fill: var(--zf-t-flag); }
+.zf-mode-out { rx: 6; stroke-width: 1.4; fill: var(--zf-bg); }
+.zf-mode-out-agent { stroke: var(--zf-t-prompt); }
+.zf-mode-out-flow  { stroke: var(--zf-t-ok); }
+.zf-mode-out-goal  { stroke: var(--zf-t-string); }
+.zf-mode-out-name { font-family: var(--vp-font-family-mono, monospace); font-size: 14px; font-weight: 700; }
+.zf-mode-out-name-agent { fill: var(--zf-t-prompt); }
+.zf-mode-out-name-flow  { fill: var(--zf-t-ok); }
+.zf-mode-out-name-goal  { fill: var(--zf-t-string); }
+.zf-mode-out-detail { font-family: var(--vp-font-family-mono, monospace); font-size: 11px; fill: var(--zf-muted-fg); }
+.zf-mode-caption { font-family: var(--vp-font-family-mono, monospace); font-size: 11px; fill: var(--zf-muted-fg); letter-spacing: 0.04em; }
+
+/* ----- DAG fan-out (concepts/dag-scheduling.md) ----- */
+.zf-dag-edge { fill: none; stroke: var(--zf-muted-fg); stroke-width: 1.4; opacity: 0.6; }
+.zf-dag-arrow-head { fill: var(--zf-muted-fg); opacity: 0.7; }
+.zf-dag-node { rx: 6; stroke-width: 1.4; fill: var(--zf-bg); }
+.zf-dag-node-design { stroke: var(--zf-t-prompt); }
+.zf-dag-node-step   { stroke: var(--zf-t-ok); }
+.zf-dag-node-merge  { stroke: var(--zf-t-string); }
+.zf-dag-name { font-family: var(--vp-font-family-mono, monospace); font-size: 14px; font-weight: 700; fill: var(--zf-fg); }
+
+/* ----- Sequence flow (concepts/messaging.md) ----- */
+.zf-seq-spine { stroke: var(--zf-border); stroke-width: 1; fill: none; }
+.zf-seq-node { rx: 6; stroke-width: 1.4; fill: var(--zf-bg); }
+.zf-seq-node-step    { stroke: var(--zf-t-ok); }
+.zf-seq-node-router  { stroke: var(--zf-muted-fg); }
+.zf-seq-node-mailbox { stroke: var(--zf-t-string); }
+.zf-seq-node-coord   { stroke: var(--zf-t-flag); }
+.zf-seq-num { font-family: var(--vp-font-family-mono, monospace); font-size: 12px; font-weight: 700; fill: var(--zf-muted-fg); }
+.zf-seq-name { font-family: var(--vp-font-family-mono, monospace); font-size: 13px; font-weight: 600; fill: var(--zf-fg); }
+.zf-seq-mono { font-family: var(--vp-font-family-mono, monospace); fill: var(--zf-t-flag); }
+.zf-seq-mono-line { font-family: var(--vp-font-family-mono, monospace); font-size: 11px; fill: var(--zf-muted-fg); }
+.zf-seq-arrow-head { fill: var(--zf-muted-fg); opacity: 0.7; }
+.zf-seq-edge { font-family: var(--vp-font-family-mono, monospace); font-size: 11px; fill: var(--zf-muted-fg); }
+
+/* ============================================================
+ * ASCII diagrams - mono pre block with brand frame
+ * ============================================================ */
+
+.zf-ascii {
+  margin: 4rem auto;
+  max-width: 1080px;
+  padding: 0 1.5rem;
+}
+.zf-ascii-title {
+  font-family: var(--vp-font-family-mono);
+  font-size: 0.72rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.32em;
+  color: var(--zf-t-prompt);
+  text-align: center;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+}
+.zf-ascii-title::before,
+.zf-ascii-title::after {
+  content: '';
+  display: inline-block;
+  width: 28px;
+  height: 1px;
+  background: var(--zf-t-prompt);
+  opacity: 0.5;
+}
+.zf-ascii pre {
+  font-family: var(--vp-font-family-mono);
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--zf-fg);
+  background: var(--zf-card);
+  border: 1px solid var(--zf-border);
+  border-radius: var(--radius);
+  padding: 28px 24px;
+  overflow-x: auto;
+  white-space: pre;
+}
+.zf-ascii figcaption {
+  margin-top: 1.25rem;
+  text-align: center;
+  font-size: 0.95rem;
+  color: var(--zf-muted-fg);
+  letter-spacing: -0.005em;
+  max-width: 60ch;
+  margin-left: auto;
+  margin-right: auto;
+  line-height: 1.55;
+}
+
+/* Blockquote callout */
+.vp-doc blockquote {
+  border-left: 3px solid var(--zf-t-flag);
+  background: var(--vp-c-tip-soft);
+  margin: 1.6rem 0;
+  padding: 0.6rem 1.25rem;
+  border-radius: 0 var(--radius) var(--radius) 0;
+  color: var(--zf-fg);
+}
+.vp-doc blockquote p { margin: 0.5rem 0; }
+
+/* ============================================================
+ * Agent Orchestration page (/agent-orchestration)
+ *
+ * Round 8 -- dedicated infographic page. Stage-numbered cards
+ * with a side rail (number + tick), a runtime topology SVG, a
+ * tool primitives grid, and a pill-row of related concepts.
+ * Color-coded categories tap the same terminal-syntax accents
+ * the rest of the site uses (--zf-t-prompt / --zf-t-ok /
+ * --zf-t-string / --zf-t-flag / --zf-t-url).
+ * ============================================================ */
+
+.ao-page {
+  max-width: 1080px;
+  margin: 1.5rem auto 6rem;
+  padding: 0 1.5rem;
+  font-family: var(--vp-font-family-base);
+}
+
+.ao-hero {
+  text-align: center;
+  padding: 2.5rem 0 3rem;
+  position: relative;
+}
+.ao-hero::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(80%, 720px);
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--zf-border), transparent);
+}
+.ao-eyebrow {
+  font-family: var(--vp-font-family-mono);
+  font-size: 11px;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--zf-t-flag);
+  margin: 0 0 14px;
+}
+.ao-title {
+  font-family: var(--vp-font-family-display);
+  font-weight: 500;
+  font-size: clamp(2rem, 5vw, 3.4rem);
+  line-height: 1.05;
+  letter-spacing: -0.035em;
+  margin: 0 0 1rem;
+  color: var(--zf-fg);
+}
+.ao-subtitle {
+  max-width: 60ch;
+  margin: 0 auto 2rem;
+  color: var(--zf-muted-fg);
+  font-size: 1.05rem;
+  line-height: 1.65;
+}
+.ao-legend {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 18px;
+  font-family: var(--vp-font-family-mono);
+  font-size: 11.5px;
+  letter-spacing: 0.04em;
+  color: var(--zf-muted-fg);
+}
+.ao-leg { display: inline-flex; align-items: center; gap: 6px; }
+.ao-leg-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+}
+.ao-leg-dot-prompt { background: var(--zf-t-prompt); }
+.ao-leg-dot-ok     { background: var(--zf-t-ok);     }
+.ao-leg-dot-string { background: var(--zf-t-string); }
+.ao-leg-dot-flag   { background: var(--zf-t-flag);   }
+.ao-leg-dot-url    { background: var(--zf-t-url);    }
+
+/* ------- Stage cards ------- */
+.ao-stages {
+  margin: 4rem 0 5rem;
+  position: relative;
+}
+
+.ao-stage {
+  display: grid;
+  grid-template-columns: 80px 1fr;
+  gap: 28px;
+  background: var(--zf-card);
+  border: 1px solid var(--zf-border);
+  border-radius: 12px;
+  padding: 24px 28px 24px 0;
+  margin-bottom: 24px;
+  position: relative;
+  opacity: 0;
+  transform: translateY(8px);
+  animation: aoStageIn 0.55s cubic-bezier(0.2, 0.6, 0.2, 1) forwards;
+  animation-delay: calc(var(--ao-i) * 0.08s);
+  transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
+}
+.ao-stage:hover {
+  border-color: var(--zf-card-hover-border);
+  transform: translateY(-2px);
+  box-shadow: 0 18px 40px hsla(190, 65%, 38%, 0.10);
+}
+.dark .ao-stage:hover {
+  box-shadow: 0 18px 40px hsla(190, 75%, 65%, 0.14);
+}
+
+@keyframes aoStageIn {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.ao-stage-rail {
+  border-right: 1px solid var(--zf-border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 6px 0 0;
+  gap: 12px;
+}
+.ao-stage-num {
+  font-family: var(--vp-font-family-mono);
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  line-height: 1;
+}
+.ao-stage-tick {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  position: relative;
+}
+.ao-stage-tick::after {
+  content: '';
+  position: absolute;
+  inset: -2px auto -28px 50%;
+  width: 1px;
+  background: var(--zf-border);
+  transform: translateX(-50%);
+}
+.ao-stage:last-of-type .ao-stage-tick::after { display: none; }
+
+.ao-cat-prompt   .ao-stage-rail { color: var(--zf-t-prompt); }
+.ao-cat-ok       .ao-stage-rail { color: var(--zf-t-ok); }
+.ao-cat-string   .ao-stage-rail { color: var(--zf-t-string); }
+.ao-cat-flag     .ao-stage-rail { color: var(--zf-t-flag); }
+.ao-cat-url      .ao-stage-rail { color: var(--zf-t-url); }
+
+.ao-stage-body { padding-top: 2px; }
+.ao-stage-cat {
+  font-family: var(--vp-font-family-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  margin: 0 0 8px;
+  color: var(--zf-t-prompt);
+}
+.ao-cat-prompt   .ao-stage-cat { color: var(--zf-t-prompt); }
+.ao-cat-ok       .ao-stage-cat { color: var(--zf-t-ok); }
+.ao-cat-string   .ao-stage-cat { color: var(--zf-t-string); }
+.ao-cat-flag     .ao-stage-cat { color: var(--zf-t-flag); }
+.ao-cat-url      .ao-stage-cat { color: var(--zf-t-url); }
+
+.ao-stage-name {
+  font-family: var(--vp-font-family-display);
+  font-weight: 600;
+  font-size: 1.32rem;
+  line-height: 1.3;
+  letter-spacing: -0.018em;
+  margin: 0 0 12px;
+  color: var(--zf-fg);
+}
+.ao-stage-name code {
+  font-family: var(--vp-font-family-mono);
+  font-size: 0.85em;
+  background: var(--zf-secondary);
+  padding: 0.05em 0.4em;
+  border-radius: 3px;
+  color: var(--zf-fg);
+}
+.ao-stage-desc {
+  color: var(--zf-muted-fg);
+  font-size: 0.98rem;
+  line-height: 1.7;
+  margin: 0 0 14px;
+  max-width: 72ch;
+}
+.ao-stage-desc code {
+  font-family: var(--vp-font-family-mono);
+  font-size: 0.86em;
+  background: var(--zf-secondary);
+  padding: 0.05em 0.4em;
+  border-radius: 3px;
+  color: var(--zf-fg);
+}
+.ao-stage-meta {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-family: var(--vp-font-family-mono);
+  font-size: 12px;
+  color: var(--zf-muted-fg);
+}
+.ao-stage-meta li {
+  display: grid;
+  grid-template-columns: 110px 1fr;
+  gap: 12px;
+  align-items: baseline;
+}
+.ao-stage-meta .ao-key {
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-size: 10.5px;
+  color: var(--zf-muted-fg);
+  opacity: 0.75;
+}
+.ao-stage-meta code {
+  background: transparent;
+  padding: 0;
+  color: var(--zf-fg);
+  word-break: break-word;
+}
+
+/* ------- Section header ------- */
+.ao-section-header {
+  text-align: center;
+  margin: 5rem 0 2.5rem;
+}
+.ao-section-header h2 {
+  font-family: var(--vp-font-family-display);
+  font-weight: 500;
+  font-size: clamp(1.6rem, 3.5vw, 2.4rem);
+  letter-spacing: -0.025em;
+  margin: 0;
+  color: var(--zf-fg);
+}
+
+/* ------- Runtime topology graph ------- */
+.ao-graph {
+  background: var(--zf-card);
+  border: 1px solid var(--zf-border);
+  border-radius: 14px;
+  padding: 28px;
+  position: relative;
+  overflow: hidden;
+}
+.ao-graph::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 50% 0%, hsla(190, 65%, 38%, 0.08), transparent 55%),
+    radial-gradient(ellipse at 50% 100%, hsla(150, 50%, 35%, 0.05), transparent 55%);
+  pointer-events: none;
+}
+.dark .ao-graph::before {
+  background:
+    radial-gradient(ellipse at 50% 0%, hsla(190, 75%, 65%, 0.10), transparent 55%),
+    radial-gradient(ellipse at 50% 100%, hsla(150, 60%, 55%, 0.06), transparent 55%);
+}
+.ao-graph svg {
+  width: 100%;
+  height: auto;
+  display: block;
+  position: relative;
+  z-index: 1;
+}
+.ao-graph-caption {
+  margin: 1.25rem auto 0;
+  text-align: center;
+  font-size: 0.92rem;
+  line-height: 1.65;
+  color: var(--zf-muted-fg);
+  max-width: 60ch;
+}
+.ao-graph-caption code {
+  font-family: var(--vp-font-family-mono);
+  font-size: 0.85em;
+  background: var(--zf-secondary);
+  padding: 0.05em 0.4em;
+  border-radius: 3px;
+  color: var(--zf-fg);
+}
+
+.ao-svg-rect {
+  fill: var(--zf-bg);
+  stroke-width: 1.4;
+}
+.ao-svg-rect-prompt { stroke: var(--zf-t-prompt); }
+.ao-svg-rect-ok     { stroke: var(--zf-t-ok); }
+.ao-svg-rect-string { stroke: var(--zf-t-string); }
+.ao-svg-rect-flag   { stroke: var(--zf-t-flag);
+                      filter: drop-shadow(0 0 6px hsla(190, 75%, 65%, 0.22)); }
+.ao-svg-rect-url    { stroke: var(--zf-t-url); }
+
+.ao-svg-cat {
+  font-family: var(--vp-font-family-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.20em;
+}
+.ao-svg-cat-prompt { fill: var(--zf-t-prompt); }
+.ao-svg-cat-ok     { fill: var(--zf-t-ok); }
+.ao-svg-cat-string { fill: var(--zf-t-string); }
+.ao-svg-cat-flag   { fill: var(--zf-t-flag); }
+.ao-svg-cat-url    { fill: var(--zf-t-url); }
+
+.ao-svg-name {
+  font-family: var(--vp-font-family-mono);
+  font-size: 13px;
+  font-weight: 700;
+  fill: var(--zf-fg);
+}
+.ao-svg-detail {
+  font-family: var(--vp-font-family-mono);
+  font-size: 10.5px;
+  fill: var(--zf-muted-fg);
+}
+.ao-svg-edge {
+  fill: none;
+  stroke: var(--zf-muted-fg);
+  stroke-width: 1.2;
+  opacity: 0.55;
+}
+.ao-svg-edge-flag {
+  stroke: var(--zf-t-flag);
+  opacity: 0.85;
+  stroke-dasharray: 5 4;
+  animation: aoDashFlow 2s linear infinite;
+}
+.ao-svg-edge-url {
+  stroke: var(--zf-t-url);
+  opacity: 0.55;
+}
+@keyframes aoDashFlow { to { stroke-dashoffset: -18; } }
+
+.ao-svg-edge-label {
+  font-family: var(--vp-font-family-mono);
+  font-size: 10px;
+  fill: var(--zf-muted-fg);
+}
+
+.ao-svg-pulse {
+  transform-origin: center;
+  transform-box: fill-box;
+  animation: aoPulse 2.4s ease-in-out infinite;
+}
+@keyframes aoPulse {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50%      { opacity: 1;   transform: scale(1.5); }
+}
+
+/* ------- Tool grid ------- */
+.ao-tool-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+}
+.ao-tool {
+  background: var(--zf-card);
+  border: 1px solid var(--zf-border);
+  border-radius: 10px;
+  padding: 22px 24px;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.25s ease, transform 0.25s ease;
+}
+.ao-tool:hover {
+  border-color: var(--zf-card-hover-border);
+  transform: translateY(-2px);
+}
+.ao-tool::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 3px;
+  height: 100%;
+  background: currentColor;
+  opacity: 0.7;
+}
+.ao-tool.ao-cat-flag   { color: var(--zf-t-flag); }
+.ao-tool.ao-cat-prompt { color: var(--zf-t-prompt); }
+.ao-tool.ao-cat-ok     { color: var(--zf-t-ok); }
+.ao-tool.ao-cat-string { color: var(--zf-t-string); }
+.ao-tool.ao-cat-url    { color: var(--zf-t-url); }
+
+.ao-tool-name {
+  font-family: var(--vp-font-family-mono);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: currentColor;
+  margin: 0 0 6px;
+}
+.ao-tool-sig {
+  font-family: var(--vp-font-family-mono);
+  font-size: 11.5px;
+  color: var(--zf-muted-fg);
+  margin: 0 0 12px;
+}
+.ao-tool-sig code {
+  background: transparent;
+  padding: 0;
+  color: var(--zf-fg);
+}
+.ao-tool-desc {
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--zf-muted-fg);
+  margin: 0;
+}
+.ao-tool-desc code {
+  font-family: var(--vp-font-family-mono);
+  font-size: 0.85em;
+  background: var(--zf-secondary);
+  padding: 0.05em 0.4em;
+  border-radius: 3px;
+  color: var(--zf-fg);
+}
+
+/* ------- Pill row ------- */
+.ao-pills {
+  margin-top: 5rem;
+  text-align: center;
+}
+.ao-pills-label {
+  font-family: var(--vp-font-family-mono);
+  font-size: 11px;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--zf-muted-fg);
+  margin: 0 0 1rem;
+}
+.ao-pills-row {
+  display: inline-flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  max-width: 760px;
+}
+.ao-pill {
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--vp-font-family-mono);
+  font-size: 11.5px;
+  font-weight: 500;
+  padding: 7px 14px;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+  text-decoration: none !important;
+  border-bottom: 1px solid currentColor !important;
+  transition: background 0.18s ease, transform 0.18s ease;
+}
+.ao-pill:hover {
+  transform: translateY(-1px);
+}
+.ao-pill.ao-cat-prompt { color: var(--zf-t-prompt); background: hsla(210, 60%, 60%, 0.05); }
+.ao-pill.ao-cat-prompt:hover { background: hsla(210, 60%, 60%, 0.15); }
+.ao-pill.ao-cat-ok     { color: var(--zf-t-ok);     background: hsla(150, 50%, 35%, 0.05); }
+.ao-pill.ao-cat-ok:hover { background: hsla(150, 50%, 35%, 0.15); }
+.ao-pill.ao-cat-string { color: var(--zf-t-string); background: hsla(190, 50%, 35%, 0.05); }
+.ao-pill.ao-cat-string:hover { background: hsla(190, 50%, 35%, 0.15); }
+.ao-pill.ao-cat-flag   { color: var(--zf-t-flag);   background: hsla(190, 65%, 38%, 0.07); }
+.ao-pill.ao-cat-flag:hover { background: hsla(190, 65%, 38%, 0.18); }
+.ao-pill.ao-cat-url    { color: var(--zf-t-url);    background: hsla(210, 60%, 45%, 0.05); }
+.ao-pill.ao-cat-url:hover { background: hsla(210, 60%, 45%, 0.15); }
+
+@media (max-width: 720px) {
+  .ao-stage { grid-template-columns: 56px 1fr; gap: 16px; padding: 18px 18px 18px 0; }
+  .ao-stage-num { font-size: 22px; }
+  .ao-stage-name { font-size: 1.15rem; }
+  .ao-stage-meta li { grid-template-columns: 96px 1fr; gap: 8px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ao-stage { animation: none; opacity: 1; transform: none; }
+  .ao-svg-edge-flag { animation: none; }
+  .ao-svg-pulse { animation: none; }
+}

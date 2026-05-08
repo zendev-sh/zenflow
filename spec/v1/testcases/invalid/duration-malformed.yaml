@@ -1,0 +1,11 @@
+description: "Duration field must match the (\\d+(\\.\\d+)?(ns|us|µs|ms|s|m|h))+ pattern; bare numbers without a unit are rejected"
+input: |
+  name: bad-duration
+  options:
+    timeout: "30"
+  steps:
+    - id: greet
+      instructions: "say hi"
+expected:
+  valid: false
+  error: validation

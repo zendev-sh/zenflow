@@ -1,0 +1,10 @@
+# robots.txt for zenflow.sh
+#
+# Entire docsite is public; no Disallow rules. Sitemap reference helps
+# crawlers (Googlebot, Bingbot, DuckDuckBot, ClaudeBot, GPTBot, etc.)
+# pick up the auto-generated sitemap.xml emitted by the VitePress build.
+
+User-agent: *
+Allow: /
+
+Sitemap: https://zenflow.sh/sitemap.xml

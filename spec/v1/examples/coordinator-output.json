@@ -1,0 +1,77 @@
+{
+  "name": "refactor_auth_module",
+  "version": 1,
+  "description": "Refactor the authentication module to support OAuth2.",
+  "agents": {
+    "analyst": {
+      "description": "Code analyst who maps existing auth dependencies.",
+      "tools": ["read", "bash"],
+      "maxTurns": 15,
+      "resultSchema": {
+        "type": "object",
+        "required": ["files"],
+        "properties": {
+          "files": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "List of file paths that import the auth package."
+          }
+        }
+      }
+    },
+    "refactorer": {
+      "description": "Senior developer who performs the refactoring.",
+      "tools": ["write", "read", "bash"],
+      "maxTurns": 30
+    },
+    "tester": {
+      "description": "QA engineer who writes and runs tests.",
+      "tools": ["write", "bash"],
+      "maxTurns": 20
+    }
+  },
+  "steps": [
+    {
+      "id": "analyze",
+      "agent": "analyst",
+      "instructions": "Map all files that import the auth package. Call submit_result with the file list."
+    },
+    {
+      "id": "plan",
+      "agent": "refactorer",
+      "instructions": "Create a step-by-step refactoring plan that migrates from session-based auth to OAuth2.",
+      "dependsOn": ["analyze"]
+    },
+    {
+      "id": "refactor_each_file",
+      "dependsOn": ["plan"],
+      "loop": {
+        "forEach": "steps.analyze.result.files",
+        "maxConcurrency": 3,
+        "steps": [
+          {
+            "id": "refactor",
+            "agent": "refactorer",
+            "instructions": "Refactor this file to use the new OAuth2 auth interface."
+          },
+          {
+            "id": "test",
+            "agent": "tester",
+            "instructions": "Write unit tests for the refactored file.",
+            "dependsOn": ["refactor"]
+          }
+        ]
+      }
+    },
+    {
+      "id": "integration_test",
+      "agent": "tester",
+      "instructions": "Run the full integration test suite. Report pass/fail with details.",
+      "dependsOn": ["refactor_each_file"]
+    }
+  ],
+  "options": {
+    "maxConcurrency": 4,
+    "onStepFailure": "abort"
+  }
+}

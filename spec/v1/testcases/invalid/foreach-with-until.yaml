@@ -1,0 +1,16 @@
+description: "forEach and until are mutually exclusive"
+input: |
+  name: foreach-until-conflict
+  agents:
+    worker:
+      description: "Processes items"
+  steps:
+    - id: process
+      agent: worker
+      instructions: "Process this item"
+      loop:
+        forEach: ["alpha", "beta", "gamma"]
+        until: "content.contains('done')"
+expected:
+  valid: false
+  error: foreach_with_until

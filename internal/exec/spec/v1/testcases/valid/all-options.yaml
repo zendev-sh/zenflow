@@ -1,0 +1,17 @@
+description: "All Options fields set with valid values"
+input: |
+  name: options-test
+  steps:
+    - id: work
+      instructions: "Do some work"
+  options:
+    maxConcurrency: 8
+    onStepFailure: cascade
+    timeout: "1h30m"
+    stepTimeout: "10m"
+    isolation: "none"
+    scheduler: round-robin
+expected:
+  valid: true
+  step_count: 1
+  topo_order: [work]

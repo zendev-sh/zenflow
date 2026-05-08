@@ -1,0 +1,16 @@
+description: "Loop with explicitly empty steps array must be rejected"
+input: |
+  name: loop-empty-steps
+  agents:
+    worker:
+      description: "Does work"
+  steps:
+    - id: build
+      agent: worker
+      instructions: "Build the project"
+      loop:
+        maxIterations: 3
+        steps: []
+expected:
+  valid: false
+  error: loop_validation

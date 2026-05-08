@@ -1,0 +1,10 @@
+description: "Step maxRetries must be non-negative"
+input: |
+  name: bad-max-retries
+  steps:
+    - id: work
+      instructions: "Do some work"
+      maxRetries: -1
+expected:
+  valid: false
+  error: validation

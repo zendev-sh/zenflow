@@ -1,0 +1,112 @@
+# Messaging demo -- agents talk to each other ONLY through the coordinator.
+#
+# 3 rounds of question/answer between "asker" and "expert":
+#   Round 1: asker sends "QUESTION_1: ..." to coord → coord forwards to expert
+#            → expert answers → coord forwards back to asker
+#   Round 2: same shape, asker's question informed by previous answer
+#   Round 3: same shape
+# Then coord narrates a summary and calls finalize.
+#
+# Key point: asker has NO information about expert and vice versa. They have
+# NEVER met. The ONLY communication channel is the coordinator hub.
+# `dependsOn: [previous-round]` ensures sequential rounds so coord has time
+# to forward messages between steps that ran before the next pair starts.
+#
+# What user should SEE in the output (per round):
+#   ✓ ◆ [asker-N] send_message            ← asker sends question to coord
+#   ≋ [coordinator] from=asker-N: QUESTION_N: <text>
+#   ✓ ◆ [coordinator] forward_to_agent target=expert-N text=...
+#   ⇠ [expert-N] received from coordinator: QUESTION_N: <text>
+#   ✓ ◆ [expert-N] send_message            ← expert sends answer to coord
+#   ≋ [coordinator] from=expert-N: ANSWER_N: <text>
+#   ✓ ◆ [coordinator] forward_to_agent target=asker-N+1 text=...
+
+name: messaging-rounds
+version: 1
+description: 3-round Q/A between asker and expert via coordinator hub. Coord forwards.
+
+agents:
+  asker:
+    description: "Curious user who knows nothing. Sends questions via send_message to coord. Reads answers from inbox."
+  expert:
+    description: "Knowledgeable expert. Reads questions from inbox. Sends answers via send_message to coord."
+  summarizer:
+    description: "Reads the conversation history and summarizes the Q/A session."
+
+steps:
+  # Round 1
+  - id: asker-1
+    agent: asker
+    instructions: |
+      Round 1. Send your FIRST question to the coordinator.
+      Call `send_message` ONCE with text:
+        "QUESTION_1: What is the capital of France?"
+      Then reply with EXACTLY: "SENT_1".
+      Do NOT call any other tool.
+
+  - id: expert-1
+    agent: expert
+    dependsOn:
+      - asker-1
+    instructions: |
+      Read the conversation context for the question coming from asker (forwarded
+      by the coordinator). It contains "QUESTION_1: ...".
+      Answer the question. Call `send_message` ONCE with text:
+        "ANSWER_1: <your answer>"
+      Then reply with EXACTLY: "REPLIED_1".
+
+  # Round 2
+  - id: asker-2
+    agent: asker
+    dependsOn:
+      - expert-1
+    instructions: |
+      Round 2. Read the previous answer from the conversation context (forwarded
+      by coordinator from expert) -- it contains "ANSWER_1: ...".
+      Send a follow-up question. Call `send_message` ONCE with text:
+        "QUESTION_2: Based on that, what is the population of that city?"
+      Then reply with EXACTLY: "SENT_2".
+
+  - id: expert-2
+    agent: expert
+    dependsOn:
+      - asker-2
+    instructions: |
+      Read the question from conversation context -- it contains "QUESTION_2: ...".
+      Answer. Call `send_message` ONCE with text:
+        "ANSWER_2: <your answer with a real number, even an estimate>"
+      Then reply with EXACTLY: "REPLIED_2".
+
+  # Round 3
+  - id: asker-3
+    agent: asker
+    dependsOn:
+      - expert-2
+    instructions: |
+      Round 3. Read previous answer in context -- contains "ANSWER_2: ...".
+      Send the FINAL question. Call `send_message` ONCE with text:
+        "QUESTION_3: Thanks! What is one famous landmark in that city?"
+      Then reply with EXACTLY: "SENT_3".
+
+  - id: expert-3
+    agent: expert
+    dependsOn:
+      - asker-3
+    instructions: |
+      Read "QUESTION_3: ...". Answer with `send_message` text:
+        "ANSWER_3: <your answer>"
+      Then reply with EXACTLY: "REPLIED_3".
+
+  # Final summary
+  - id: summary
+    agent: summarizer
+    dependsOn:
+      - expert-3
+    instructions: |
+      Look at the full conversation history (3 questions + 3 answers visible
+      in your context via dependsOn chain). Write a 3-sentence summary of
+      the Q/A session.
+
+options:
+  onStepFailure: cascade
+  scheduler: dependency-first

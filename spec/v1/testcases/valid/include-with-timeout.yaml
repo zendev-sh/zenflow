@@ -1,0 +1,14 @@
+description: "Include step with timeout and retries applied to sub-workflow"
+input: |
+  name: robust-include
+  includes:
+    deploy: "workflows/deploy.yaml"
+  steps:
+    - id: deploy-staging
+      include: deploy
+      timeout: "15m"
+      retries: 3
+expected:
+  valid: true
+  step_count: 1
+  topo_order: [deploy-staging]

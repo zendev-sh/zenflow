@@ -1,0 +1,20 @@
+# Simple Chain -- Linear 3-step workflow, no agents section.
+# Each step depends on the previous, forming a sequential chain.
+
+name: simple-chain
+version: 1
+description: Generate, review, and publish a blog post.
+
+steps:
+  - id: draft
+    instructions: "Write a 500-word blog post about async programming in Go."
+
+  - id: review
+    instructions: "Review the draft for technical accuracy and readability. Suggest improvements."
+    dependsOn:
+      - draft
+
+  - id: publish
+    instructions: "Format the reviewed post as markdown and add frontmatter metadata."
+    dependsOn:
+      - review

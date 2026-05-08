@@ -1,0 +1,78 @@
+# Debate Until -- Multi-round debate with judge-controlled termination.
+# Each round: pro argues → con counters (sequential within round).
+# Judge evaluates after each round -- stops when one side is clearly winning
+# or arguments are exhausted. Maximum 5 rounds.
+
+name: debate-until
+version: 1
+description: Multi-round debate with repeat-until loop and judge agent.
+
+agents:
+  moderator:
+    description: "Debate moderator who defines the topic, rules, and scoring criteria."
+  pro:
+    description: "Debate team arguing IN FAVOR. Build on previous rounds, respond to counter-arguments."
+  con:
+    description: "Debate team arguing AGAINST. Counter the pro side's points with evidence."
+  judge:
+    description: "Impartial judge. Set done=true when one side is clearly winning or arguments are repetitive. Set done=false to continue."
+    resultSchema:
+      type: object
+      required: [done]
+      properties:
+        done:
+          type: boolean
+          description: "true if debate should end (clear winner or diminishing returns), false to continue"
+        reason:
+          type: string
+          description: "Brief explanation of why to continue or stop"
+  summarizer:
+    description: "Debate summarizer who produces the final verdict and analysis."
+
+steps:
+  - id: setup
+    agent: moderator
+    instructions: "Define the debate topic: 'Remote work should be the default for all knowledge workers.' Set 3 key questions each side must address. Define what constitutes a strong argument (evidence, logic, addressing counter-points)."
+
+  - id: debate-rounds
+    dependsOn:
+      - setup
+    loop:
+      maxIterations: 5
+      untilAgent: judge
+      # cumulative: verdict step needs to see BOTH pro and con arguments
+      # from EVERY round, not just the final round's last inner step (which
+      # would be con-argue alone). Without this, verdict goes on a desperate
+      # bash spree trying to find the missing pro-argue context.
+      outputMode: cumulative
+      steps:
+        - id: pro-argue
+          agent: pro
+          instructions: |
+            Present your argument FOR remote work as default. If this is not
+            the first round, directly respond to the con side's previous
+            points. Use evidence, statistics, and real-world examples.
+
+            Then call `send_message` ONCE with your full argument as the
+            text so the coordinator can narrate the round in real-time to
+            observers. After the tool returns, finalize your output with
+            the full argument text again.
+        - id: con-argue
+          agent: con
+          instructions: |
+            Present your argument AGAINST remote work as default. Directly
+            counter the pro side's points from this round. Use evidence,
+            statistics, and real-world examples.
+
+            Then call `send_message` ONCE with your full counter-argument as
+            the text so the coordinator can narrate the round in real-time.
+            After the tool returns, finalize your output with the full
+            counter-argument text again.
+          dependsOn:
+            - pro-argue
+
+  - id: verdict
+    agent: summarizer
+    instructions: "Analyze the full debate. Summarize each side's strongest points, identify which arguments were effectively countered, and declare a winner with detailed reasoning."
+    dependsOn:
+      - debate-rounds

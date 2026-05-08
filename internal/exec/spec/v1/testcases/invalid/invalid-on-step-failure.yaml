@@ -1,0 +1,11 @@
+description: "onStepFailure must be a valid failure strategy value"
+input: |
+  name: bad-failure-strategy
+  steps:
+    - id: work
+      instructions: "Do some work"
+  options:
+    onStepFailure: "invalid-value"
+expected:
+  valid: false
+  error: validation

@@ -1,0 +1,6 @@
+// Example source code for full-featured workflow context
+package main
+
+func main() {
+    // TODO: implement feature
+}

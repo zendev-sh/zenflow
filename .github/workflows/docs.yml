@@ -1,0 +1,78 @@
+name: Docs
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/**'
+      - 'package.json'
+      - 'package-lock.json'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'docs/**'
+      - 'package.json'
+      - 'package-lock.json'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  # Required for the wrangler-action to comment the preview URL on PRs
+  # via the GitHub API. No effect on push deploys.
+  pull-requests: write
+
+# Cancel stale docs builds. PR pushes auto-cancel; main pushes are
+# preserved (a fresh deploy run shouldn't interrupt one already
+# pushing artefacts to Cloudflare).
+concurrency:
+  group: docs-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # 9.11a.4: skip the deploy step on PRs from forked repos  - 
+    # GitHub does not expose secrets to fork-PR runs by policy, so
+    # the wrangler-action would fail without credentials. The job
+    # itself still runs (build + lint), only the Cloudflare deploy
+    # step is gated.
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+          cache: npm
+
+      - run: npm ci
+
+      - name: Build docs
+        run: npm run build
+
+      - name: Deploy to Cloudflare Pages (production)
+        # Push-to-main: deploy to the main branch slot, which Cloudflare
+        # Pages wires to the production custom domains zenflow.sh +
+        # www.zenflow.sh.
+        if: github.event_name == 'push'
+        uses: cloudflare/wrangler-action@9acf94ace14e7dc412b076f2c5c20b8ce93c79cd # v3.15.0
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy docs/.vitepress/dist --project-name=zenflow --branch=main
+
+      - name: Deploy to Cloudflare Pages (PR preview)
+        # Same-repo PRs only: forked PRs do not have access to the
+        # CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID secrets.
+        # Each push to a PR branch updates a unique preview URL of the
+        # form `<sanitised-branch>.zenflow.pages.dev`. The action posts
+        # the URL back as a PR comment via pull-requests:write above.
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        uses: cloudflare/wrangler-action@9acf94ace14e7dc412b076f2c5c20b8ce93c79cd # v3.15.0
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+          command: pages deploy docs/.vitepress/dist --project-name=zenflow --branch=${{ github.head_ref }}

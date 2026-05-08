@@ -1,0 +1,30 @@
+description: "Multi-step repeat-until loop with maxIterations and until condition"
+input: |
+  name: code-review-cycle
+  agents:
+    coder:
+      description: "Writes and fixes code"
+    reviewer:
+      description: "Reviews code quality"
+  steps:
+    - id: initial-impl
+      agent: coder
+      instructions: "Write initial implementation"
+    - id: review-cycle
+      dependsOn: [initial-impl]
+      loop:
+        maxIterations: 5
+        until: "steps.review.content.contains('LGTM')"
+        delay: "10s"
+        steps:
+          - id: review
+            agent: reviewer
+            instructions: "Review the code for correctness and style"
+          - id: fix
+            agent: coder
+            instructions: "Fix issues found in the review"
+            dependsOn: [review]
+expected:
+  valid: true
+  step_count: 2
+  topo_order: [initial-impl, review-cycle]

@@ -1,0 +1,38 @@
+description: "Fan-out/fan-in DAG with parallel steps"
+input: |
+  name: code-review
+  agents:
+    designer:
+      description: "Designs the architecture"
+    frontend:
+      description: "Implements frontend components"
+    backend:
+      description: "Implements backend services"
+    reviewer:
+      description: "Reviews all implementations"
+  steps:
+    - id: design
+      agent: designer
+      instructions: "Design the feature architecture"
+    - id: impl-frontend
+      agent: frontend
+      instructions: "Implement frontend"
+      dependsOn: [design]
+    - id: impl-backend
+      agent: backend
+      instructions: "Implement backend API"
+      dependsOn: [design]
+    - id: review
+      agent: reviewer
+      instructions: "Review all implementations"
+      dependsOn: [impl-frontend, impl-backend]
+expected:
+  valid: true
+  step_count: 4
+  topo_constraints:
+    - before: [design]
+      after: [impl-frontend]
+    - before: [design]
+      after: [impl-backend]
+    - before: [impl-frontend, impl-backend]
+      after: [review]

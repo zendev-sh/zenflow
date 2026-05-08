@@ -1,0 +1,16 @@
+description: "Loop maxConcurrency must be non-negative"
+input: |
+  name: bad-loop-concurrency
+  agents:
+    worker:
+      description: "Does work"
+  steps:
+    - id: process
+      agent: worker
+      instructions: "Process items"
+      loop:
+        forEach: ["a", "b", "c"]
+        maxConcurrency: -1
+expected:
+  valid: false
+  error: validation

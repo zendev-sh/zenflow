@@ -1,0 +1,6 @@
+# Minimal -- Smallest valid workflow. One step, no agents section.
+
+name: minimal
+steps:
+  - id: greet
+    instructions: "Say hello."

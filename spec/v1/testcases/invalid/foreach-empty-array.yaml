@@ -1,0 +1,15 @@
+description: "forEach with empty static array -- nothing to iterate"
+input: |
+  name: foreach-empty
+  agents:
+    worker:
+      description: "Processes items"
+  steps:
+    - id: process
+      agent: worker
+      instructions: "Process this item"
+      loop:
+        forEach: []
+expected:
+  valid: false
+  error: foreach_empty_array

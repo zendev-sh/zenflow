@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Documentation
+    url: https://zenflow.sh
+    about: Full reference, getting-started, YAML and CLI docs.
+  - name: Discussions
+    url: https://github.com/zendev-sh/zenflow/discussions
+    about: Open-ended questions, design proposals, integration help.
+  - name: Security disclosures
+    url: https://github.com/zendev-sh/zenflow/security/advisories/new
+    about: Report vulnerabilities privately via GitHub Security Advisories. See SECURITY.md.

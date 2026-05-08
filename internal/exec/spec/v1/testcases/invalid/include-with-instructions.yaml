@@ -1,0 +1,12 @@
+description: "Include step must not have instructions field"
+input: |
+  name: include-instructions-conflict
+  includes:
+    deploy: "workflows/deploy.yaml"
+  steps:
+    - id: deploy-staging
+      include: deploy
+      instructions: "Deploy with extra care"
+expected:
+  valid: false
+  error: include_has_instructions

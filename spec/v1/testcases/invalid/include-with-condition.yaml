@@ -1,0 +1,15 @@
+description: "Include step must not have condition field"
+input: |
+  name: include-condition-conflict
+  includes:
+    deploy: "workflows/deploy.yaml"
+  steps:
+    - id: check
+      instructions: "Check readiness"
+    - id: deploy
+      include: deploy
+      dependsOn: [check]
+      condition: "steps.check.status == 'completed'"
+expected:
+  valid: false
+  error: include_has_condition

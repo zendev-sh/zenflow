@@ -1,0 +1,84 @@
+description: "All fields populated -- agents, tools, timeouts, retries, file refs, options, loops, conditions, includes"
+input: |
+  name: full-featured-workflow
+  description: "Demonstrates every field in the zenflow schema"
+  version: 1
+  agents:
+    architect:
+      description: "Designs system architecture"
+      prompt: "@prompts/architect.md"
+      model: "bedrock/anthropic.claude-sonnet-4-6"
+      tools: ["read_file", "write_file", "search"]
+      disallowedTools: ["execute_command"]
+      maxTurns: 10
+      temperature: 0.7
+      topP: 0.9
+    coder:
+      description: "Implements code changes"
+      prompt: "You are a senior Go developer."
+      model: "openai/gpt-4o"
+      tools: [bash, read, write]
+      maxTurns: 20
+    reviewer:
+      description: "Reviews code for quality and correctness"
+      model: "bedrock/anthropic.claude-sonnet-4-6"
+      tools: ["read_file", "search"]
+      temperature: 0.3
+    judge:
+      description: "Evaluates if review cycle is complete"
+      model: "bedrock/anthropic.claude-sonnet-4-6"
+      temperature: 0.0
+      resultSchema:
+        type: object
+        properties:
+          done:
+            type: boolean
+          reason:
+            type: string
+        required:
+          - done
+  includes:
+    deploy: "workflows/deploy.yaml"
+  steps:
+    - id: design
+      agent: architect
+      instructions: "@instructions/design.md"
+      contextFiles: ["docs/requirements.md", "docs/api-spec.yaml"]
+      timeout: "30m"
+    - id: implement
+      agent: coder
+      instructions: "Implement the design from the previous step"
+      dependsOn: [design]
+      model: "bedrock/anthropic.claude-sonnet-4-6"
+      timeout: "1h"
+      retries: 2
+      condition: "steps.design.status == 'completed'"
+    - id: dev-cycle
+      dependsOn: [implement]
+      loop:
+        maxIterations: 3
+        untilAgent: judge
+        steps:
+          - id: review
+            agent: reviewer
+            instructions: "Review the implementation for bugs and style issues"
+          - id: fix
+            agent: coder
+            instructions: "Fix issues found in review"
+            dependsOn: [review]
+    - id: deploy-staging
+      include: deploy
+      dependsOn: [dev-cycle]
+      timeout: "15m"
+      retries: 1
+  options:
+    maxConcurrency: 4
+    onStepFailure: skip-dependents
+    timeout: "2h"
+    stepTimeout: "30m"
+    isolation: "worktree-per-step"
+    scheduler: dependency-first
+expected:
+  valid: true
+  step_count: 4
+  topo_order: [design, implement, dev-cycle, deploy-staging]

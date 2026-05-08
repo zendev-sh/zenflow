@@ -1,0 +1,42 @@
+# Debate -- Two teams argue in parallel, coordinator moderates via messaging.
+# After topic setup, team_pro and team_con work simultaneously.
+# Coordinator forwards each team's arguments to the other as they develop.
+# A judge renders the final verdict.
+
+name: debate
+version: 1
+description: Structured debate between two teams with coordinator-mediated argument exchange.
+
+agents:
+  moderator-setup:
+    description: "Debate moderator who defines the topic, rules, and key questions for both sides."
+  pro:
+    description: "Debate team arguing IN FAVOR of the proposition. Build the strongest possible case."
+  con:
+    description: "Debate team arguing AGAINST the proposition. Find weaknesses and counter-arguments."
+  judge:
+    description: "Impartial judge who evaluates both arguments and declares a winner with reasoning."
+
+steps:
+  - id: setup
+    agent: moderator-setup
+    instructions: "Define the debate topic: 'AI coding assistants will replace most junior developer roles within 5 years.' Set 3 key questions each side must address. Establish judging criteria."
+
+  - id: team-pro
+    agent: pro
+    instructions: "Argue IN FAVOR of the proposition. Address the key questions from setup. Present evidence, examples, and logical reasoning. Anticipate counter-arguments."
+    dependsOn:
+      - setup
+
+  - id: team-con
+    agent: con
+    instructions: "Argue AGAINST the proposition. Address the key questions from setup. Present evidence, examples, and logical reasoning. Anticipate counter-arguments."
+    dependsOn:
+      - setup
+
+  - id: verdict
+    agent: judge
+    instructions: "Evaluate both arguments. Consider the strength of evidence, logical consistency, and how well each side addressed the key questions. Declare a winner and explain your reasoning."
+    dependsOn:
+      - team-pro
+      - team-con

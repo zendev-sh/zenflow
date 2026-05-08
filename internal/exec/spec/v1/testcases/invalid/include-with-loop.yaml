@@ -1,0 +1,13 @@
+description: "Include step must not have loop field"
+input: |
+  name: include-loop-conflict
+  includes:
+    deploy: "workflows/deploy.yaml"
+  steps:
+    - id: deploy-all
+      include: deploy
+      loop:
+        forEach: ["staging", "production"]
+expected:
+  valid: false
+  error: include_has_loop

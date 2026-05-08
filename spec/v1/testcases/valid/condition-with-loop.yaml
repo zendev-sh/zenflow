@@ -1,0 +1,25 @@
+description: "Step with both condition and loop -- condition gates loop entry"
+input: |
+  name: conditional-retry
+  agents:
+    checker:
+      description: "Checks service health"
+    fixer:
+      description: "Attempts to fix unhealthy services"
+  steps:
+    - id: health-check
+      agent: checker
+      instructions: "Check if the service is healthy"
+    - id: fix-loop
+      agent: fixer
+      instructions: "Attempt to fix the service"
+      dependsOn: [health-check]
+      condition: "steps.health-check.content.contains('unhealthy')"
+      loop:
+        maxIterations: 5
+        until: "content.contains('healthy')"
+        delay: "30s"
+expected:
+  valid: true
+  step_count: 2
+  topo_order: [health-check, fix-loop]

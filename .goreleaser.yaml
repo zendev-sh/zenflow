@@ -1,0 +1,163 @@
+version: 2
+
+project_name: zenflow
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: zenflow
+    main: ./cmd/zenflow
+    binary: zenflow
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    # `otel` enables the github.com/zendev-sh/zenflow/observability/otel
+    # submodule wiring so the distributed binaries support `--trace`
+    # out of the box. Source builds via plain `go install
+    # github.com/zendev-sh/zenflow/cmd/zenflow@<version>` work without
+    # the tag (the submodule never enters the build graph) and `--trace`
+    # parses to a no-op.
+    tags:
+      - otel
+    ldflags:
+      - -s -w
+      - -X main.version={{.Version}}
+      - -X main.commit={{.Commit}}
+      - -X main.date={{.Date}}
+
+archives:
+  - id: zenflow
+    ids: [zenflow]
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- .Version }}_
+      {{- .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+    formats: [tar.gz]
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+    files:
+      - README.md
+      - LICENSE
+      - CONTRIBUTING.md
+
+checksum:
+  name_template: 'checksums.txt'
+
+snapshot:
+  version_template: '{{ incpatch .Version }}-snapshot'
+
+changelog:
+  sort: asc
+  use: github
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+      - '^chore:'
+      - Merge pull request
+      - Merge branch
+  groups:
+    - title: Features
+      regexp: '^.*?feat(\(.+\))??!?:.+$'
+      order: 0
+    - title: Bug fixes
+      regexp: '^.*?fix(\(.+\))??!?:.+$'
+      order: 1
+    - title: Other
+      order: 999
+
+release:
+  github:
+    owner: zendev-sh
+    name: zenflow
+  draft: false
+  prerelease: auto
+  name_template: 'zenflow {{ .Tag }}'
+  header: |
+    ## zenflow {{ .Tag }}
+  footer: |
+    **Full Changelog**: https://github.com/zendev-sh/zenflow/compare/{{ .PreviousTag }}...{{ .Tag }}
+
+dockers:
+  - id: zenflow-amd64
+    ids: [zenflow]
+    image_templates:
+      - 'ghcr.io/zendev-sh/zenflow:{{ .Tag }}-amd64'
+    dockerfile: Dockerfile.dist
+    use: buildx
+    goos: linux
+    goarch: amd64
+    build_flag_templates:
+      - '--platform=linux/amd64'
+      - '--label=org.opencontainers.image.title={{ .ProjectName }}'
+      - '--label=org.opencontainers.image.version={{ .Version }}'
+      - '--label=org.opencontainers.image.created={{ .Date }}'
+      - '--label=org.opencontainers.image.revision={{ .FullCommit }}'
+      - '--label=org.opencontainers.image.source=https://github.com/zendev-sh/zenflow'
+      - '--label=org.opencontainers.image.url=https://zenflow.sh'
+      - '--label=org.opencontainers.image.licenses=Apache-2.0'
+      - '--build-arg=VERSION={{ .Version }}'
+      - '--build-arg=COMMIT={{ .FullCommit }}'
+      - '--build-arg=DATE={{ .Date }}'
+
+  - id: zenflow-arm64
+    ids: [zenflow]
+    image_templates:
+      - 'ghcr.io/zendev-sh/zenflow:{{ .Tag }}-arm64'
+    dockerfile: Dockerfile.dist
+    use: buildx
+    goos: linux
+    goarch: arm64
+    build_flag_templates:
+      - '--platform=linux/arm64'
+      - '--label=org.opencontainers.image.title={{ .ProjectName }}'
+      - '--label=org.opencontainers.image.version={{ .Version }}'
+      - '--label=org.opencontainers.image.created={{ .Date }}'
+      - '--label=org.opencontainers.image.revision={{ .FullCommit }}'
+      - '--label=org.opencontainers.image.source=https://github.com/zendev-sh/zenflow'
+      - '--label=org.opencontainers.image.url=https://zenflow.sh'
+      - '--label=org.opencontainers.image.licenses=Apache-2.0'
+      - '--build-arg=VERSION={{ .Version }}'
+      - '--build-arg=COMMIT={{ .FullCommit }}'
+      - '--build-arg=DATE={{ .Date }}'
+
+docker_manifests:
+  - name_template: 'ghcr.io/zendev-sh/zenflow:{{ .Tag }}'
+    image_templates:
+      - 'ghcr.io/zendev-sh/zenflow:{{ .Tag }}-amd64'
+      - 'ghcr.io/zendev-sh/zenflow:{{ .Tag }}-arm64'
+  - name_template: 'ghcr.io/zendev-sh/zenflow:v{{ .Major }}.{{ .Minor }}'
+    image_templates:
+      - 'ghcr.io/zendev-sh/zenflow:{{ .Tag }}-amd64'
+      - 'ghcr.io/zendev-sh/zenflow:{{ .Tag }}-arm64'
+    skip_push: auto
+  - name_template: 'ghcr.io/zendev-sh/zenflow:latest'
+    image_templates:
+      - 'ghcr.io/zendev-sh/zenflow:{{ .Tag }}-amd64'
+      - 'ghcr.io/zendev-sh/zenflow:{{ .Tag }}-arm64'
+    skip_push: auto
+
+homebrew_casks:
+  - name: zenflow
+    ids: [zenflow]
+    skip_upload: auto
+    repository:
+      owner: zendev-sh
+      name: homebrew-tap
+      token: '{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}'
+    directory: Casks
+    homepage: https://zenflow.sh
+    description: Declarative multi-agent workflows with first-class messaging
+    caveats: 'Licensed under Apache-2.0. https://github.com/zendev-sh/zenflow/blob/main/LICENSE'

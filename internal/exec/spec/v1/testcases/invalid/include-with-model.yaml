@@ -1,0 +1,12 @@
+description: "Include step must not have model field"
+input: |
+  name: include-model-conflict
+  includes:
+    deploy: "workflows/deploy.yaml"
+  steps:
+    - id: deploy-staging
+      include: deploy
+      model: "bedrock/anthropic.claude-sonnet-4-6"
+expected:
+  valid: false
+  error: include_has_model

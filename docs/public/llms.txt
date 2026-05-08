@@ -1,0 +1,29 @@
+# zenflow
+
+> Multi-agent workflow engine for Go. Declarative YAML workflows with an LLM coordinator that routes events through hub-and-spoke mailboxes. Race-safe delivery, zero-data-loss recovery, single ~20 MB binary. Runs on any provider [goai](https://goai.sh) supports (Google, AWS Bedrock, Azure, OpenAI-compatible).
+
+## Documentation
+
+- [Quick Start](https://zenflow.sh/getting-started/quick-start): Install, first workflow, and the three CLI verbs (`flow` / `goal` / `agent`) with a runnable example each.
+- [Architecture](https://zenflow.sh/architecture): DAG executor, coordinator, MessageRouter + Mailbox, delivery engine, lifecycle. The three-layer stack (zenflow engine, goai SDK, LLM provider).
+- [YAML Reference](https://zenflow.sh/yaml/): Workflow / agent / step / loop / include schemas + CEL expression reference for `condition` and `loop.until`.
+- [CLI Reference](https://zenflow.sh/cli/): All flags, output formats, exit codes, and the NDJSON event schema for `--json`.
+- [Go API Reference](https://zenflow.sh/api/): Core functions, the 49 `With*` options, types, errors, and the `AgentRunner` + `Orchestrator` lifecycle contract.
+- [Concepts](https://zenflow.sh/concepts/): Agents, scheduling, coordinator, messaging, failure handling, isolation, shared memory, observability, loops, conditions, composition, structured output, tools.
+- [Integrations](https://zenflow.sh/integrations/): CI/CD, Docker, scripting, observability (OTel / Langfuse / Jaeger / Datadog).
+
+## Examples
+
+- [Examples Index](https://zenflow.sh/examples): 19 worked examples covering every primitive (parallel fan-out, conditional steps, three loop flavours, sub-workflow includes, structured output, retries, isolation, shared memory).
+
+## Reference
+
+- [Compare to other frameworks](https://zenflow.sh/compare): Side-by-side with CrewAI / AutoGen / LangGraph covering the design tradeoffs.
+- [Agent Orchestration Blueprint](https://zenflow.sh/agent-orchestration.html): Standalone infographic walking through the runtime architecture.
+- [GitHub repo](https://github.com/zendev-sh/zenflow): Source, issues, releases.
+- [Go package on pkg.go.dev](https://pkg.go.dev/github.com/zendev-sh/zenflow): API browser with type-aware navigation.
+
+## For AI agents
+
+- [SKILL.md](https://github.com/zendev-sh/zenflow/blob/main/SKILL.md): Top-of-funnel context for AI agents that consume zenflow as a tool. Tool description, env vars, YAML shape, NDJSON event schema, exit codes, decision flow.
+- [AGENTS.md](https://github.com/zendev-sh/zenflow/blob/main/AGENTS.md): Instructions for AI agents editing the zenflow codebase. Code style, package layout, key rules, testing levels. Mirrors CLAUDE.md content (kept in sync by scripts/sync-agents-md.sh).

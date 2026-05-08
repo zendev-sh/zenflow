@@ -1,0 +1,66 @@
+# Loop ForEach -- Parallel iteration over a dynamic array from step output.
+# First step lists microservices, then forEach deploys each one in parallel.
+
+name: loop-foreach
+version: 1
+description: Discover services and deploy each one in parallel.
+
+agents:
+  discovery:
+    description: "Service discovery agent that lists all deployable microservices."
+    model: "claude-sonnet-4-6"
+    maxTurns: 15
+    resultSchema:
+      type: object
+      required: [services]
+      properties:
+        services:
+          type: array
+          description: "Array of service objects with name and region fields."
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              region:
+                type: string
+  deployer:
+    description: "Deployment agent that deploys a single service to the target environment."
+    model: "claude-sonnet-4-6"
+    tools:
+      - bash
+    maxTurns: 15
+  verifier:
+    description: "Verification agent that runs health checks after deployment."
+    model: "claude-sonnet-4-6"
+    tools:
+      - bash
+    maxTurns: 5
+
+steps:
+  - id: list_services
+    agent: discovery
+    instructions: "List all microservices that need deployment. You MUST call the submit_result tool with a services array."
+
+  # forEach reads structured data from dependency result -- no text parsing needed.
+  - id: deploy_each
+    dependsOn:
+      - list_services
+    loop:
+      forEach: "steps.list_services.result.services"
+      maxConcurrency: 3
+      steps:
+        - id: deploy
+          agent: deployer
+          instructions: "Deploy this service to its target region."
+        - id: verify
+          agent: verifier
+          instructions: "Run health checks on the deployed service."
+          dependsOn:
+            - deploy
+
+  - id: summary
+    agent: discovery
+    instructions: "Summarize all deployment results and report any failures."
+    dependsOn:
+      - deploy_each

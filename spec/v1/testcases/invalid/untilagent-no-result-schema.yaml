@@ -1,0 +1,16 @@
+description: "untilAgent agent must have resultSchema defined"
+input: |
+  name: untilagent-no-schema
+  agents:
+    checker:
+      description: "Checks completion"
+  steps:
+    - id: refine
+      agent: checker
+      instructions: "Refine implementation"
+      loop:
+        maxIterations: 5
+        untilAgent: checker
+expected:
+  valid: false
+  error: validation

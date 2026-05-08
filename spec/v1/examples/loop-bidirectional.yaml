@@ -1,0 +1,61 @@
+# Loop bidirectional messaging: Router-to-coord bridge
+# with full namespacing + delegation for repeat-until inner DAG.
+#
+# Each iteration: worker step sends progress to coord; coord can
+# forward_to_agent("worker") (bare name) AND
+# forward_to_agent("loop-stages.0.worker") (namespaced) -- both routed via root
+# router delegation to the active iteration's nested router.
+#
+# What user should SEE:
+#   ⇠ [loop-stages.0.worker] sent to coordinator: progress for round 1
+#   ↻ [coordinator] wake msgs=N
+#   ≋ [coordinator] (narrate)
+#   ⇠ [coordinator] sent to loop-stages.0.worker: <forwarded msg>
+#   ⇢ [loop-stages.0.worker] received from coordinator: <forwarded msg>
+#   ... repeat for iter 1, iter 2, ...
+#   ⇠ [judge] submit_result {done:true} after N rounds
+
+name: loop-bidirectional
+version: 1
+description: Bidirectional messaging inside a repeat-until loop. Tests namespacing.
+
+agents:
+  worker:
+    description: "Worker that performs a task, sends progress updates to coord via send_message, and reads coord context-updates from its inbox."
+  judge:
+    description: "Judge: stop after worker has reported progress on all 3 stages."
+    resultSchema:
+      type: object
+      required: [done]
+      properties:
+        done:
+          type: boolean
+
+steps:
+  - id: setup
+    agent: worker
+    instructions: |
+      Workflow setup. Reply EXACTLY with "READY" -- nothing else.
+
+  - id: loop-stages
+    dependsOn:
+      - setup
+    loop:
+      maxIterations: 3
+      untilAgent: judge
+      outputMode: cumulative
+      steps:
+        - id: worker
+          agent: worker
+          instructions: |
+            You are in iteration N of a 3-stage task (stage 1 = round 1,
+            stage 2 = round 2, etc.).
+
+            Step 1: Read your inbox. If coord sent you context, acknowledge it
+            in your response. Otherwise note "no inbox messages".
+
+            Step 2: Call `send_message` ONCE with text:
+              "STAGE_<N>: completed task X with metric Y"
+            (substitute N = current iteration index + 1, X / Y your choice).
+
+            Step 3: Reply with EXACTLY: "STAGE_<N>_DONE".

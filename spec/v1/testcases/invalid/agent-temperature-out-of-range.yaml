@@ -1,0 +1,14 @@
+description: "Agent temperature must be between 0 and 2"
+input: |
+  name: bad-temperature
+  agents:
+    coder:
+      description: "Writes code"
+      temperature: 3.0
+  steps:
+    - id: work
+      agent: coder
+      instructions: "Do some work"
+expected:
+  valid: false
+  error: validation

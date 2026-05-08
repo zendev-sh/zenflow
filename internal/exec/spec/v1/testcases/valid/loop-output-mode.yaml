@@ -1,0 +1,17 @@
+description: "loop.outputMode = cumulative on a repeat-until loop"
+input: |
+  name: loop-output-mode-valid
+  agents:
+    writer:
+      description: "Writes the next round's text."
+  steps:
+    - id: rounds
+      agent: writer
+      instructions: "Write a one-sentence update."
+      loop:
+        maxIterations: 3
+        outputMode: cumulative
+expected:
+  valid: true
+  step_count: 1
+  topo_order: [rounds]

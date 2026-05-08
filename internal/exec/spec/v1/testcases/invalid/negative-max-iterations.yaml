@@ -1,0 +1,16 @@
+description: "maxIterations must be a positive integer (minimum 1)"
+input: |
+  name: negative-iterations
+  agents:
+    checker:
+      description: "Checks system health"
+  steps:
+    - id: poll
+      agent: checker
+      instructions: "Check health"
+      loop:
+        maxIterations: -1
+        until: "content.contains('healthy')"
+expected:
+  valid: false
+  error: negative_value

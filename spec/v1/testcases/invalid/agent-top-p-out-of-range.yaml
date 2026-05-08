@@ -1,0 +1,14 @@
+description: "Agent topP must be between 0 and 1"
+input: |
+  name: bad-top-p
+  agents:
+    coder:
+      description: "Writes code"
+      topP: 2.0
+  steps:
+    - id: work
+      agent: coder
+      instructions: "Do some work"
+expected:
+  valid: false
+  error: validation

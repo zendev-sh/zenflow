@@ -1,0 +1,59 @@
+# Parallel Fan-Out -- Steps with shared dependency execute in parallel.
+# After design completes, three independent implementation steps run concurrently,
+# then a final integration step waits for all three.
+
+name: parallel-fan-out
+version: 1
+description: Design a microservice, implement components in parallel, then integrate.
+
+agents:
+  architect:
+    description: "System architect who designs APIs and data models."
+    model: "claude-opus-4-6"
+  backend:
+    description: "Backend developer who implements Go services."
+    model: "claude-sonnet-4-6"
+    tools:
+      - write
+      - bash
+  frontend:
+    description: "Frontend developer who builds React components."
+    model: "claude-sonnet-4-6"
+    tools:
+      - write
+  integrator:
+    description: "Integration engineer who wires components together."
+    model: "claude-sonnet-4-6"
+    tools:
+      - write
+      - bash
+steps:
+  - id: design
+    agent: architect
+    instructions: "Design the REST API schema and database models for a user auth service."
+
+  - id: api-server
+    agent: backend
+    instructions: "Implement the REST API server based on the design."
+    dependsOn:
+      - design
+
+  - id: database
+    agent: backend
+    instructions: "Implement the database layer with migrations."
+    dependsOn:
+      - design
+
+  - id: ui-components
+    agent: frontend
+    instructions: "Build login and registration React components."
+    dependsOn:
+      - design
+
+  - id: integrate
+    agent: integrator
+    instructions: "Wire the API server, database, and UI components together. Write integration tests."
+    dependsOn:
+      - api-server
+      - database
+      - ui-components

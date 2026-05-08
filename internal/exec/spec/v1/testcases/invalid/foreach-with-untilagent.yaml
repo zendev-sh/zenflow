@@ -1,0 +1,18 @@
+description: "forEach and untilAgent are mutually exclusive"
+input: |
+  name: foreach-untilagent-conflict
+  agents:
+    worker:
+      description: "Processes items"
+    judge:
+      description: "Evaluates completion"
+  steps:
+    - id: process
+      agent: worker
+      instructions: "Process this item"
+      loop:
+        forEach: ["alpha", "beta", "gamma"]
+        untilAgent: judge
+expected:
+  valid: false
+  error: foreach_with_untilagent

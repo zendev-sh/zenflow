@@ -1,0 +1,12 @@
+description: "maxIterations must be >= 1 -- zero is invalid"
+input: |
+  name: zero-iterations
+  steps:
+    - id: poll
+      instructions: "Check status"
+      loop:
+        maxIterations: 0
+        until: "content.contains('done')"
+expected:
+  valid: false
+  error: negative_value

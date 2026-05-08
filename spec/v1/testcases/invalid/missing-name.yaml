@@ -1,0 +1,8 @@
+description: "Workflow without required name field"
+input: |
+  steps:
+    - id: build
+      instructions: "Build the project"
+expected:
+  valid: false
+  error: missing_name

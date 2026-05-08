@@ -1,0 +1,12 @@
+description: "Include step must not have contextFiles field"
+input: |
+  name: include-contextfiles-conflict
+  includes:
+    audit: "workflows/audit.yaml"
+  steps:
+    - id: run-audit
+      include: audit
+      contextFiles: ["docs/compliance.md"]
+expected:
+  valid: false
+  error: include_has_contextfiles

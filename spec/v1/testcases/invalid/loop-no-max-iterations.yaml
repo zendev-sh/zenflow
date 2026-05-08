@@ -1,0 +1,16 @@
+description: "Repeat-until loop without required maxIterations"
+input: |
+  name: infinite-loop-risk
+  agents:
+    checker:
+      description: "Checks system health"
+  steps:
+    - id: health-poll
+      agent: checker
+      instructions: "Check if the service is healthy"
+      loop:
+        until: "content.contains('healthy')"
+        delay: "10s"
+expected:
+  valid: false
+  error: loop_missing_max_iterations

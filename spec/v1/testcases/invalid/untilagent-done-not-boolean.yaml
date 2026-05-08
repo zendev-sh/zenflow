@@ -1,0 +1,23 @@
+description: "untilAgent agent resultSchema.properties.done must have type boolean"
+input: |
+  name: untilagent-done-wrong-type
+  agents:
+    checker:
+      description: "Checks completion"
+      resultSchema:
+        type: object
+        properties:
+          done:
+            type: string
+        required:
+          - done
+  steps:
+    - id: refine
+      agent: checker
+      instructions: "Refine implementation"
+      loop:
+        maxIterations: 5
+        untilAgent: checker
+expected:
+  valid: false
+  error: validation

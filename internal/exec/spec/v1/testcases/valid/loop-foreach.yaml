@@ -1,0 +1,23 @@
+description: "forEach loop with CEL expression over dynamic step output"
+input: |
+  name: parallel-deploy
+  agents:
+    lister:
+      description: "Lists services to deploy"
+    deployer:
+      description: "Deploys a single service"
+  steps:
+    - id: list-services
+      agent: lister
+      instructions: "List all microservices as a JSON array"
+    - id: deploy-each
+      agent: deployer
+      instructions: "Deploy this service to production"
+      dependsOn: [list-services]
+      loop:
+        forEach: "steps.list-services.result.services"
+        maxConcurrency: 3
+expected:
+  valid: true
+  step_count: 2
+  topo_order: [list-services, deploy-each]

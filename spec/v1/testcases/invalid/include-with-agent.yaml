@@ -1,0 +1,15 @@
+description: "Include step must not have agent field"
+input: |
+  name: include-agent-conflict
+  agents:
+    coder:
+      description: "Writes code"
+  includes:
+    auth: "workflows/auth.yaml"
+  steps:
+    - id: setup-auth
+      include: auth
+      agent: coder
+expected:
+  valid: false
+  error: include_has_agent

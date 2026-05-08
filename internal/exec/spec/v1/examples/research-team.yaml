@@ -1,0 +1,49 @@
+# Research Team -- Parallel agents collaborate via coordinator messaging.
+# Researcher completes first, then writer/fact-checker/illustrator work in parallel.
+# Coordinator forwards research findings to all parallel agents, and cross-pollinates
+# discoveries between them as they complete.
+
+name: research-team
+version: 1
+description: Research a topic, then have writer, fact-checker, and illustrator work in parallel with coordinator-mediated context sharing.
+
+agents:
+  researcher:
+    description: "Research analyst who investigates a topic thoroughly and produces structured findings."
+  writer:
+    description: "Technical writer who crafts a compelling article based on research findings."
+  fact-checker:
+    description: "Fact-checker who verifies claims and identifies unsupported statements."
+  illustrator:
+    description: "Diagram designer who proposes visual aids and figure descriptions for the article."
+
+steps:
+  - id: research
+    agent: researcher
+    instructions: "Research the topic 'How WebAssembly is changing server-side computing'. Produce key findings, statistics, and notable projects."
+
+  - id: write-draft
+    agent: writer
+    instructions: "Write a 500-word article based on the research findings. Focus on clarity and narrative flow."
+    dependsOn:
+      - research
+
+  - id: fact-check
+    agent: fact-checker
+    instructions: "Review the research findings for accuracy. Flag any claims that need citations or seem unsupported."
+    dependsOn:
+      - research
+
+  - id: suggest-visuals
+    agent: illustrator
+    instructions: "Based on the research, propose 3 diagrams or figures that would enhance the article. Describe each one."
+    dependsOn:
+      - research
+
+  - id: final-edit
+    agent: writer
+    instructions: "Incorporate fact-check corrections and visual suggestions into the final article."
+    dependsOn:
+      - write-draft
+      - fact-check
+      - suggest-visuals

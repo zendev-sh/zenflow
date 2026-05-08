@@ -1,0 +1,29 @@
+# Debate (Soak Variant) -- Smaller 2-step debate for stability soak runs.
+#
+# The full 4-step debate.yaml fans setup → {team-pro, team-con} → verdict,
+# which can produce large fan-in context at the verdict step and trigger
+# tail-latency issues on some providers. This variant collapses the workflow
+# to argue → judge -- same coordinator/router code paths, no fan-in context
+# bloat -- making it suitable for stability soak runs on tail-latency-sensitive
+# providers.
+
+name: debate-soak
+version: 1
+description: Reduced 2-step debate (argue → judge) for soak coverage on tail-latency-sensitive providers.
+
+agents:
+  pro:
+    description: "Debate team arguing IN FAVOR of the proposition. Build the strongest possible case."
+  judge:
+    description: "Impartial judge who evaluates the argument and renders a verdict with reasoning."
+
+steps:
+  - id: argue
+    agent: pro
+    instructions: "Argue IN FAVOR of the proposition: 'AI coding assistants will replace most junior developer roles within 5 years.' Present 3 concise points (evidence, examples, reasoning). Keep the argument under 250 words to bound downstream context."
+
+  - id: verdict
+    agent: judge
+    instructions: "Evaluate the argument from the previous step. Consider strength of evidence and logical consistency. Render a verdict (PERSUASIVE / NOT PERSUASIVE) with 2-3 sentences of reasoning. Keep the verdict under 150 words."
+    dependsOn:
+      - argue

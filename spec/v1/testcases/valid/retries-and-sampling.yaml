@@ -1,0 +1,27 @@
+description: "step.maxRetries + options.maxRetries + agent temperature/topP"
+input: |
+  name: retries-and-sampling
+  version: 1
+  agents:
+    drafter:
+      description: "Drafts a brief response; uses higher temperature for variety."
+      temperature: 0.9
+      topP: 0.95
+    judge:
+      description: "Decides whether the draft is acceptable; deterministic."
+      temperature: 0.0
+  options:
+    maxRetries: 1
+  steps:
+    - id: draft
+      agent: drafter
+      instructions: "Write one paragraph."
+      maxRetries: 3
+    - id: review
+      agent: judge
+      dependsOn: [draft]
+      instructions: "Reply 'ok' or a reason."
+expected:
+  valid: true
+  step_count: 2
+  topo_order: [draft, review]

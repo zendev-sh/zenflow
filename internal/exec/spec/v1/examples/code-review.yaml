@@ -1,0 +1,42 @@
+# Code Review Pipeline -- Parallel security and performance reviews with messaging.
+# Implementation completes first, then security and performance reviewers work in parallel.
+# Coordinator forwards security findings to performance reviewer and vice versa.
+# Final report synthesizes both reviews.
+
+name: code-review
+version: 1
+description: Implement a feature, then run parallel security and performance reviews with cross-review messaging.
+
+agents:
+  developer:
+    description: "Senior developer who implements features following best practices."
+  security:
+    description: "Security engineer who audits code for vulnerabilities, injection risks, and auth issues."
+  performance:
+    description: "Performance engineer who identifies bottlenecks, N+1 queries, and optimization opportunities."
+  lead:
+    description: "Tech lead who synthesizes review findings into actionable recommendations."
+
+steps:
+  - id: implement
+    agent: developer
+    instructions: "Implement a user authentication API with login, registration, password reset, and JWT token management. Focus on functionality first."
+
+  - id: security-review
+    agent: security
+    instructions: "Audit the implementation for security vulnerabilities. Check for: SQL injection, XSS, CSRF, insecure token storage, weak password policies, and missing rate limiting."
+    dependsOn:
+      - implement
+
+  - id: perf-review
+    agent: performance
+    instructions: "Review the implementation for performance issues. Check for: N+1 queries, missing database indexes, unoptimized token validation, excessive memory allocation, and missing caching opportunities."
+    dependsOn:
+      - implement
+
+  - id: final-report
+    agent: lead
+    instructions: "Synthesize both reviews into a prioritized action plan. Categorize findings as critical/high/medium/low. Recommend which fixes to do before launch vs. defer to backlog."
+    dependsOn:
+      - security-review
+      - perf-review

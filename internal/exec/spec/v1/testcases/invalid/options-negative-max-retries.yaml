@@ -1,0 +1,11 @@
+description: "options.maxRetries must be non-negative"
+input: |
+  name: bad-options-max-retries
+  steps:
+    - id: work
+      instructions: "Do some work"
+  options:
+    maxRetries: -1
+expected:
+  valid: false
+  error: validation

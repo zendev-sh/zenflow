@@ -1,0 +1,284 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://zenflow.sh/spec/v1/schema.json",
+  "title": "Zenflow Workflow",
+  "description": "Schema for zenflow multi-agent workflow orchestration documents. Supports YAML and JSON serialization.",
+  "type": "object",
+  "required": ["name", "steps"],
+  "additionalProperties": false,
+  "properties": {
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Workflow name. Must be non-empty."
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 2000,
+      "description": "Human-readable description of the workflow's purpose."
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 1,
+      "description": "Schema version. Currently only 1 is defined."
+    },
+    "agents": {
+      "type": "object",
+      "description": "Named agent definitions. Keys are agent names referenced by steps.",
+      "propertyNames": {
+        "pattern": "^[a-z][a-z0-9_-]{0,63}$"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/AgentConfig"
+      }
+    },
+    "includes": {
+      "$ref": "#/$defs/Includes"
+    },
+    "steps": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 100,
+      "items": {
+        "$ref": "#/$defs/Step"
+      },
+      "description": "Ordered list of workflow steps forming a DAG."
+    },
+    "options": {
+      "$ref": "#/$defs/Options"
+    }
+  },
+  "$defs": {
+    "Duration": {
+      "type": "string",
+      "pattern": "^(\\d+h)?(\\d+m)?(\\d+s)?$",
+      "minLength": 2,
+      "description": "Duration string in Go format. Supports hours (h), minutes (m), seconds (s). Examples: \"30m\", \"1h30m\", \"45s\". No fractions, no ms/us/ns."
+    },
+    "AgentConfig": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "description": {
+          "type": "string",
+          "description": "Required. Human-readable description of the agent's role."
+        },
+        "prompt": {
+          "type": "string",
+          "description": "System prompt for the agent. Use @ prefix to reference a file (e.g., \"@prompts/coder.md\")."
+        },
+        "model": {
+          "type": "string",
+          "description": "LLM model identifier. Free-form string. Bare (\"claude-sonnet-4-6\") and provider-prefixed (\"bedrock/anthropic.claude-sonnet-4-6\", \"google/gemini-3-pro-preview\", \"azure/gpt-5\", \"vertex/...\") are valid. The CLI's auto-router does not accept the bare \"anthropic/\" prefix."
+        },
+        "tools": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Tool allowlist. List explicit tool names; wildcards are NOT supported. Omit the field to allow every tool registered with the orchestrator."
+        },
+        "disallowedTools": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Tool denylist. Applied after allowlist."
+        },
+        "maxTurns": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Maximum LLM conversation turns. Defaults to 50 when omitted (orchestrator default). Setting `0` is equivalent to omitting the field (the default of 50 is used). Negative values are rejected."
+        },
+        "temperature": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 2,
+          "description": "LLM sampling temperature."
+        },
+        "topP": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "LLM nucleus sampling parameter."
+        },
+        "resultSchema": {
+          "type": "object",
+          "description": "JSON Schema defining the shape of the agent's structured result. Compiled into a submit_result tool at runtime; agent calls this tool to produce structured output."
+        }
+      },
+      "required": ["description"]
+    },
+    "Step": {
+      "type": "object",
+      "required": ["id"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-zA-Z][a-zA-Z0-9_-]*$",
+          "description": "Unique step identifier. Must start with a letter, followed by alphanumeric, underscore, or hyphen."
+        },
+        "agent": {
+          "type": "string",
+          "description": "Reference to an agent defined in the agents section."
+        },
+        "instructions": {
+          "type": "string",
+          "maxLength": 2000,
+          "description": "Task instructions for the agent. Use @ prefix to reference a file (e.g., \"@instructions/design.md\")."
+        },
+        "dependsOn": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Step IDs that must complete before this step runs."
+        },
+        "contextFiles": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "File paths whose contents are injected into agent context. Relative to workflow file directory."
+        },
+        "model": {
+          "type": "string",
+          "description": "Override model for this step. Takes precedence over agent model."
+        },
+        "timeout": {
+          "$ref": "#/$defs/Duration",
+          "description": "Timeout for this step (or entire loop block if step has a loop)."
+        },
+        "retries": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of retry attempts on failure."
+        },
+        "maxRetries": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Maximum tool-call retries inside a single step (passed to the agent runner via WithMaxRetries). Distinct from 'retries' which retries the whole step. 0 = use the orchestrator default."
+        },
+        "condition": {
+          "type": "string",
+          "minLength": 1,
+          "description": "CEL expression. Step is skipped if expression evaluates to false. Evaluated before the step runs."
+        },
+        "include": {
+          "type": "string",
+          "description": "Reference to a named include or a file path to a sub-workflow. Mutually exclusive with agent, instructions, loop, condition, contextFiles, model (enforced by validation, not schema)."
+        },
+        "loop": {
+          "$ref": "#/$defs/Loop"
+        }
+      }
+    },
+    "Loop": {
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "properties": {
+        "maxIterations": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Hard cap on iterations. Required for repeat-until loops. Not applicable to forEach."
+        },
+        "until": {
+          "type": "string",
+          "minLength": 1,
+          "description": "CEL expression evaluated after each iteration. Loop stops when true."
+        },
+        "untilAgent": {
+          "type": "string",
+          "description": "Agent name that acts as judge. Executor reads result.done from agent output. Loop stops when result.done=true. Content is free-form text; decision is in result (structured JSON object)."
+        },
+        "forEach": {
+          "oneOf": [
+            {
+              "type": "string",
+              "description": "CEL expression returning an array."
+            },
+            {
+              "type": "array",
+              "items": {},
+              "description": "Static array literal. Items can be string, object, or any JSON type."
+            }
+          ],
+          "description": "Array to iterate over. CEL expression string or static array literal. Mutually exclusive with until/untilAgent/maxIterations/delay."
+        },
+        "maxConcurrency": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Maximum parallel forEach iterations. Default: all parallel. Setting `0` is equivalent to omitting the field (treated as unset)."
+        },
+        "delay": {
+          "$ref": "#/$defs/Duration",
+          "description": "Wait between iterations. Repeat-until only; not applicable to forEach."
+        },
+        "steps": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/Step"
+          },
+          "description": "Inner steps for multi-step loop. If absent, loop the parent step. Inner steps MUST NOT have loop (no nested loops; enforced by validation, not schema)."
+        },
+        "outputMode": {
+          "type": "string",
+          "enum": ["", "last", "cumulative"],
+          "description": "How a multi-iteration loop builds its final Content. 'last' (default) keeps only the final iteration's output. 'cumulative' concatenates all iterations' outputs separated by '\\n\\n---\\n\\n'. Empty string is equivalent to 'last' for backward compatibility."
+        }
+      }
+    },
+    "Includes": {
+      "type": "object",
+      "description": "Named sub-workflow registry. Keys are names referenced by step include fields. Values are file paths relative to workflow file.",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "Options": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "maxConcurrency": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 5,
+          "description": "Maximum number of steps executing in parallel. Default: 5. Setting `0` is equivalent to omitting the field (default of 5 is used)."
+        },
+        "onStepFailure": {
+          "type": "string",
+          "enum": ["cascade", "skip-dependents", "abort"],
+          "default": "cascade",
+          "description": "Failure strategy. Default: cascade. cascade: fail dependents. skip-dependents: skip dependents, continue others. abort: stop all."
+        },
+        "timeout": {
+          "$ref": "#/$defs/Duration",
+          "description": "Timeout for the entire workflow."
+        },
+        "stepTimeout": {
+          "$ref": "#/$defs/Duration",
+          "description": "Default timeout for each step (unless overridden by step-level timeout)."
+        },
+        "isolation": {
+          "type": "string",
+          "description": "Isolation strategy. Free-form string; consumer-defined. Examples: \"none\", \"worktree-per-step\"."
+        },
+        "scheduler": {
+          "type": "string",
+          "enum": ["dependency-first", "round-robin", "least-busy"],
+          "default": "dependency-first",
+          "description": "Scheduling algorithm for parallel step execution. Default: dependency-first."
+        },
+        "maxRetries": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Workflow-level default for the agent-runner per-step tool-call retry cap. Falls through to per-step 'maxRetries' when set; otherwise the orchestrator default applies."
+        }
+      }
+    }
+  }
+}

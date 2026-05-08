@@ -1,0 +1,13 @@
+description: "Include step with direct file path (no top-level includes section)"
+input: |
+  name: simple-include
+  steps:
+    - id: setup
+      instructions: "Initialize the environment"
+    - id: run-auth
+      include: "workflows/auth-flow.yaml"
+      dependsOn: [setup]
+expected:
+  valid: true
+  step_count: 2
+  topo_order: [setup, run-auth]

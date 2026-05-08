@@ -1,0 +1,44 @@
+# golangci-lint config for zenflow.
+#
+# Documented exclusions below cover patterns that are intentionally safe and
+# would otherwise generate noise across CLI/test code:
+#
+#   1. errcheck on fmt.Fprint/Fprintln/Fprintf to stdout/stderr  -  print
+#      failures are not actionable in a CLI; checking io.Writer errors on
+#      os.Stdout/os.Stderr would clutter every print site.
+#   2. errcheck on (*os.File).Close in defer / *.Seek / Setenv / Unsetenv /
+#      Chmod / WriteFile / Remove inside _test.go  -  test code asserts on the
+#      observable behaviour, not on syscall return values.
+#   3. errcheck on (*os.File).Close in storage_file.go's tmp-file rollback
+#      paths  -  rollback is best-effort cleanup; the primary error is already
+#      surfaced.
+#   4. errcheck on store.MemoryStorage.SaveRun in tests  -  the in-memory store
+#      cannot fail.
+#   5. unused mock types/methods in *_test.go  -  kept as deliberate fixtures
+#      that may be re-enabled by future tests; deleting and re-adding is
+#      churn we don't want. (Per-symbol //nolint would also work but bloats
+#      every line.)
+version: "2"
+run:
+  timeout: 5m
+linters:
+  default: standard
+  exclusions:
+    rules:
+      # 1. Fprint family on stdout/stderr/strings.Builder
+      - linters: [errcheck]
+        text: "Error return value of `fmt.Fprint(ln|f)?` is not checked"
+      # 2. Test file errcheck on common helpers
+      - path: _test\.go
+        linters: [errcheck]
+        text: "Error return value of `(os\\.(Setenv|Unsetenv|Chmod|WriteFile|Remove)|.*\\.(Close|Seek))` is not checked"
+      - path: _test\.go
+        linters: [errcheck]
+        text: "Error return value of `store\\.MemoryStorage\\.SaveRun` is not checked"
+      # 3. storage_file.go rollback close/remove
+      - path: storage_file\.go
+        linters: [errcheck]
+        text: "Error return value of `(f\\.Close|os\\.Remove)` is not checked"
+      # 5. Unused mock fixtures in tests (kept intentionally for future tests)
+      - path: _test\.go
+        linters: [unused]

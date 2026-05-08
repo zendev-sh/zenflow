@@ -1,0 +1,23 @@
+description: "untilAgent agent resultSchema must have properties.done"
+input: |
+  name: untilagent-missing-done
+  agents:
+    checker:
+      description: "Checks completion"
+      resultSchema:
+        type: object
+        properties:
+          status:
+            type: string
+        required:
+          - status
+  steps:
+    - id: refine
+      agent: checker
+      instructions: "Refine implementation"
+      loop:
+        maxIterations: 5
+        untilAgent: checker
+expected:
+  valid: false
+  error: validation

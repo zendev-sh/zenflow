@@ -1,0 +1,19 @@
+description: "Top-level includes registry with step referencing a named include"
+input: |
+  name: release-pipeline
+  includes:
+    auth: "workflows/auth-flow.yaml"
+    deploy: "workflows/deploy.yaml"
+  steps:
+    - id: setup-auth
+      include: auth
+    - id: deploy-staging
+      include: deploy
+      dependsOn: [setup-auth]
+    - id: deploy-prod
+      include: deploy
+      dependsOn: [deploy-staging]
+expected:
+  valid: true
+  step_count: 3
+  topo_order: [setup-auth, deploy-staging, deploy-prod]

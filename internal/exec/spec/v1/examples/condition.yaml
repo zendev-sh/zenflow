@@ -1,0 +1,90 @@
+# Condition -- Conditional step skip with CEL expressions.
+# The security audit only runs if the design step mentions authentication.
+# The performance optimization only runs if tests pass.
+
+name: condition-example
+version: 1
+description: Workflow with conditional steps that skip based on CEL expressions.
+
+agents:
+  designer:
+    description: "Software architect who creates system designs."
+    model: "claude-opus-4-6"
+    resultSchema:
+      type: object
+      required: [features]
+      properties:
+        features:
+          type: array
+          description: "List of features in the design (e.g., 'authentication', 'authorization', 'user-profiles')."
+          items:
+            type: string
+  developer:
+    description: "Developer who implements features."
+    model: "claude-sonnet-4-6"
+    tools:
+      - write
+      - bash
+  security:
+    description: "Security engineer who audits authentication flows."
+    model: "claude-opus-4-6"
+    tools:
+      - read
+  tester:
+    description: "Developer who writes and runs unit tests."
+    model: "claude-sonnet-4-6"
+    tools:
+      - write
+      - bash
+    resultSchema:
+      type: object
+      required: [passed]
+      properties:
+        passed:
+          type: boolean
+          description: "true if all tests passed, false otherwise."
+        summary:
+          type: string
+  optimizer:
+    description: "Performance engineer who optimizes hot paths."
+    model: "claude-sonnet-4-6"
+    tools:
+      - read
+      - bash
+steps:
+  - id: design
+    agent: designer
+    instructions: "Design the user management API. Include authentication if the service handles user data."
+
+  - id: implement
+    agent: developer
+    instructions: "Implement the API based on the design."
+    dependsOn:
+      - design
+
+  - id: security_audit
+    agent: security
+    instructions: "Audit the authentication implementation for vulnerabilities."
+    dependsOn:
+      - implement
+    condition: "steps.design.result.features.exists(f, f == 'authentication')"
+
+  - id: test
+    agent: tester
+    instructions: "Write and run unit tests. Submit your result with passed=true if all tests pass, passed=false otherwise."
+    dependsOn:
+      - implement
+
+  - id: optimize
+    agent: optimizer
+    instructions: "Profile and optimize the hot paths in the implementation."
+    dependsOn:
+      - test
+    condition: "steps.test.status == 'completed' && steps.test.result.passed == true"
+
+  - id: finalize
+    agent: designer
+    instructions: "Generate release notes summarizing all changes."
+    dependsOn:
+      - security_audit
+      - optimize

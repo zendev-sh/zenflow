@@ -1,0 +1,12 @@
+description: "loop.outputMode must be one of '', 'last', or 'cumulative'"
+input: |
+  name: bad-loop-output-mode
+  steps:
+    - id: cycle
+      instructions: "Iterate"
+      loop:
+        maxIterations: 3
+        outputMode: "wrong"
+expected:
+  valid: false
+  error: loop_validation

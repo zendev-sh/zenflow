@@ -1,0 +1,38 @@
+# CODEOWNERS for zenflow.
+#
+# https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+#
+# Order matters: later patterns override earlier ones.
+# Each pattern lists the GitHub usernames or teams that auto-review PRs
+# touching matching files.
+
+# Default reviewer for everything not matched by a more specific rule.
+*                                @zendev-sh/maintainers
+
+# Spec is load-bearing; YAML schema + CLI behaviour anchor every consumer.
+/spec/                           @zendev-sh/maintainers
+/cmd/zenflow/                    @zendev-sh/maintainers
+
+# Engine internals  -  keep eyes on changes that shift type-identity or
+# the goai surface contract.
+/internal/                       @zendev-sh/maintainers
+
+# Public facade files  -  type-identity-preserving aliases. Changes here
+# are usually safe but worth a careful read because they define the
+# library API consumers import as `github.com/zendev-sh/zenflow`.
+/agent_facade.go                 @zendev-sh/maintainers
+/orchestrator_facade.go          @zendev-sh/maintainers
+/coord_facade.go                 @zendev-sh/maintainers
+/router_facade.go                @zendev-sh/maintainers
+/transcript_facade.go            @zendev-sh/maintainers
+/interfaces.go                   @zendev-sh/maintainers
+/workflow.go                     @zendev-sh/maintainers
+/duration.go                     @zendev-sh/maintainers
+
+# Docs site source.
+/docs/                           @zendev-sh/maintainers
+
+# CI + release configuration.
+/.github/                        @zendev-sh/maintainers
+/codecov.yml                     @zendev-sh/maintainers
+/.goreleaser.yaml                @zendev-sh/maintainers

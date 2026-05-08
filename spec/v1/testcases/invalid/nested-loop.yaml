@@ -1,0 +1,27 @@
+description: "Inner loop steps must not have their own loop -- nested loops prohibited"
+input: |
+  name: nested-loop
+  agents:
+    coder:
+      description: "Writes code"
+    reviewer:
+      description: "Reviews code"
+  steps:
+    - id: outer
+      loop:
+        maxIterations: 3
+        until: "steps.review.content.contains('LGTM')"
+        steps:
+          - id: implement
+            agent: coder
+            instructions: "Implement the feature"
+          - id: review
+            agent: reviewer
+            instructions: "Review the code"
+            dependsOn: [implement]
+            loop:
+              maxIterations: 2
+              until: "content.contains('no issues')"
+expected:
+  valid: false
+  error: nested_loop_prohibited

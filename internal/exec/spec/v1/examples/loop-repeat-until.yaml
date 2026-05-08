@@ -1,0 +1,61 @@
+# Loop Repeat-Until -- Code, review, fix cycle with untilAgent judge.
+# The loop runs up to 5 iterations. After each iteration, the reviewer
+# agent judges whether the code is ready. Loop stops when reviewer says done.
+
+name: loop-repeat-until
+version: 1
+description: Iterative code-review-fix cycle until reviewer approves.
+
+agents:
+  coder:
+    description: "Developer who writes and fixes Go code."
+    model: "claude-sonnet-4-6"
+    tools:
+      - write
+      - read
+      - bash
+    maxTurns: 20
+  reviewer:
+    description: "Code reviewer who evaluates code quality."
+    model: "claude-opus-4-6"
+    tools:
+      - read
+    maxTurns: 10
+  judge:
+    description: "Judge agent that decides if the review cycle is complete. Set result.done=true when ready, result.done=false to continue."
+    model: "claude-sonnet-4-6"
+    maxTurns: 3
+    resultSchema:
+      type: object
+      required: [done]
+      properties:
+        done:
+          type: boolean
+        reason:
+          type: string
+
+steps:
+  - id: design
+    agent: coder
+    instructions: "Design the API for a rate limiter package."
+
+  - id: dev_cycle
+    dependsOn:
+      - design
+    loop:
+      maxIterations: 5
+      untilAgent: judge
+      until: "steps.review.content.contains('LGTM')"
+      delay: "10s"
+      steps:
+        - id: implement
+          agent: coder
+          instructions: "Implement or fix the rate limiter based on review feedback."
+        - id: review
+          agent: reviewer
+          instructions: "Review the implementation. Output LGTM if ready, or list issues to fix."
+          dependsOn:
+            - implement
+
+options:
+  onStepFailure: abort

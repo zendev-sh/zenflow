@@ -1,0 +1,7 @@
+description: "Workflow with empty steps array"
+input: |
+  name: empty-workflow
+  steps: []
+expected:
+  valid: false
+  error: empty_steps

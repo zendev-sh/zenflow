@@ -1,0 +1,16 @@
+description: "Linear 3-step chain with explicit dependencies"
+input: |
+  name: build-pipeline
+  steps:
+    - id: compile
+      instructions: "Compile the Go project"
+    - id: test
+      instructions: "Run unit tests"
+      dependsOn: [compile]
+    - id: deploy
+      instructions: "Deploy to staging"
+      dependsOn: [test]
+expected:
+  valid: true
+  step_count: 3
+  topo_order: [compile, test, deploy]

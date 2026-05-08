@@ -1,0 +1,7 @@
+description: "Workflow without required steps field"
+input: |
+  name: broken-workflow
+  description: "This workflow has no steps"
+expected:
+  valid: false
+  error: missing_steps

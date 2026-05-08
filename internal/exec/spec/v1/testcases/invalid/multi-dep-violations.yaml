@@ -1,0 +1,10 @@
+description: "Multiple missing dependency references are all surfaced via errors.Join (not fail-fast)"
+input: |
+  name: multi-dep-errors
+  steps:
+    - id: deploy
+      instructions: "Deploy"
+      dependsOn: [build, test]
+expected:
+  valid: false
+  error: missing_dep

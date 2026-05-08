@@ -1,0 +1,10 @@
+description: "Step retries must be non-negative"
+input: |
+  name: bad-retries
+  steps:
+    - id: work
+      instructions: "Do some work"
+      retries: -1
+expected:
+  valid: false
+  error: validation

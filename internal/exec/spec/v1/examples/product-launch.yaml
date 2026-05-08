@@ -1,0 +1,51 @@
+# Product Launch -- Parallel teams coordinate via coordinator messaging.
+# Market research completes first, then pricing/marketing/legal work in parallel.
+# Coordinator forwards pricing decisions to marketing copy writer,
+# and legal constraints to both pricing and marketing.
+
+name: product-launch
+version: 1
+description: Plan a product launch with parallel pricing, marketing, and legal review, coordinated by messaging.
+
+agents:
+  analyst:
+    description: "Market analyst who researches competitors, target audience, and market positioning."
+  pricing:
+    description: "Pricing strategist who determines optimal price points based on market data."
+  copywriter:
+    description: "Marketing copywriter who creates launch messaging, taglines, and landing page copy."
+  legal:
+    description: "Legal reviewer who checks marketing claims and pricing for compliance."
+  planner:
+    description: "Launch coordinator who assembles the final go-to-market plan."
+
+steps:
+  - id: market-research
+    agent: analyst
+    instructions: "Research the market for a new AI-powered code review tool. Identify top 3 competitors, target audience segments, and pricing benchmarks."
+
+  - id: pricing-strategy
+    agent: pricing
+    instructions: "Define pricing tiers (free/pro/enterprise) based on the market research. Include specific price points and feature differentiation."
+    dependsOn:
+      - market-research
+
+  - id: marketing-copy
+    agent: copywriter
+    instructions: "Write launch messaging: a tagline, 3 key value propositions, and a 200-word landing page hero section. Base it on the market research."
+    dependsOn:
+      - market-research
+
+  - id: legal-review
+    agent: legal
+    instructions: "Review the market research findings for any claims we should avoid. Flag competitor comparisons that could be problematic."
+    dependsOn:
+      - market-research
+
+  - id: launch-plan
+    agent: planner
+    instructions: "Assemble the final launch plan combining pricing, marketing copy, and legal guidance into a coherent go-to-market strategy."
+    dependsOn:
+      - pricing-strategy
+      - marketing-copy
+      - legal-review

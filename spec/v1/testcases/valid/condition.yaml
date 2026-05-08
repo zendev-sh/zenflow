@@ -1,0 +1,21 @@
+description: "Step with CEL condition that gates execution"
+input: |
+  name: conditional-deploy
+  agents:
+    tester:
+      description: "Runs test suite"
+    deployer:
+      description: "Deploys to production"
+  steps:
+    - id: run-tests
+      agent: tester
+      instructions: "Run the full test suite"
+    - id: deploy
+      agent: deployer
+      instructions: "Deploy to production"
+      dependsOn: [run-tests]
+      condition: "steps.run-tests.status == 'completed'"
+expected:
+  valid: true
+  step_count: 2
+  topo_order: [run-tests, deploy]

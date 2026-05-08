@@ -1,0 +1,10 @@
+description: "Step condition must not be empty string (minLength: 1)"
+input: |
+  name: empty-condition
+  steps:
+    - id: work
+      instructions: "Do some work"
+      condition: ""
+expected:
+  valid: false
+  error: validation

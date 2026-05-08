@@ -1,0 +1,12 @@
+description: "AgentConfig requires a description field"
+input: |
+  name: agent-no-desc
+  agents:
+    coder: {}
+  steps:
+    - id: work
+      agent: coder
+      instructions: "Do some work"
+expected:
+  valid: false
+  error: agent_missing_description

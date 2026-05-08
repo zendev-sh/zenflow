@@ -1,0 +1,10 @@
+description: "Workflow root rejects unknown top-level fields (additionalProperties: false)"
+input: |
+  name: bad-root-field
+  steps:
+    - id: greet
+      instructions: "say hi"
+  unrecognizedField: "this is not in the schema"
+expected:
+  valid: false
+  error: validation

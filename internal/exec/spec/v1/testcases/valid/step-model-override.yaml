@@ -1,0 +1,20 @@
+description: "Step-level model override takes precedence over agent model"
+input: |
+  name: model-override
+  agents:
+    writer:
+      description: "Writes content"
+      model: "openai/gpt-4o"
+  steps:
+    - id: draft
+      agent: writer
+      instructions: "Write a first draft"
+    - id: refine
+      agent: writer
+      instructions: "Refine the draft with a more capable model"
+      dependsOn: [draft]
+      model: "bedrock/anthropic.claude-sonnet-4-6"
+expected:
+  valid: true
+  step_count: 2
+  topo_order: [draft, refine]

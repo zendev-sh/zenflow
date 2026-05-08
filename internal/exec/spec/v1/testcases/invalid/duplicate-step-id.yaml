@@ -1,0 +1,11 @@
+description: "Two steps with the same ID"
+input: |
+  name: duplicate-ids
+  steps:
+    - id: build
+      instructions: "First build step"
+    - id: build
+      instructions: "Duplicate build step"
+expected:
+  valid: false
+  error: duplicate_step

@@ -1,0 +1,32 @@
+name: retries-and-sampling
+version: 1
+description: |
+  Demonstrates step-level and workflow-level maxRetries plus per-agent
+  sampling controls (temperature, topP). The step-level retries field is
+  the maximum attempt count after the first failure; the workflow-level
+  options.maxRetries acts as a default when step.maxRetries is unset.
+
+agents:
+  drafter:
+    description: "Drafts a brief response; uses higher temperature for variety."
+    temperature: 0.9
+    topP: 0.95
+  judge:
+    description: "Decides whether the draft is acceptable; deterministic."
+    temperature: 0.0
+
+options:
+  maxRetries: 1
+
+steps:
+  - id: draft
+    agent: drafter
+    instructions: "Write one paragraph about Go's context.Context contract."
+    maxRetries: 3
+  - id: review
+    agent: judge
+    dependsOn: [draft]
+    instructions: |
+      Read steps.draft.content. Reply with one sentence: either
+      "ok" or a specific reason the draft is too long, off-topic,
+      or factually wrong.

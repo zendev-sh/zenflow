@@ -1,0 +1,13 @@
+description: "Step references an agent not defined in agents section"
+input: |
+  name: bad-agent-ref
+  agents:
+    coder:
+      description: "Writes code"
+  steps:
+    - id: review
+      agent: reviewer
+      instructions: "Review the code"
+expected:
+  valid: false
+  error: missing_agent

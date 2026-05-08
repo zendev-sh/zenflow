@@ -1,0 +1,11 @@
+description: "Scheduler must be a valid strategy value"
+input: |
+  name: bad-scheduler
+  steps:
+    - id: work
+      instructions: "Do some work"
+  options:
+    scheduler: "invalid-value"
+expected:
+  valid: false
+  error: validation

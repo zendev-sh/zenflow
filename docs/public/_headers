@@ -1,0 +1,51 @@
+# Cloudflare Pages headers for zenflow.sh.
+#
+# Reference: https://developers.cloudflare.com/pages/configuration/headers/
+# Patterns evaluate top-down; later matches on the same path layer onto
+# earlier ones (Cloudflare merges by header name).
+
+# HTML - short cache so docs updates roll out quickly. Cloudflare's edge
+# revalidates against the origin every hour; consumers re-fetch on
+# stale-while-revalidate semantics.
+/*
+  Cache-Control: public, max-age=3600
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: interest-cohort=(), camera=(), microphone=(), geolocation=(), payment=(), usb=(), accelerometer=(), gyroscope=(), magnetometer=()
+  Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
+  # CSP - 'unsafe-eval' kept as a defensive default. VitePress
+  # pre-compiles SFC templates at build time, so the production
+  # bundle should not need runtime Function()/eval for our own
+  # components. We have not exhaustively audited every transitive
+  # runtime dependency (Vue runtime helpers, local search index,
+  # syntax highlighter, etc.) for a Function() / new Function() call
+  # path, so removing 'unsafe-eval' is gated on a preview deploy +
+  # DevTools console sweep showing no EvalError / "unsafe-eval"
+  # violations across every page. Once that sweep is clean, drop
+  # 'unsafe-eval' below. Risk of keeping it: an XSS that lands an
+  # injected <script> can also call eval/Function. Mitigation: the
+  # other script-src tokens are tightly scoped, and 'unsafe-inline'
+  # is already required by VitePress's emitted inline boot scripts,
+  # so 'unsafe-eval' adds little marginal attack surface.
+  #
+  # asciinema.org is allowed because the homepage, examples page,
+  # and coordinator concept page embed asciicasts via the
+  # <Asciinema> SFC at theme/components/Asciinema.vue. That
+  # component injects <script src="https://asciinema.org/a/{id}.js">,
+  # which then fetches the cast JSON (connect-src) and thumbnail /
+  # avatar assets (img-src) from the same origin, and ultimately
+  # renders an <iframe src="https://asciinema.org/a/{id}/iframe">
+  # (frame-src).
+  #
+  # fonts.googleapis.com / fonts.gstatic.com are allowed because
+  # theme/style.css and public/agent-orchestration.html @import
+  # the Outfit + JetBrains Mono webfonts. The CSS file is served
+  # from googleapis (style-src) and the .woff2 payloads from
+  # gstatic (font-src).
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com https://asciinema.org; img-src 'self' data: https://www.google-analytics.com https://asciinema.org; connect-src 'self' https://www.google-analytics.com https://www.googletagmanager.com https://asciinema.org; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; frame-src https://asciinema.org; frame-ancestors 'none';
+
+# Hashed build assets - VitePress emits filename-hashed JS/CSS into
+# `/assets/` so they can be cached forever.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable

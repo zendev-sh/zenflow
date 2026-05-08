@@ -1,0 +1,16 @@
+description: "Circular dependency among three steps"
+input: |
+  name: cyclic-workflow
+  steps:
+    - id: a
+      instructions: "Step A"
+      dependsOn: [c]
+    - id: b
+      instructions: "Step B"
+      dependsOn: [a]
+    - id: c
+      instructions: "Step C"
+      dependsOn: [b]
+expected:
+  valid: false
+  error: cycle

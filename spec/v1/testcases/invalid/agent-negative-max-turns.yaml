@@ -1,0 +1,14 @@
+description: "Agent maxTurns must be non-negative"
+input: |
+  name: bad-max-turns
+  agents:
+    coder:
+      description: "Writes code"
+      maxTurns: -1
+  steps:
+    - id: work
+      agent: coder
+      instructions: "Do some work"
+expected:
+  valid: false
+  error: validation

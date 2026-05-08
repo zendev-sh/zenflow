@@ -1,0 +1,19 @@
+description: "Include step with dependsOn -- sub-workflow waits for dependencies"
+input: |
+  name: ordered-includes
+  includes:
+    build: "workflows/build.yaml"
+    test: "workflows/test.yaml"
+  steps:
+    - id: compile
+      instructions: "Compile the project"
+    - id: run-build
+      include: build
+      dependsOn: [compile]
+    - id: run-tests
+      include: test
+      dependsOn: [run-build]
+expected:
+  valid: true
+  step_count: 3
+  topo_order: [compile, run-build, run-tests]

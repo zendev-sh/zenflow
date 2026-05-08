@@ -1,0 +1,42 @@
+# Context Files -- Demonstrates contextFiles with text, image, and PDF attachments.
+# Text files are inlined in the prompt. Images and PDFs are sent as multimodal parts.
+# Image/PDF support requires a multimodal model (e.g., Gemini, Claude Sonnet).
+
+name: context-files
+version: 1
+description: Workflow demonstrating contextFiles with text, image, and PDF attachments.
+
+agents:
+  analyst:
+    description: "Analyst who examines provided context files and summarizes findings."
+
+steps:
+  - id: analyze-text
+    agent: analyst
+    instructions: "Read the provided text file and summarize its content in one sentence."
+    contextFiles:
+      - "fixtures/context.txt"
+
+  - id: analyze-image
+    agent: analyst
+    instructions: "Describe the provided image. What do you see? (It may be a very small test image.)"
+    contextFiles:
+      - "fixtures/sample.png"
+
+  - id: analyze-pdf
+    agent: analyst
+    instructions: "Read the provided PDF document and summarize its content."
+    contextFiles:
+      - "fixtures/sample.pdf"
+
+  - id: analyze-mixed
+    agent: analyst
+    instructions: "You have been given a text file, an image, and a PDF. Summarize what each one contains."
+    dependsOn:
+      - analyze-text
+      - analyze-image
+      - analyze-pdf
+    contextFiles:
+      - "fixtures/context.txt"
+      - "fixtures/sample.png"
+      - "fixtures/sample.pdf"

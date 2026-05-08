@@ -1,0 +1,16 @@
+description: "forEach loop must not have maxIterations -- array length determines count"
+input: |
+  name: foreach-max-conflict
+  agents:
+    worker:
+      description: "Processes items"
+  steps:
+    - id: process
+      agent: worker
+      instructions: "Process this item"
+      loop:
+        forEach: ["alpha", "beta", "gamma"]
+        maxIterations: 10
+expected:
+  valid: false
+  error: foreach_with_max_iterations

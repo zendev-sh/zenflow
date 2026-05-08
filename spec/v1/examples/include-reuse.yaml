@@ -1,0 +1,48 @@
+# Include Reuse -- Workflow composition with includes registry.
+# The deploy sub-workflow is reused for both staging and production.
+
+name: include-reuse
+version: 1
+description: Build, then deploy to staging and production using a reusable deploy workflow.
+
+includes:
+  deploy: "workflows/deploy.yaml"
+
+agents:
+  architect:
+    description: "System architect who designs the deployment strategy."
+    model: "claude-opus-4-6"
+  builder:
+    description: "Build engineer who compiles and packages the application."
+    model: "claude-sonnet-4-6"
+    tools:
+      - bash
+
+steps:
+  - id: design
+    agent: architect
+    instructions: "Design the deployment strategy for the new release."
+
+  - id: build
+    agent: builder
+    instructions: "Build and package the application. Run all tests."
+    dependsOn:
+      - design
+    timeout: "20m"
+
+  - id: deploy-staging
+    include: deploy
+    dependsOn:
+      - build
+    timeout: "30m"
+    retries: 1
+
+  - id: deploy-production
+    include: deploy
+    dependsOn:
+      - deploy-staging
+    timeout: "45m"
+    retries: 2
+
+options:
+  onStepFailure: abort

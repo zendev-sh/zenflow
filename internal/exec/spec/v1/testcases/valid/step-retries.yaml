@@ -1,0 +1,16 @@
+description: "Step with retries field for fault tolerance"
+input: |
+  name: resilient-pipeline
+  agents:
+    deployer:
+      description: "Deploys services to cloud infrastructure"
+  steps:
+    - id: deploy
+      agent: deployer
+      instructions: "Deploy the application to production"
+      retries: 3
+      timeout: "10m"
+expected:
+  valid: true
+  step_count: 1
+  topo_order: [deploy]

@@ -1,0 +1,31 @@
+# syntax=docker/dockerfile:1.7
+#
+# Dockerfile.dist - slim runtime-only image consumed by GoReleaser.
+#
+# GoReleaser's `dockers:` step compiles the Go binary first (via the
+# `builds:` block), then runs `docker build` with a temp build context
+# containing only the resulting binary + this Dockerfile. The
+# multi-stage `Dockerfile` in this repo is for source-build use cases
+# (`docker build . -t zenflow:dev`) and would fail here because the
+# build context does not include go.mod / sources.
+#
+# Run a workflow:
+#   docker pull ghcr.io/zendev-sh/zenflow:latest
+#   docker run --rm -e GEMINI_API_KEY -v "$PWD":/wd -w /wd \
+#     ghcr.io/zendev-sh/zenflow:latest flow workflow.yaml
+
+FROM gcr.io/distroless/static-debian12:nonroot
+
+LABEL org.opencontainers.image.title="zenflow"
+LABEL org.opencontainers.image.description="Declarative multi-agent workflows with first-class messaging."
+LABEL org.opencontainers.image.source="https://github.com/zendev-sh/zenflow"
+LABEL org.opencontainers.image.url="https://zenflow.sh"
+LABEL org.opencontainers.image.licenses="Apache-2.0"
+
+COPY zenflow /usr/local/bin/zenflow
+
+# /wd is the conventional mount point for a workflow directory. Image
+# runs as the distroless `nonroot` user (uid 65532).
+WORKDIR /wd
+
+ENTRYPOINT ["/usr/local/bin/zenflow"]

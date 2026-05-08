@@ -1,0 +1,41 @@
+description: "Loop with untilAgent -- LLM judge decides when to stop"
+input: |
+  name: debate-workflow
+  agents:
+    pro:
+      description: "Argues in favor of the proposal"
+    con:
+      description: "Argues against the proposal"
+    judge:
+      description: "Evaluates debate quality and decides if consensus reached"
+      temperature: 0.2
+      resultSchema:
+        type: object
+        properties:
+          done:
+            type: boolean
+          reason:
+            type: string
+        required:
+          - done
+  steps:
+    - id: debate
+      loop:
+        maxIterations: 5
+        untilAgent: judge
+        steps:
+          - id: argue-pro
+            agent: pro
+            instructions: "Present your argument for the proposal"
+          - id: argue-con
+            agent: con
+            instructions: "Present your counterargument"
+            dependsOn: [argue-pro]
+          - id: evaluate
+            agent: judge
+            instructions: "Evaluate arguments and decide if consensus is reached"
+            dependsOn: [argue-con]
+expected:
+  valid: true
+  step_count: 1
+  topo_order: [debate]

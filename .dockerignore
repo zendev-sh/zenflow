@@ -1,0 +1,57 @@
+# .dockerignore - keep the build context tight (< 5 MB).
+#
+# Anything not needed by `go build ./cmd/zenflow/` is excluded so
+# the BuildKit context upload stays fast on cold cache.
+
+# VitePress docs site
+docs/
+package.json
+package-lock.json
+node_modules/
+
+# OSS docs surface
+README.md
+CONTRIBUTING.md
+AGENTS.md
+CLAUDE.md
+LICENSE
+
+# Demo + cast + GIF
+demos/
+
+# Embedding examples (//go:build example tag, not part of CLI build)
+examples/
+
+# Test fixtures
+spec/v1/testcases/
+**/*_test.go
+**/testdata/
+
+# Editor / VCS / CI artefacts
+.git/
+.github/
+.vscode/
+.idea/
+.DS_Store
+.env
+.envrc
+*.swp
+
+# Hooks + scripts not used by docker build
+hooks/
+homebrew/
+scripts/
+
+# Built artefacts that may sit in the source tree
+zenflow
+zenflow.exe
+*.test
+coverage.out
+*.log
+
+# Asciinema source
+*.cast
+*.gif
+
+# CI workflow files (not needed by docker build)
+.goreleaser.yaml

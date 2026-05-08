@@ -1,0 +1,23 @@
+description: "Boundary values for temperature (2.0) and topP (0.0 and 1.0) are accepted"
+input: |
+  name: boundary-sampling
+  agents:
+    a:
+      description: "high temperature, max topP"
+      temperature: 2.0
+      topP: 1.0
+    b:
+      description: "min topP"
+      temperature: 0.0
+      topP: 0.0
+  steps:
+    - id: hot
+      agent: a
+      instructions: "noisy generation"
+    - id: cold
+      agent: b
+      instructions: "deterministic generation"
+expected:
+  valid: true
+  step_count: 2
+  topo_order: [hot, cold]

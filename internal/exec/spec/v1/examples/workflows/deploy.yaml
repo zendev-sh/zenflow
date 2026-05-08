@@ -1,0 +1,16 @@
+name: deploy-sub-workflow
+description: Reusable deployment sub-workflow
+
+agents:
+  deploy-agent:
+    description: "Deployment agent that runs deployment commands."
+
+steps:
+  - id: run-deploy
+    agent: deploy-agent
+    instructions: "Run the deployment. Respond with: deployment complete."
+  - id: verify-deploy
+    agent: deploy-agent
+    instructions: "Verify the deployment succeeded. Respond with: verification passed."
+    dependsOn:
+      - run-deploy

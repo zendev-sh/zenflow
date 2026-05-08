@@ -1,0 +1,10 @@
+description: "Step depends on a step ID that does not exist"
+input: |
+  name: bad-dep-ref
+  steps:
+    - id: deploy
+      instructions: "Deploy to production"
+      dependsOn: [test]
+expected:
+  valid: false
+  error: missing_dep

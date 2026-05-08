@@ -1,0 +1,17 @@
+description: "forEach loop with a static array literal"
+input: |
+  name: multi-repo-review
+  agents:
+    reviewer:
+      description: "Reviews a repository for code quality"
+  steps:
+    - id: review-repos
+      agent: reviewer
+      instructions: "Review this repository for security issues"
+      loop:
+        forEach: ["alpha", "beta", "gamma"]
+        maxConcurrency: 3
+expected:
+  valid: true
+  step_count: 1
+  topo_order: [review-repos]

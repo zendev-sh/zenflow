@@ -1,0 +1,18 @@
+description: "Step with contextFiles for injecting file contents into agent context"
+input: |
+  name: context-aware-review
+  agents:
+    reviewer:
+      description: "Reviews code against project standards"
+  steps:
+    - id: review
+      agent: reviewer
+      instructions: "Review the PR against our coding standards"
+      contextFiles:
+        - "docs/coding-standards.md"
+        - "docs/api-guidelines.md"
+        - ".golangci.yml"
+expected:
+  valid: true
+  step_count: 1
+  topo_order: [review]

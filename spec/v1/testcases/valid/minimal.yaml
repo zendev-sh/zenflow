@@ -1,0 +1,10 @@
+description: "Minimal valid workflow -- single step, no agents"
+input: |
+  name: hello-world
+  steps:
+    - id: greet
+      instructions: "Say hello"
+expected:
+  valid: true
+  step_count: 1
+  topo_order: [greet]

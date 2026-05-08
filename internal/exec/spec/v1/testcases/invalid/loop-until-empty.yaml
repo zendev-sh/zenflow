@@ -1,0 +1,16 @@
+description: "Loop until must not be empty string (minLength: 1)"
+input: |
+  name: empty-until
+  agents:
+    worker:
+      description: "Does work"
+  steps:
+    - id: poll
+      agent: worker
+      instructions: "Poll for status"
+      loop:
+        maxIterations: 5
+        until: ""
+expected:
+  valid: false
+  error: validation

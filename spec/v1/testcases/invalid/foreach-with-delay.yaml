@@ -1,0 +1,16 @@
+description: "forEach and delay are mutually exclusive -- delay is for repeat-until only"
+input: |
+  name: foreach-delay-conflict
+  agents:
+    worker:
+      description: "Processes items"
+  steps:
+    - id: process
+      agent: worker
+      instructions: "Process this item"
+      loop:
+        forEach: ["alpha", "beta", "gamma"]
+        delay: "5s"
+expected:
+  valid: false
+  error: foreach_with_delay

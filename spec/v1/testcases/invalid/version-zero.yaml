@@ -1,0 +1,10 @@
+description: "Workflow version must be >= 1; 0 is rejected by schema minimum"
+input: |
+  name: version-zero
+  version: 0
+  steps:
+    - id: greet
+      instructions: "say hi"
+expected:
+  valid: false
+  error: validation

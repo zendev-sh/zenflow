@@ -1,0 +1,25 @@
+description: "untilAgent agent resultSchema must have done in required array"
+input: |
+  name: untilagent-done-not-required
+  agents:
+    checker:
+      description: "Checks completion"
+      resultSchema:
+        type: object
+        properties:
+          done:
+            type: boolean
+          status:
+            type: string
+        required:
+          - status
+  steps:
+    - id: refine
+      agent: checker
+      instructions: "Refine implementation"
+      loop:
+        maxIterations: 5
+        untilAgent: checker
+expected:
+  valid: false
+  error: validation
