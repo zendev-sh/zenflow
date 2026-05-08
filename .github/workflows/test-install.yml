@@ -221,6 +221,15 @@ jobs:
                 and content "zenflow tool-execution OK on $RUNNER_OS".
           '@ | Set-Content -Path C:\zf-tool\flow.yaml -Encoding utf8
 
+      - name: rate-limit cool-down
+        # Gemini free-tier is 5 requests/minute. With max-parallel:1
+        # the matrix is serial, but back-to-back jobs still land
+        # inside the same 60s window when each row finishes in
+        # under a minute. Sleep 70s before each zenflow flow so the
+        # rolling-window quota has fully reset by the time we hit it.
+        run: sleep 70
+        shell: bash
+
       - name: zenflow flow (Unix)
         if: runner.os != 'Windows'
         env:
