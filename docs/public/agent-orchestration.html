@@ -939,6 +939,17 @@ body::after {
   }
 })();
 </script>
+<!-- Google Analytics 4. Mirrors the VitePress-injected tag on the
+     rest of the site. This page is a static asset under docs/public/
+     so VitePress doesn't auto-inject; the script lives inline.
+     Measurement ID is the same as the rest of the site. -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-KJP3V6GDWH"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-KJP3V6GDWH');
+</script>
 </head>
 <body>
 <div class="page">
