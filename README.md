@@ -12,7 +12,7 @@
   <a href="https://codecov.io/gh/zendev-sh/zenflow"><img src="https://codecov.io/gh/zendev-sh/zenflow/branch/main/graph/badge.svg" alt="Codecov"></a>
   <a href="https://github.com/zendev-sh/zenflow/releases/latest"><img src="https://img.shields.io/github/v/release/zendev-sh/zenflow" alt="Release"></a>
   <a href="https://pkg.go.dev/github.com/zendev-sh/zenflow"><img src="https://pkg.go.dev/badge/github.com/zendev-sh/zenflow.svg" alt="Go Reference"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/github/license/zendev-sh/zenflow" alt="License"></a>
+  <a href="https://github.com/zendev-sh/zenflow/blob/main/LICENSE"><img src="https://img.shields.io/github/license/zendev-sh/zenflow" alt="License"></a>
 </p>
 
 <p align="center">

@@ -2,6 +2,15 @@ version: 2
 
 project_name: zenflow
 
+# Ignore the observability/otel submodule tags when computing PreviousTag
+# for the changelog footer. Without this, GoReleaser sees the
+# `observability/otel/v0.1.1` tag pushed minutes before `v0.1.1` and
+# emits "Full Changelog: observability/otel/v0.1.1...v0.1.1", which is
+# nonsensical to the reader.
+git:
+  ignore_tags:
+    - 'observability/otel/v*'
+
 before:
   hooks:
     - go mod tidy
