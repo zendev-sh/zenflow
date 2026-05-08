@@ -5,7 +5,7 @@ go 1.25.0
 require (
 	github.com/google/cel-go v0.27.0
 	github.com/zendev-sh/goai v0.7.5
-	github.com/zendev-sh/zenflow/observability/otel v0.0.0
+	github.com/zendev-sh/zenflow/observability/otel v0.1.0
 	go.uber.org/goleak v1.3.0
 	golang.org/x/text v0.35.0
 	gopkg.in/yaml.v3 v3.0.1
@@ -41,4 +41,3 @@ require (
 	google.golang.org/protobuf v1.36.11 // indirect
 )
 
-replace github.com/zendev-sh/zenflow/observability/otel => ./observability/otel

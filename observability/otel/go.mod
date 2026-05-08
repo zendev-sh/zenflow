@@ -5,7 +5,7 @@ go 1.25.0
 require (
 	github.com/zendev-sh/goai v0.7.5
 	github.com/zendev-sh/goai/observability/otel v0.7.5
-	github.com/zendev-sh/zenflow v0.5.0
+	github.com/zendev-sh/zenflow v0.1.0
 	go.opentelemetry.io/otel v1.43.0
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.43.0
 	go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.43.0
@@ -38,4 +38,3 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace github.com/zendev-sh/zenflow => ../..
