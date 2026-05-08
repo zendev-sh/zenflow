@@ -140,19 +140,57 @@ jobs:
   # invocation, file IO via read/write, glob/grep path resolution.
   # Skipped automatically if GEMINI_API_KEY isn't set on the repo
   # (forks etc).
-  tool-execution-windows:
-    name: zenflow flow on windows-latest (real LLM)
-    runs-on: windows-latest
+  tool-execution:
+    name: zenflow flow on ${{ matrix.os }} (real LLM)
+    runs-on: ${{ matrix.os }}
     if: ${{ github.repository == 'zendev-sh/zenflow' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
     steps:
-      - name: install zenflow
+      - name: install zenflow (Unix)
+        if: runner.os != 'Windows'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: curl -fsSL https://zenflow.sh/install.sh | GITHUB_TOKEN="$GITHUB_TOKEN" sh
+
+      - name: install zenflow (Windows)
+        if: runner.os == 'Windows'
         shell: pwsh
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           iwr -useb https://zenflow.sh/install.ps1 | iex
 
-      - name: write tool-exercising workflow
+      - name: write tool-exercising workflow (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          mkdir -p /tmp/zf-tool
+          cat > /tmp/zf-tool/flow.yaml <<'EOF'
+          version: 1
+          name: smoke-tool
+          agents:
+            scribe:
+              description: writes one short fact to disk
+              model: google/gemini-3-flash-preview
+              prompt: |
+                You are a careful scribe. Use the write tool to create
+                a file `note.txt` containing the literal string
+                "zenflow tool-execution OK on $RUNNER_OS", then stop.
+                Do not write anything else.
+              tools:
+                - write
+          steps:
+            - id: write_note
+              agent: scribe
+              instructions: |
+                Use the write tool exactly once with path "note.txt"
+                and content "zenflow tool-execution OK on $RUNNER_OS".
+          EOF
+
+      - name: write tool-exercising workflow (Windows)
+        if: runner.os == 'Windows'
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path C:\zf-tool | Out-Null
@@ -166,8 +204,8 @@ jobs:
               prompt: |
                 You are a careful scribe. Use the write tool to create
                 a file `note.txt` containing the literal string
-                "zenflow tool-execution OK on windows-latest", then
-                stop. Do not write anything else.
+                "zenflow tool-execution OK on $RUNNER_OS", then stop.
+                Do not write anything else.
               tools:
                 - write
           steps:
@@ -175,10 +213,30 @@ jobs:
               agent: scribe
               instructions: |
                 Use the write tool exactly once with path "note.txt"
-                and content "zenflow tool-execution OK on windows-latest".
+                and content "zenflow tool-execution OK on $RUNNER_OS".
           '@ | Set-Content -Path C:\zf-tool\flow.yaml -Encoding utf8
 
-      - name: zenflow flow (writes note.txt via the write tool)
+      - name: zenflow flow (Unix)
+        if: runner.os != 'Windows'
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          export PATH="$HOME/.local/bin:$PATH"
+          cd /tmp/zf-tool
+          zenflow flow flow.yaml --workdir /tmp/zf-tool --yolo --model google/gemini-3-flash-preview
+          if [ ! -f /tmp/zf-tool/note.txt ]; then
+            echo "note.txt was not created by the write tool" >&2
+            exit 1
+          fi
+          content=$(cat /tmp/zf-tool/note.txt)
+          echo "note.txt content: $content"
+          if ! grep -q 'zenflow tool-execution OK' /tmp/zf-tool/note.txt; then
+            echo "note.txt content unexpected: $content" >&2
+            exit 1
+          fi
+
+      - name: zenflow flow (Windows)
+        if: runner.os == 'Windows'
         shell: pwsh
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
