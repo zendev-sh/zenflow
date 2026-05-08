@@ -160,4 +160,17 @@ homebrew_casks:
     directory: Casks
     homepage: https://zenflow.sh
     description: Declarative multi-agent workflows with first-class messaging
-    caveats: 'Licensed under Apache-2.0. https://github.com/zendev-sh/zenflow/blob/main/LICENSE'
+    # Strip the macOS quarantine xattr after install so Gatekeeper does
+    # not block first-run on unsigned binaries. zenflow is not yet
+    # Apple-notarised; without this hook every macOS install hits the
+    # "Apple could not verify zenflow is free of malware" prompt.
+    hooks:
+      post:
+        install: |
+          system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/zenflow"]
+    caveats: |
+      Licensed under Apache-2.0. https://github.com/zendev-sh/zenflow/blob/main/LICENSE
+      zenflow is not yet Apple-notarised. The post-install hook strips
+      the macOS quarantine attribute so Gatekeeper does not block
+      first-run; if you reinstall manually, run:
+        xattr -dr com.apple.quarantine $(brew --prefix)/bin/zenflow

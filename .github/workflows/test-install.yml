@@ -1,0 +1,122 @@
+name: Test install scripts
+
+# Manual-trigger smoke for the one-command install paths advertised in
+# README § Install. Each runner installs zenflow via the OS-appropriate
+# script and then exercises the no-LLM CLI surface (--version, validate,
+# plan) against a tiny embedded workflow. This is enough to catch the
+# common Windows-incompatibility classes (path separators, OS-aware
+# fixtures, file extensions in flag values) without needing an LLM API
+# key.
+#
+# Real tool-execution (`zenflow flow` against an LLM provider, exercising
+# bash / read / write / glob / grep tools end-to-end) is a separate
+# follow-up that requires provider credentials in repo secrets.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  install-sh:
+    name: install.sh on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - name: curl | sh
+        run: curl -fsSL https://zenflow.sh/install.sh | sh
+
+      - name: write sample workflow
+        run: |
+          mkdir -p /tmp/zenflow-smoke
+          cat > /tmp/zenflow-smoke/sample.yaml <<'EOF'
+          version: 1
+          name: smoke-flow
+          agents:
+            writer:
+              model: google/gemini-3-flash-preview
+              prompt: write something
+          steps:
+            - id: first
+              agent: writer
+              instructions: produce a one-line summary
+            - id: second
+              agent: writer
+              depends_on: [first]
+              instructions: extend the summary
+          EOF
+
+      - name: zenflow --version
+        run: |
+          export PATH="$HOME/.local/bin:$PATH"
+          zenflow --version
+          zenflow --version | grep -q '^zenflow 0\.' || { echo "unexpected version output"; exit 1; }
+
+      - name: zenflow validate
+        run: |
+          export PATH="$HOME/.local/bin:$PATH"
+          zenflow validate /tmp/zenflow-smoke/sample.yaml
+
+      - name: zenflow plan
+        run: |
+          export PATH="$HOME/.local/bin:$PATH"
+          zenflow plan /tmp/zenflow-smoke/sample.yaml
+
+  install-ps1:
+    name: install.ps1 on windows-latest
+    runs-on: windows-latest
+    steps:
+      - name: iwr | iex
+        shell: pwsh
+        run: |
+          iwr -useb https://zenflow.sh/install.ps1 | iex
+
+      - name: write sample workflow
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path C:\zenflow-smoke | Out-Null
+          @'
+          version: 1
+          name: smoke-flow
+          agents:
+            writer:
+              model: google/gemini-3-flash-preview
+              prompt: write something
+          steps:
+            - id: first
+              agent: writer
+              instructions: produce a one-line summary
+            - id: second
+              agent: writer
+              depends_on: [first]
+              instructions: extend the summary
+          '@ | Set-Content -Path C:\zenflow-smoke\sample.yaml -Encoding utf8
+
+      - name: zenflow --version
+        shell: pwsh
+        run: |
+          $InstallDir = Join-Path $env:LOCALAPPDATA 'Programs\zenflow'
+          $env:Path = "$InstallDir;$env:Path"
+          zenflow --version
+          if (-not ((zenflow --version) -match '^zenflow 0\.')) {
+            Write-Error "unexpected version output"
+            exit 1
+          }
+
+      - name: zenflow validate
+        shell: pwsh
+        run: |
+          $InstallDir = Join-Path $env:LOCALAPPDATA 'Programs\zenflow'
+          $env:Path = "$InstallDir;$env:Path"
+          zenflow validate C:\zenflow-smoke\sample.yaml
+
+      - name: zenflow plan
+        shell: pwsh
+        run: |
+          $InstallDir = Join-Path $env:LOCALAPPDATA 'Programs\zenflow'
+          $env:Path = "$InstallDir;$env:Path"
+          zenflow plan C:\zenflow-smoke\sample.yaml
