@@ -45,7 +45,7 @@ jobs:
           agents:
             writer:
               description: writer agent
-              model: google/gemini-3-flash-preview
+              model: google/gemini-2.0-flash-lite-001
               prompt: write something
           steps:
             - id: first
@@ -98,7 +98,7 @@ jobs:
           agents:
             writer:
               description: writer agent
-              model: google/gemini-3-flash-preview
+              model: google/gemini-2.0-flash-lite-001
               prompt: write something
           steps:
             - id: first
@@ -146,11 +146,6 @@ jobs:
     if: ${{ github.repository == 'zendev-sh/zenflow' }}
     strategy:
       fail-fast: false
-      # Serialise the matrix so 3 OSes do not hit the Gemini free-tier
-      # 5-requests-per-minute quota in parallel. Each row needs about
-      # 2 generate calls (agent + coord finalize), so back-to-back is
-      # well within budget.
-      max-parallel: 1
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
     steps:
@@ -178,7 +173,7 @@ jobs:
           agents:
             scribe:
               description: writes one short fact to disk
-              model: google/gemini-3-flash-preview
+              model: google/gemini-2.0-flash-lite-001
               prompt: |
                 You are a careful scribe. Use the write tool to create
                 a file `note.txt` containing the literal string
@@ -205,7 +200,7 @@ jobs:
           agents:
             scribe:
               description: writes one short fact to disk
-              model: google/gemini-3-flash-preview
+              model: google/gemini-2.0-flash-lite-001
               prompt: |
                 You are a careful scribe. Use the write tool to create
                 a file `note.txt` containing the literal string
@@ -221,15 +216,6 @@ jobs:
                 and content "zenflow tool-execution OK on $RUNNER_OS".
           '@ | Set-Content -Path C:\zf-tool\flow.yaml -Encoding utf8
 
-      - name: rate-limit cool-down
-        # Gemini free-tier is 5 requests/minute. With max-parallel:1
-        # the matrix is serial, but back-to-back jobs still land
-        # inside the same 60s window when each row finishes in
-        # under a minute. Sleep 70s before each zenflow flow so the
-        # rolling-window quota has fully reset by the time we hit it.
-        run: sleep 70
-        shell: bash
-
       - name: zenflow flow (Unix)
         if: runner.os != 'Windows'
         env:
@@ -242,7 +228,7 @@ jobs:
           export PATH="$HOME/.local/bin:$PATH"
           cd /tmp/zf-tool
           set +e
-          zenflow flow flow.yaml --workdir /tmp/zf-tool --yolo --model google/gemini-3-flash-preview
+          zenflow flow flow.yaml --workdir /tmp/zf-tool --yolo --model google/gemini-2.0-flash-lite-001
           set -e
           if [ ! -f /tmp/zf-tool/note.txt ]; then
             echo "note.txt was not created by the write tool" >&2
@@ -267,7 +253,7 @@ jobs:
           $env:Path = "$InstallDir;$env:Path"
           Set-Location C:\zf-tool
           $ErrorActionPreference = 'Continue'
-          zenflow flow flow.yaml --workdir C:\zf-tool --yolo --model google/gemini-3-flash-preview
+          zenflow flow flow.yaml --workdir C:\zf-tool --yolo --model google/gemini-2.0-flash-lite-001
           $ErrorActionPreference = 'Stop'
           if (-not (Test-Path C:\zf-tool\note.txt)) {
             Write-Error "note.txt was not created by the write tool"
