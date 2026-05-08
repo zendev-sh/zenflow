@@ -4,7 +4,7 @@
 
 <h1 align="center">zenflow</h1>
 
-<p align="center"><em>Multi-agent orchestration & workflow engine.</em></p>
+<p align="center"><em><a href="https://zenflow.sh/agent-orchestration.html">Multi-agent orchestration & workflow engine.</a></em></p>
 
 <p align="center">Declarative YAML agent workflows. An LLM coordinator routes events through hub-and-spoke mailboxes with race-safe delivery and zero-data-loss recovery. One YAML file, one Go binary. Runs on any provider <a href="https://goai.sh">goai</a> supports.</p>
 
@@ -18,6 +18,7 @@
 <p align="center">
   <a href="https://zenflow.sh">Website</a> &middot;
   <a href="https://zenflow.sh/getting-started/quick-start">Docs</a> &middot;
+  <a href="https://zenflow.sh/agent-orchestration.html">Blueprint</a> &middot;
   <a href="https://zenflow.sh/architecture">Architecture</a> &middot;
   <a href="https://zenflow.sh/yaml/">YAML Reference</a> &middot;
   <a href="https://zenflow.sh/examples">Examples</a>
