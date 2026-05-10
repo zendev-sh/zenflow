@@ -5,6 +5,7 @@
 // step count so it stays well under typical wall-clock and token
 // budgets when run repeatedly.
 // Run from the zenflow/ directory:
+//
 //	export GEMINI_API_KEY=...
 //	go run -tags example ./examples/debate-soak/
 package main

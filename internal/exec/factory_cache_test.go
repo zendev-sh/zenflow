@@ -35,8 +35,8 @@ func TestOrchestrator_Close_CancelsGoroutines(t *testing.T) {
 		}
 	})
 	t.Cleanup(func() {
- // Ensure the runner closure exits even if the test returns
- // before it did.
+		// Ensure the runner closure exits even if the test returns
+		// before it did.
 		select {
 		case <-release:
 		default:

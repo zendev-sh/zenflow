@@ -5,10 +5,14 @@ package router
 // (e.g. coord_tools' forward_to_agent appending a list of valid step
 // IDs only on DropReasonUnknownStep) should use errors.As to extract
 // the *DropError instead of substring-matching on err.Error.
+//
 //	var de *zenflow.DropError
 //	if errors.As(err, &de) && de.Reason == zenflow.DropReasonUnknownStep {
+//
 // // ...
+//
 //	}
+//
 // Error returns the canonical "dropped: <reason>" string so existing
 // consumers that pass err.Error through verbatim continue to work.
 // Stable.

@@ -111,12 +111,12 @@ func (e *Executor) drainBeforeWorkflowEnd(ctx context.Context, runID string) {
 	select {
 	case <-done:
 	case <-drainTimer.C:
- // The outer defer reports leaks via EventMessage; don't
- // duplicate here. Continue so we still emit WorkflowEnd.
+	// The outer defer reports leaks via EventMessage; don't
+	// duplicate here. Continue so we still emit WorkflowEnd.
 	case <-ctx.Done():
- // - on cancel, don't sit on the 5s grace timer.
- // The outer cleanup will still observe orphan resume
- // goroutines via the shutdown wait.
+		// - on cancel, don't sit on the 5s grace timer.
+		// The outer cleanup will still observe orphan resume
+		// goroutines via the shutdown wait.
 	}
 
 	// (2) Final coordinator inbox drain. - delegate to

@@ -65,34 +65,46 @@ type Output struct {
 // documented types changed within the v0.x line. Consumers may rely on
 // Event{Type: ...} literals continuing to compile.
 // Per-EventType field population (fields not listed carry the zero value):
+//
 //	EventWorkflowStart : Type, RunID, Timestamp, Message (workflow name),
+//
 // Data["total"]=int (step count).
 // Context (FlowContext string, may be empty) is set
 // only on the coordinator-inbox push; the public
 // ProgressSink emission does not set Context.
+//
 //	EventWorkflowEnd : Type, RunID, Timestamp, Duration, Tokens.
 //	EventStepStart : Type, RunID, StepID, Timestamp, AgentName,
+//
 // Data["index"]=int, Data["total"]=int.
 // Loop steps additionally set Data["loop_type"]=string
 // ("repeat", "repeat-until", "forEach") and
 // Data["items"]=int for forEach steps.
 // Include steps additionally set Data["include"]=string.
+//
 //	EventStepEnd : Type, RunID, StepID, Timestamp, AgentName,
+//
 // Duration, Tokens. Error is zero on success.
 // Also emitted by the loop and forEach container
 // steps on successful completion.
+//
 //	EventStepSkipped : Type, RunID, StepID, Timestamp.
 //	EventError : Type, RunID, StepID, Timestamp, Error.
+//
 // Duration is set when a step execution duration
 // is available (i.e. when a step fails mid-run).
 // Storage errors set RunID+StepID; step errors also
 // set Duration.
+//
 //	EventAgentTurn : Type, RunID, StepID, Timestamp, AgentName,
+//
 // Data["phase"]="request"|"response",
 // Data["model"]=string.
 // "request" phase: Data["turn"]=int (message count).
 // "response" phase: Tokens.
+//
 //	EventToolCall : Type, RunID, StepID, Timestamp, AgentName,
+//
 // Data["phase"]="start"|"end",
 // Data["tool_name"]=string,
 // Data["tool_call_id"]=string,
@@ -103,56 +115,88 @@ type Output struct {
 // Subagent callers additionally set
 // Data["depth"]=int and Data["parentCallID"]=string
 // when SpawnDepth > 0.
+//
 //	EventMessage : Type, RunID, Timestamp, Message.
+//
 // StepID is set when the message is step-scoped
 // (e.g. CEL condition skip, forEach cap warning).
 // Data is set for some sub-cases (e.g.
 // Data["reason"], Data["messageCount"] for resume
 // truncation events).
+//
 //	EventPlanReady : Type, RunID, Message (workflow name),
+//
 // Data["workflow"]=*Workflow.
 // Timestamp may be zero (emitted before executor).
+//
 //	EventCoordinatorNarration : Type, RunID, StepID, Timestamp, AgentName,
+//
 // Message (narration text).
+//
 //	EventCoordinatorMessage : Type, RunID, Timestamp, MessageKind, Message,
+//
 // Subject (advisory tag).
+//
 //	EventCoordinatorSynthesis : Type, RunID, Timestamp, Message.
 //	EventCoordinatorInboxMessage : Type, RunID, Timestamp, Message (content),
+//
 // MessageKind (default MessageKindContent),
 // Data["from"]=string (originating step ID),
 // Data["type"]=string (RouterMessageType).
+//
 //	EventMessageSent : Type, RunID, StepID (sender), Timestamp,
+//
 // Message (text, may be truncated by sinks),
 // Data["to"]=string, Data["text"]=string,
 // Data["msg_type"]=int (RouterMessageType).
+//
 //	EventMessageDropped : Type, RunID, StepID (target), Timestamp,
+//
 // Message ("[from -> to]: content"),
 // Data["reason"]=string, Data["from"]=string,
 // Data["to"]=string, Data["msg_type"]=int.
+//
 //	EventAgentInboxDrain : Type, RunID, StepID, Timestamp,
+//
 // Message ("[from]: content"),
 // Data["from"]=string, Data["msg_type"]=int.
+//
 //	EventAgentIdle : Type, RunID, StepID, Timestamp,
+//
 // Data["unread_count"]=int (always 0).
+//
 //	EventAgentWake : Type, RunID, StepID, Timestamp,
+//
 // Data["message_count"]=int, Data["cycle"]=int.
+//
 //	EventMaxWakeCyclesWarning : Type, RunID, StepID, Timestamp,
+//
 // Data["current_cycle"]=int,
 // Data["max_cycles"]=int,
 // Data["unread_remaining"]=int.
+//
 //	EventResumeStarted : Type, RunID, StepID, Timestamp,
+//
 // Data["resumeID"]=string, Data["from"]=string.
+//
 //	EventResumeCompleted : Type, RunID, StepID, Timestamp, Duration,
+//
 // Data["resumeID"]=string, Data["from"]=string,
 // Data["durationMs"]=int64.
+//
 //	EventResumeFailed : Type, RunID, StepID, Timestamp,
+//
 // Data["resumeID"]=string, Data["from"]=string,
 // Data["reason"]=string, Data["durationMs"]=int64.
 // Some paths additionally set Data["error"]=string.
+//
 //	EventResumeQueued : Type, RunID, StepID, Timestamp,
+//
 // Data["resumeID"]=string, Data["from"]=string,
 // Data["activeResumeID"]=string.
+//
 //	EventTranscriptSealed : Type, RunID, StepID, Timestamp,
+//
 // Data["reason"]=string
 // ("transcript-too-large" or "store-error"),
 // Data["error"]=string.

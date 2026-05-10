@@ -1,7 +1,9 @@
 // Package otel provides OpenTelemetry tracing for zenflow workflows.
 // It bridges goai's per-LLM-call tracing with zenflow's Orchestrator-level lifecycle,
 // creating a hierarchical span structure:
+//
 //	RunFlow:
+//
 // zenflow.flow
 // ├── zenflow.step (step A)
 // │ └── chat ... ← goai otel
@@ -10,22 +12,30 @@
 // │ └── chat ...
 // ├── zenflow.coordinator {phase=on_step_event} ← after step B
 // └── zenflow.coordinator {phase=synthesize} ← after all steps
+//
 //	RunGoal:
+//
 // zenflow.goal {zenflow.run_id, zenflow.goal.text} ← Orchestrator
 // └── zenflow.flow {zenflow.run_id, zenflow.workflow.name} ← Orchestrator (via RunFlow)
 // ├── zenflow.step ...
 // ├── zenflow.coordinator {phase=on_step_event} ...
 // └── zenflow.coordinator {phase=synthesize}
+//
 //	RunAgent:
+//
 // zenflow.agent {zenflow.run_id, zenflow.agent.prompt} ← Orchestrator
 // └── chat ... ← goai otel
 // Usage:
+//
 //	import (// zenotel "github.com/zendev-sh/zenflow/observability/otel"
-//)
+//
+// )
+//
 //	orch := zenflow.New(// zenflow.WithModel(model),
+//
 // zenflow.WithGoAIOptions(zenotel.GoAIOption),
 // zenotel.WithTracing,
-//)
+// )
 package otel
 
 import (
@@ -113,6 +123,7 @@ func WithTracing(opts ...TracingOption) zenflow.Option {
 
 // GoAIOption returns a goai.Option that enables OTel tracing for
 // individual LLM calls and tool executions. Pass this to WithGoAIOptions:
+//
 //	zenflow.WithGoAIOptions(zenotel.GoAIOption)
 func GoAIOption(opts ...TracingOption) goai.Option {
 	cfg := config{}

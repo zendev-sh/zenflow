@@ -80,7 +80,7 @@ func (t *ChanWakeTarget) SignalWake() {
 	select {
 	case t.ch <- struct{}{}:
 	default:
- // Already has a pending wake - coalesce.
+		// Already has a pending wake - coalesce.
 	}
 }
 
@@ -324,8 +324,8 @@ func (e *DeliveryEngine) pollOne(stepID string) {
 	}
 	kind, _ := state.Observe()
 	if kind != goai.StepIdle {
- // Agent is busy (StepLLMInFlight / StepToolExecuting / etc.)
- // - do not interrupt. Wake fires only between iterations.
+		// Agent is busy (StepLLMInFlight / StepToolExecuting / etc.)
+		// - do not interrupt. Wake fires only between iterations.
 		return
 	}
 	if len(e.mailbox.Unread(stepID)) == 0 {
@@ -333,10 +333,10 @@ func (e *DeliveryEngine) pollOne(stepID string) {
 	}
 	target := e.registry.WakeTarget(stepID)
 	if target == nil {
- // Step was unregistered between ActiveSteps and now (its
- // runStep deferred Unregister fired). Nothing to wake; the
- // engine will simply skip on subsequent ticks once the step
- // also drops from ActiveSteps.
+		// Step was unregistered between ActiveSteps and now (its
+		// runStep deferred Unregister fired). Nothing to wake; the
+		// engine will simply skip on subsequent ticks once the step
+		// also drops from ActiveSteps.
 		return
 	}
 	target.SignalWake()

@@ -53,7 +53,7 @@ func (e *Executor) runStep(ctx context.Context, runID, stepID string, step Step,
 			return &StepResult{ID: bareStepID, Status: spec.StepFailed, Error: fmt.Errorf("isolation setup: %w", setupErr)}
 		}
 		defer func() {
- // Cleanup must run even if the step fails or panics.
+			// Cleanup must run even if the step fails or panics.
 			if cleanupErr := e.Isolation.Cleanup(ctx, runID, stepID); cleanupErr != nil {
 				if e.Progress != nil {
 					e.Progress.OnEvent(ctx, Event{
@@ -114,21 +114,21 @@ func (e *Executor) runStep(ctx context.Context, runID, stepID string, step Step,
 			if sr == nil || sr.Status != spec.StepCompleted {
 				continue
 			}
- // follow-up: PreserveContent opts the dep out of
- // the OutputTransform too. Without this, CLI's default
- // TokenBudgetTransformer (8KB MaxBytesPerDep - even stricter
- // than the 16KB maxDepContentBytes cap already
- // bypassed) truncates cumulative loop content BEFORE
- // writeDepSection sees it. The user's debate-until.yaml
- // repro showed `[truncated for context limit]` in verdict
- // even after because the CLI install adds the
- // transformer at cmd/zenflow/main.go:555 unconditionally.
+			// follow-up: PreserveContent opts the dep out of
+			// the OutputTransform too. Without this, CLI's default
+			// TokenBudgetTransformer (8KB MaxBytesPerDep - even stricter
+			// than the 16KB maxDepContentBytes cap already
+			// bypassed) truncates cumulative loop content BEFORE
+			// writeDepSection sees it. The user's debate-until.yaml
+			// repro showed `[truncated for context limit]` in verdict
+			// even after because the CLI install adds the
+			// transformer at cmd/zenflow/main.go:555 unconditionally.
 			if sr.PreserveContent {
 				continue
 			}
 			newContent, newResult := e.OutputTransform.TransformStepOutput(depID, sr.Content, sr.Result, model)
 			if newContent != sr.Content || newResult != nil {
- // Create a shallow copy to avoid mutating the shared StepResult.
+				// Create a shallow copy to avoid mutating the shared StepResult.
 				transformed := *sr
 				transformed.Content = newContent
 				if newResult != nil {
@@ -166,9 +166,9 @@ func (e *Executor) runStep(ctx context.Context, runID, stepID string, step Step,
 	// emit "target-terminal" drops.
 	if e.Router != nil {
 		e.Router.RegisterInbox(stepID)
- // NOTE: Router.Close is deferred BELOW (after waitForStepTermination)
- // so that - in LIFO order - it fires BEFORE the wait. See the
- // "B1 fix: defer order" comment near waitForStepTermination.
+		// NOTE: Router.Close is deferred BELOW (after waitForStepTermination)
+		// so that - in LIFO order - it fires BEFORE the wait. See the
+		// "B1 fix: defer order" comment near waitForStepTermination.
 	}
 
 	// Auto-inject shared memory tools when SharedMem is configured.
@@ -176,7 +176,7 @@ func (e *Executor) runStep(ctx context.Context, runID, stepID string, step Step,
 	if e.SharedMem != nil {
 		agentName := cmp.Or(step.Agent, stepID)
 		smTools := NewSharedMemoryTools(e.SharedMem, agentName)
- // Auto-inject: always include shared memory tools unless explicitly disallowed.
+		// Auto-inject: always include shared memory tools unless explicitly disallowed.
 		filteredSM := FilterTools(smTools, nil, agent.DisallowedTools)
 		tools = append(tools, filteredSM...)
 	}
@@ -206,27 +206,27 @@ func (e *Executor) runStep(ctx context.Context, runID, stepID string, step Step,
 		if e.Router == nil || e.mailbox == nil {
 			return
 		}
- // Use a short polling interval so production termination is
- // fast for typical workflows; tests inject their own clock via
- // the function-direct path. The supplied tick uses time.Tick
- // (auto-stop on GC) so we don't need to manage ticker
- // lifetime here. F8 - apply HoldTimeout (or default 30s) to
- // cap the wait; on hold-timeout, drain remaining mailbox
- // messages and emit DropReasonHoldTimeout per message so the
- // "zero silent drops" contract holds even when the workflow
- // is hung waiting for senders that never close.
+		// Use a short polling interval so production termination is
+		// fast for typical workflows; tests inject their own clock via
+		// the function-direct path. The supplied tick uses time.Tick
+		// (auto-stop on GC) so we don't need to manage ticker
+		// lifetime here. F8 - apply HoldTimeout (or default 30s) to
+		// cap the wait; on hold-timeout, drain remaining mailbox
+		// messages and emit DropReasonHoldTimeout per message so the
+		// "zero silent drops" contract holds even when the workflow
+		// is hung waiting for senders that never close.
 		hold := e.HoldTimeout
 		if hold <= 0 {
 			hold = defaultHoldTimeout
 		}
- // Use NewTicker + defer Stop so the underlying timer goroutine is
- // reclaimed when this step's wait returns. Plain time.Tick (the
- // previous form) returns the channel but never stops the timer
- // - once-per-step leak that accumulates across long workflows.
- // The tickFunc closure ignores its argument because the ticker
- // is already constructed at the requested cadence. Wrapped in
- // an IIFE so the deferred Stop runs even if the wait panics
- // (the panic-clean exit was the latent leak missed).
+		// Use NewTicker + defer Stop so the underlying timer goroutine is
+		// reclaimed when this step's wait returns. Plain time.Tick (the
+		// previous form) returns the channel but never stops the timer
+		// - once-per-step leak that accumulates across long workflows.
+		// The tickFunc closure ignores its argument because the ticker
+		// is already constructed at the requested cadence. Wrapped in
+		// an IIFE so the deferred Stop runs even if the wait panics
+		// (the panic-clean exit was the latent leak missed).
 		err := func() error {
 			stepTicker := time.NewTicker(50 * time.Millisecond)
 			defer stepTicker.Stop()
@@ -307,11 +307,11 @@ func (e *Executor) runStep(ctx context.Context, runID, stepID string, step Step,
 	// to false to retain the conservative NxN behavior.
 	if e.Router != nil {
 		if e.SenderMatrixDAGAware {
- // Single coordinator slot for this step.
+			// Single coordinator slot for this step.
 			e.Router.OpenSender(stepID)
 			defer e.Router.CloseSender(stepID)
 		} else {
- // Pre-F7 conservative path - one slot per sibling.
+			// Pre-F7 conservative path - one slot per sibling.
 			for _, other := range e.Workflow.Steps {
 				if other.ID == stepID {
 					continue
@@ -344,32 +344,32 @@ func (e *Executor) runStep(ctx context.Context, runID, stepID string, step Step,
 		wake:          stepWake,
 		maxWakeCycles: e.MaxWakeCycles,
 		spawner:       e.Runner.spawner,
- // propagate the workflow Router into the per-step
- // AgentRunner so the Run loop's auto-inject hook (lines
- // 287-310 in agent_runner.go) can register the
- // `send_message` tool. Without this assignment the executor's
- // per-step runner has Router == nil and step LLMs never see
- // send_message - defeating the deliverable. Safe to assign
- // regardless of coordinator presence: when no coord runner was
- // installed via WithCoordinator, e.Router is nil and the
- // per-step runner's auto-inject hook short-circuits, matching
- // the "no coord = no send_message" invariant tested in
- // TestRunAgent_SendMessageToolInjected/router_nil_no_inject.
+		// propagate the workflow Router into the per-step
+		// AgentRunner so the Run loop's auto-inject hook (lines
+		// 287-310 in agent_runner.go) can register the
+		// `send_message` tool. Without this assignment the executor's
+		// per-step runner has Router == nil and step LLMs never see
+		// send_message - defeating the deliverable. Safe to assign
+		// regardless of coordinator presence: when no coord runner was
+		// installed via WithCoordinator, e.Router is nil and the
+		// per-step runner's auto-inject hook short-circuits, matching
+		// the "no coord = no send_message" invariant tested in
+		// TestRunAgent_SendMessageToolInjected/router_nil_no_inject.
 		router: e.Router,
- // transcript persistence. Only set when the
- // Run created a store (i.e. the mailbox+delivery stack is
- // active); non-mailbox Runs skip resume entirely.
+		// transcript persistence. Only set when the
+		// Run created a store (i.e. the mailbox+delivery stack is
+		// active); non-mailbox Runs skip resume entirely.
 		transcript: e.transcriptStore,
 		modelID:    model,
- // : agent.Prompt is the agent identity (role), so it
- // lives in the system slot. prompt.go::AssemblePrompt no
- // longer prefixes "## Agent Role" into the user message - 
- // the system prompt + the per-step user instructions are
- // the canonical shape every LLM provider expects.
- // Verified end-to-end across the CLAUDE.md mandatory provider
- // matrix (gemini-3-pro-preview, bedrock anthropic.claude-sonnet-4-6,
- // bedrock minimax.minimax-m2.5, azure DeepSeek-V3.2, azure
- // claude-sonnet-4-6, azure gpt-5, azure gpt-5.3-codex).
+		// : agent.Prompt is the agent identity (role), so it
+		// lives in the system slot. prompt.go::AssemblePrompt no
+		// longer prefixes "## Agent Role" into the user message -
+		// the system prompt + the per-step user instructions are
+		// the canonical shape every LLM provider expects.
+		// Verified end-to-end across the CLAUDE.md mandatory provider
+		// matrix (gemini-3-pro-preview, bedrock anthropic.claude-sonnet-4-6,
+		// bedrock minimax.minimax-m2.5, azure DeepSeek-V3.2, azure
+		// claude-sonnet-4-6, azure gpt-5, azure gpt-5.3-codex).
 		systemPrompt: agent.Prompt,
 	}
 
@@ -461,15 +461,15 @@ func (e *Executor) runStep(ctx context.Context, runID, stepID string, step Step,
 		if e.Progress != nil {
 			e.Progress.OnEvent(ctx, stepErrEv)
 		}
- // (Fix 11): the bare-lifecycle pushCoordEvent for
- // EventError was REMOVED here. Investigation found accidental
- // dual-push: the per-step post-`done` pushStepEventToCoord call
- // (at the Run-loop callsite) emits the same StepID + status with
- // richer counters (completed/failed/pending). Two coord-mailbox
- // messages per failed step were redundant noise; the post-done
- // push is the canonical one. StepStart still uses pushCoordEvent
- // (no equivalent post-done callsite exists for start events).
- // Invariant: TestExecutor_ExactlyOneStepEndPerStep.
+		// (Fix 11): the bare-lifecycle pushCoordEvent for
+		// EventError was REMOVED here. Investigation found accidental
+		// dual-push: the per-step post-`done` pushStepEventToCoord call
+		// (at the Run-loop callsite) emits the same StepID + status with
+		// richer counters (completed/failed/pending). Two coord-mailbox
+		// messages per failed step were redundant noise; the post-done
+		// push is the canonical one. StepStart still uses pushCoordEvent
+		// (no equivalent post-done callsite exists for start events).
+		// Invariant: TestExecutor_ExactlyOneStepEndPerStep.
 		return sr
 	}
 

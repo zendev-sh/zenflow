@@ -147,6 +147,7 @@ func isStrippableControl(r rune) bool {
 // SanitizeUnicode because unicode.IsSpace reports ZWSP/ZWNBSP as space,
 // yet they are invisible to humans and can smuggle prompt-injection
 // payloads past operator review.
+//
 //	U+200B ZERO WIDTH SPACE
 //	U+200C ZERO WIDTH NON-JOINER
 //	U+200D ZERO WIDTH JOINER
@@ -165,6 +166,7 @@ func isZeroWidth(r rune) bool {
 // is Co (Private Use), which is considered graphic; but the glyphs
 // themselves carry no assigned meaning and are a common channel for
 // smuggling invisible / homoglyph payloads into LLM prompts.
+//
 //	U+E000..U+F8FF BMP PUA
 //	U+F0000..U+FFFFD Supplementary Private Use Area-A
 //	U+100000..U+10FFFD Supplementary Private Use Area-B
@@ -201,23 +203,23 @@ func SanitizeUnicode(s string) (string, error) {
 		if isStrippableControl(r) {
 			continue
 		}
- // Strip zero-width formatting characters (Unicode bidi/format
- // chars commonly used to smuggle hidden content into prompts).
- // They are invisible to humans but survive the IsPrint/IsSpace
- // gate (ZWSP etc. report IsSpace=true), so a workflow author
- // can sneak one into an agent prompt to alter LLM behaviour
- // without any visible cue in a code review.
+		// Strip zero-width formatting characters (Unicode bidi/format
+		// chars commonly used to smuggle hidden content into prompts).
+		// They are invisible to humans but survive the IsPrint/IsSpace
+		// gate (ZWSP etc. report IsSpace=true), so a workflow author
+		// can sneak one into an agent prompt to alter LLM behaviour
+		// without any visible cue in a code review.
 		if isZeroWidth(r) {
 			continue
 		}
- // Strip Private Use Area code points. IsPrint is true for Co,
- // but the glyphs carry no assigned meaning and are a known
- // vector for prompt-injection smuggling in LLM context.
+		// Strip Private Use Area code points. IsPrint is true for Co,
+		// but the glyphs carry no assigned meaning and are a known
+		// vector for prompt-injection smuggling in LLM context.
 		if isPrivateUse(r) {
 			continue
 		}
 		if !unicode.IsPrint(r) && !unicode.IsSpace(r) {
- // Other non-printable (e.g. format chars U+2060). Drop.
+			// Other non-printable (e.g. format chars U+2060). Drop.
 			continue
 		}
 		b.WriteRune(r)
@@ -263,7 +265,7 @@ func DetectMixedScript(s string) bool {
 		case r >= 0x4E00 && r <= 0x9FFF: // CJK Unified Ideographs
 			seen |= han
 		}
- // popcount ≥ 2 ⇒ mixed.
+		// popcount ≥ 2 ⇒ mixed.
 		if seen != 0 && seen&(seen-1) != 0 {
 			return true
 		}

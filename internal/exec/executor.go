@@ -41,11 +41,11 @@ const (
 // It handles DAG scheduling, concurrency limiting, step timeouts, retries,
 // and failure strategies (cascade, skip-dependents, abort).
 type Executor struct {
-	Runner         *AgentRunner
-	Storage        Storage
-	Progress       ProgressSink
-	Workflow       *Workflow
-	DefaultModel   string
+	Runner       *AgentRunner
+	Storage      Storage
+	Progress     ProgressSink
+	Workflow     *Workflow
+	DefaultModel string
 	// ForceModel, when non-empty, overrides Step.Model and AgentConfig.Model
 	// during effective-model resolution. Set by Orchestrator from the
 	// WithForceModel option; nested executors propagate the same value via
@@ -321,10 +321,10 @@ func (e *Executor) Run(ctx context.Context) (*WorkflowResult, error) {
 	runCtx, cancelRun := context.WithCancel(ctx)
 	ctx = runCtx
 	defer func() {
- // G3 (R3): force-cancel resume goroutines BEFORE waiting so
- // they exit via ctx.Done rather than relying on the parent
- // ctx propagating. cancelRun is idempotent - safe to call
- // even if the parent ctx already cancelled.
+		// G3 (R3): force-cancel resume goroutines BEFORE waiting so
+		// they exit via ctx.Done rather than relying on the parent
+		// ctx propagating. cancelRun is idempotent - safe to call
+		// even if the parent ctx already cancelled.
 		cancelRun()
 		done := make(chan struct{})
 		go func() {
@@ -336,11 +336,11 @@ func (e *Executor) Run(ctx context.Context) (*WorkflowResult, error) {
 		select {
 		case <-done:
 		case <-shutdownTimer.C:
- // Safety net: a goroutine ignored ctx entirely (e.g. a
- // provider driver with no ctx plumbing). Report the leak
- // count so operators can trace the offender. The active
- // counter is decremented in runResume's defer so
- // whatever remains here is the wedged cohort.
+			// Safety net: a goroutine ignored ctx entirely (e.g. a
+			// provider driver with no ctx plumbing). Report the leak
+			// count so operators can trace the offender. The active
+			// counter is decremented in runResume's defer so
+			// whatever remains here is the wedged cohort.
 			leaked := e.resumeActiveCount.Load()
 			if e.Progress != nil {
 				e.Progress.OnEvent(context.Background(), Event{
@@ -451,7 +451,7 @@ func (e *Executor) Run(ctx context.Context) (*WorkflowResult, error) {
 			results[stepID] = sr
 			addUsage(&totalTokens, sr.Tokens)
 
- // Decrement in-degree for dependents of completed steps.
+			// Decrement in-degree for dependents of completed steps.
 			for _, dep := range dependents[stepID] {
 				inDegree[dep]--
 			}
@@ -463,7 +463,7 @@ func (e *Executor) Run(ctx context.Context) (*WorkflowResult, error) {
 		run := &Run{ID: runID, Workflow: e.Workflow, Status: spec.StatusRunning, Steps: make(map[string]*StepResult, len(order))}
 		if sErr := e.Storage.SaveRun(ctx, run); sErr != nil {
 			slog.Warn("initial SaveRun failed (continuing without persistence)", "err", sErr, "run_id", run.ID)
- // continue - Storage is observability, not correctness; final SaveRun will retry
+			// continue - Storage is observability, not correctness; final SaveRun will retry
 		}
 	}
 
@@ -479,20 +479,20 @@ func (e *Executor) Run(ctx context.Context) (*WorkflowResult, error) {
 	mailboxEnabled := e.MailboxDeliveryEnabled == nil || *e.MailboxDeliveryEnabled
 	if e.Coordinator != nil && mailboxEnabled {
 		{
- // - the orchestrator pre-allocates Router in New
- // and passes it via the Executor.Router field (zenflow.go
- // runFlowWithID). When that path supplies a Router we reuse
- // it so the coord runner's pre-wired Router pointer matches
- // the one the executor actually uses. Standalone Executor
- // usage (no Orchestrator) still gets a fresh Router via the
- // nil-check fallback below.
+			// - the orchestrator pre-allocates Router in New
+			// and passes it via the Executor.Router field (zenflow.go
+			// runFlowWithID). When that path supplies a Router we reuse
+			// it so the coord runner's pre-wired Router pointer matches
+			// the one the executor actually uses. Standalone Executor
+			// usage (no Orchestrator) still gets a fresh Router via the
+			// nil-check fallback below.
 			if e.Router == nil {
 				e.Router = NewMessageRouter()
 			}
- // F3 - WithMailboxStore lets consumers swap the default
- // in-memory store. WithMaxMailboxSize wraps the default
- // store with a bounded variant that emits "mailbox-full"
- // drops on overflow.
+			// F3 - WithMailboxStore lets consumers swap the default
+			// in-memory store. WithMaxMailboxSize wraps the default
+			// store with a bounded variant that emits "mailbox-full"
+			// drops on overflow.
 			switch {
 			case e.MailboxStoreFactory != nil:
 				mailbox = e.MailboxStoreFactory()
@@ -503,53 +503,53 @@ func (e *Executor) Run(ctx context.Context) (*WorkflowResult, error) {
 			}
 			e.Router.SetMailbox(mailbox)
 
- // G7 : pre-register every workflow step ID so that
- // any future sibling-direct Send path can auto-open a sender
- // slot just-in-time instead of silently dropping with
- // DropReasonUnknownStep. Truly unknown step IDs (typo,
- // removed step) continue to drop.
- // also mark loop / include containers as wrapper
- // steps so coord's forward_to_agent rejects messages
- // targeting them (wrappers have no agent - silent misroute
- // otherwise). Detection: step has Loop or Include defined.
+			// G7 : pre-register every workflow step ID so that
+			// any future sibling-direct Send path can auto-open a sender
+			// slot just-in-time instead of silently dropping with
+			// DropReasonUnknownStep. Truly unknown step IDs (typo,
+			// removed step) continue to drop.
+			// also mark loop / include containers as wrapper
+			// steps so coord's forward_to_agent rejects messages
+			// targeting them (wrappers have no agent - silent misroute
+			// otherwise). Detection: step has Loop or Include defined.
 			for _, s := range e.Workflow.Steps {
 				e.Router.RegisterStep(s.ID)
 				if s.Loop != nil || s.Include != "" {
 					e.Router.RegisterWrapperStep(s.ID)
 				}
 			}
- // Register external-sender inboxes (non-step identities such
- // as "coordinator") so reverse messages from
- // resumed steps land in the mailbox instead of dropping as
- // DropReasonUnknownStep. See WithExternalInbox.
- // auto-registration: when a coordinator
- // runner is installed, implicitly add the coord step ID
- // to the effective inbox set. Without this, CLI runs that
- // never call WithExternalInbox see the reverse RouterMessage
- // from a resumed step drop with DropReasonUnknownStep. We
- // compute effective inboxes locally and do NOT mutate
- // e.ExternalInboxes.
+			// Register external-sender inboxes (non-step identities such
+			// as "coordinator") so reverse messages from
+			// resumed steps land in the mailbox instead of dropping as
+			// DropReasonUnknownStep. See WithExternalInbox.
+			// auto-registration: when a coordinator
+			// runner is installed, implicitly add the coord step ID
+			// to the effective inbox set. Without this, CLI runs that
+			// never call WithExternalInbox see the reverse RouterMessage
+			// from a resumed step drop with DropReasonUnknownStep. We
+			// compute effective inboxes locally and do NOT mutate
+			// e.ExternalInboxes.
 			effectiveInboxes := make([]string, len(e.ExternalInboxes), len(e.ExternalInboxes)+2)
 			copy(effectiveInboxes, e.ExternalInboxes)
 			coordID := coordStepID(e.Coordinator)
- // - dual-inbox registration. Two distinct
- // string keys both default to "coordinator" but serve
- // different roles (see WithCoordinator docstring):
- // 1. coordStepID(runner) - caller-owned coord runner
- // Mailbox key (lifecycle-event push destination).
- // 2. CoordRouterInboxID - workflow Router's coord inbox
- // key (resumed-step reverse-reply destination).
- // Both must be RegisterStep/RegisterInbox'd. When the
- // caller passes a custom StepID (e.g. "primary"), the two
- // IDs differ and 's "register coordID only" logic
- // silently drops reverse replies addressed to
- // CoordRouterInboxID with DropReasonUnknownStep. Always
- // register both; the de-dup loop below collapses repeats
- // for the default case where they coincide.
- // - replace O(n*m) nested-scan dedup with
- // a single-pass map. Bounded at small N today (extras=2,
- // effectiveInboxes typically <5), but the map form keeps
- // growth linear if either side ever expands.
+			// - dual-inbox registration. Two distinct
+			// string keys both default to "coordinator" but serve
+			// different roles (see WithCoordinator docstring):
+			// 1. coordStepID(runner) - caller-owned coord runner
+			// Mailbox key (lifecycle-event push destination).
+			// 2. CoordRouterInboxID - workflow Router's coord inbox
+			// key (resumed-step reverse-reply destination).
+			// Both must be RegisterStep/RegisterInbox'd. When the
+			// caller passes a custom StepID (e.g. "primary"), the two
+			// IDs differ and 's "register coordID only" logic
+			// silently drops reverse replies addressed to
+			// CoordRouterInboxID with DropReasonUnknownStep. Always
+			// register both; the de-dup loop below collapses repeats
+			// for the default case where they coincide.
+			// - replace O(n*m) nested-scan dedup with
+			// a single-pass map. Bounded at small N today (extras=2,
+			// effectiveInboxes typically <5), but the map form keeps
+			// growth linear if either side ever expands.
 			seen := make(map[string]struct{}, len(effectiveInboxes)+2)
 			for _, id := range effectiveInboxes {
 				seen[id] = struct{}{}
@@ -568,22 +568,22 @@ func (e *Executor) Run(ctx context.Context) (*WorkflowResult, error) {
 				e.Router.RegisterStep(id)
 				e.Router.RegisterInbox(id)
 			}
- // - wiring moved to Orchestrator.New
- // (zenflow.go) so the coord runner's Router/Progress are
- // set synchronously before the consumer's coord goroutine
- // can read them. Doing the
- // wiring here in Run was racy: cmdFlow's startCoordRunner
- // spawns the goroutine BEFORE RunFlow is called, so the
- // goroutine's first iteration could read runner.Router /
- // runner.Progress concurrently with the assignment below.
- // Confirmed by `go test -race -count=2 -run
- // TestCmdFlow_ModelOverride` reproducing the race.
- // Standalone-Executor usage (no Orchestrator wrapper) that
- // installs a Coordinator directly via the struct literal
- // is responsible for pre-wiring Coordinator.Router and
- // Coordinator.Progress before calling Run. The fallback
- // path below covers callers that pre-wire - the executor
- // honors caller-supplied values without overwriting.
+			// - wiring moved to Orchestrator.New
+			// (zenflow.go) so the coord runner's Router/Progress are
+			// set synchronously before the consumer's coord goroutine
+			// can read them. Doing the
+			// wiring here in Run was racy: cmdFlow's startCoordRunner
+			// spawns the goroutine BEFORE RunFlow is called, so the
+			// goroutine's first iteration could read runner.Router /
+			// runner.Progress concurrently with the assignment below.
+			// Confirmed by `go test -race -count=2 -run
+			// TestCmdFlow_ModelOverride` reproducing the race.
+			// Standalone-Executor usage (no Orchestrator wrapper) that
+			// installs a Coordinator directly via the struct literal
+			// is responsible for pre-wiring Coordinator.Router and
+			// Coordinator.Progress before calling Run. The fallback
+			// path below covers callers that pre-wire - the executor
+			// honors caller-supplied values without overwriting.
 			if e.Coordinator.router == nil {
 				e.Coordinator.router = e.Router
 			}
@@ -591,15 +591,15 @@ func (e *Executor) Run(ctx context.Context) (*WorkflowResult, error) {
 				e.Coordinator.progress = e.Progress
 			}
 
- // F6 wrap the user-supplied progress sink in the
- // non-blocking pump so emit calls from critical paths
- // (router stepLock, poller invariant-check) never block on
- // a slow downstream sink.
+			// F6 wrap the user-supplied progress sink in the
+			// non-blocking pump so emit calls from critical paths
+			// (router stepLock, poller invariant-check) never block on
+			// a slow downstream sink.
 			progressSink := wrapProgressNonBlocking(e.Progress, e.ProgressBufferSize)
 			if progressSink != nil {
- // Replace e.Progress so the rest of the run goes through
- // the pump as well (events/output emitted from runStep,
- // pushStepEventToCoord, etc.). Restore via defer at Stop.
+				// Replace e.Progress so the rest of the run goes through
+				// the pump as well (events/output emitted from runStep,
+				// pushStepEventToCoord, etc.). Restore via defer at Stop.
 				origProgress := e.Progress
 				e.Progress = progressSink
 				defer func() {
@@ -608,11 +608,11 @@ func (e *Executor) Run(ctx context.Context) (*WorkflowResult, error) {
 				}()
 			}
 
- // Wire router-side drops into EventMessageDropped so the
- // "zero silent drops" contract holds for target-terminal,
- // unknown-step, and mailbox-closed-by-finalize paths
- // F3 also fans out to the user-supplied
- // DropCallback when configured.
+			// Wire router-side drops into EventMessageDropped so the
+			// "zero silent drops" contract holds for target-terminal,
+			// unknown-step, and mailbox-closed-by-finalize paths
+			// F3 also fans out to the user-supplied
+			// DropCallback when configured.
 			runIDForDrop := runID
 			userDrop := newDropFanout(e.DropCallback, e.DropCallbackBufferSize)
 			defer userDrop.Stop()
@@ -639,10 +639,10 @@ func (e *Executor) Run(ctx context.Context) (*WorkflowResult, error) {
 			e.mailbox = mailbox
 			e.wakeRegistry = wakeRegistry
 
- // Allocate the transcript store for this Run. Custom factory
- // > default InMemoryTranscriptStore with configured caps.
- // The store's lifetime is the Run; it is NOT reused across
- // Runs (GC on Run exit).
+			// Allocate the transcript store for this Run. Custom factory
+			// > default InMemoryTranscriptStore with configured caps.
+			// The store's lifetime is the Run; it is NOT reused across
+			// Runs (GC on Run exit).
 			switch {
 			case e.TranscriptStoreFactory != nil:
 				e.transcriptStore = e.TranscriptStoreFactory()
@@ -651,27 +651,27 @@ func (e *Executor) Run(ctx context.Context) (*WorkflowResult, error) {
 					e.MaxTranscriptMessages, e.MaxTranscriptBytes,
 				)
 			}
- // register the Executor as the Router's
- // resume hook. Must happen AFTER transcriptStore is
- // allocated so CanResume reports true.
+			// register the Executor as the Router's
+			// resume hook. Must happen AFTER transcriptStore is
+			// allocated so CanResume reports true.
 			e.Router.SetResumer(e)
- // H3: wire the run-lifetime ctx provider so Router.Send passes
- // the correct cancellation scope to ResumeStep. The closure
- // captures the local runCtx (derived above - a child of the
- // caller's ctx with its own cancel) so Run cancellation
- // propagates into every resume goroutine.
+			// H3: wire the run-lifetime ctx provider so Router.Send passes
+			// the correct cancellation scope to ResumeStep. The closure
+			// captures the local runCtx (derived above - a child of the
+			// caller's ctx with its own cancel) so Run cancellation
+			// propagates into every resume goroutine.
 			e.Router.SetRunCtxProvider(func() context.Context { return runCtx })
 
- // register coord runner's Wake under BOTH coord
- // keys (coordID + CoordRouterInboxID; differ when caller
- // uses a custom StepID like "primary"). Then install the
- // Router.afterSend hook so every successful Append fires
- // SignalWake on the matching registered target. This closes
- // the gap where send_message → Router.Send → mailbox.Append
- // landed in coord's mailbox but coord never woke until the
- // next lifecycle event (often after the sender step had
- // already exited, surfacing the message as a (resumed)
- // reverse-drain at end-of-workflow).
+			// register coord runner's Wake under BOTH coord
+			// keys (coordID + CoordRouterInboxID; differ when caller
+			// uses a custom StepID like "primary"). Then install the
+			// Router.afterSend hook so every successful Append fires
+			// SignalWake on the matching registered target. This closes
+			// the gap where send_message → Router.Send → mailbox.Append
+			// landed in coord's mailbox but coord never woke until the
+			// next lifecycle event (often after the sender step had
+			// already exited, surfacing the message as a (resumed)
+			// reverse-drain at end-of-workflow).
 			if e.Coordinator != nil && e.Coordinator.wake != nil {
 				coordWakeTarget := router.NewChanWakeTarget(e.Coordinator.wake)
 				wakeRegistry.Register(coordStepID(e.Coordinator), coordWakeTarget)
@@ -679,32 +679,32 @@ func (e *Executor) Run(ctx context.Context) (*WorkflowResult, error) {
 					wakeRegistry.Register(CoordRouterInboxID, coordWakeTarget)
 				}
 			}
- // bridge Router messages addressed to coord into
- // coord.Mailbox so coord's drain loop sees them in real
- // time. Without the bridge, send_message → Router.Send
- // lands in Router-mailbox; coord runner reads from
- // coord.Mailbox (separate instance from
- // NewDefaultCoordRunner); coord wakes (above SignalWake)
- // but finds an empty mailbox and exits. Messages then sit
- // unread in Router-mailbox until end-of-step
- // drainCoordReverseReplies surfaces them as `(resumed)`.
- // Two mailboxes can't be unified because
- // drainCoordReverseReplies must drain Router-routed
- // messages (resume replies + send_message) at workflow
- // end, while lifecycle pushes via pushCoordEvent must NOT
- // be re-emitted as `(resumed)`. A bridge keeps the two
- // concerns separate while ensuring coord's loop sees
- // router-routed messages.
+			// bridge Router messages addressed to coord into
+			// coord.Mailbox so coord's drain loop sees them in real
+			// time. Without the bridge, send_message → Router.Send
+			// lands in Router-mailbox; coord runner reads from
+			// coord.Mailbox (separate instance from
+			// NewDefaultCoordRunner); coord wakes (above SignalWake)
+			// but finds an empty mailbox and exits. Messages then sit
+			// unread in Router-mailbox until end-of-step
+			// drainCoordReverseReplies surfaces them as `(resumed)`.
+			// Two mailboxes can't be unified because
+			// drainCoordReverseReplies must drain Router-routed
+			// messages (resume replies + send_message) at workflow
+			// end, while lifecycle pushes via pushCoordEvent must NOT
+			// be re-emitted as `(resumed)`. A bridge keeps the two
+			// concerns separate while ensuring coord's loop sees
+			// router-routed messages.
 			coordIDForBridge := coordStepID(e.Coordinator)
 			coordMailboxBridge := e.Coordinator.mailbox
 			routerMailboxBridge := mailbox
 			e.Router.SetAfterSend(func(stepID string, msg RouterMessage) {
- // Wrap the bridge body in recover so a panicking
- // caller-supplied Mailbox / ProgressSink cannot crash
- // Router.Send. Symmetrical with the workflow-start /
- // workflow-end coord-bridge recovers below; without it,
- // a defective bridge target would propagate up through
- // Router.Send into arbitrary sender goroutines.
+				// Wrap the bridge body in recover so a panicking
+				// caller-supplied Mailbox / ProgressSink cannot crash
+				// Router.Send. Symmetrical with the workflow-start /
+				// workflow-end coord-bridge recovers below; without it,
+				// a defective bridge target would propagate up through
+				// Router.Send into arbitrary sender goroutines.
 				defer func() {
 					if r := recover(); r != nil {
 						var bridgeErr error
@@ -732,31 +732,31 @@ func (e *Executor) Run(ctx context.Context) (*WorkflowResult, error) {
 				if stepID != CoordRouterInboxID && stepID != coordIDForBridge {
 					return
 				}
- // bridge as MOVE not COPY. Append to coord.Mailbox
- // (where coord runner's drain loop reads) AND MarkRead the
- // original in Router-mailbox. Without the MarkRead, the
- // per-step drainCoordReverseReplies sees
- // the same message still unread in Router-mailbox and
- // re-emits it as a duplicate `(resumed)` event AFTER the
- // sender step exited - matching the user's debate-until.yaml
- // observation where pro/con send_message surfaced as
- // `(resumed)` from coord even though the bridge had already
- // delivered it. msg.MessageID is populated by Router.Send
- // after mailbox.Append assigns the canonical ID.
+				// bridge as MOVE not COPY. Append to coord.Mailbox
+				// (where coord runner's drain loop reads) AND MarkRead the
+				// original in Router-mailbox. Without the MarkRead, the
+				// per-step drainCoordReverseReplies sees
+				// the same message still unread in Router-mailbox and
+				// re-emits it as a duplicate `(resumed)` event AFTER the
+				// sender step exited - matching the user's debate-until.yaml
+				// observation where pro/con send_message surfaced as
+				// `(resumed)` from coord even though the bridge had already
+				// delivered it. msg.MessageID is populated by Router.Send
+				// after mailbox.Append assigns the canonical ID.
 				if _, err := coordMailboxBridge.Append(coordIDForBridge, msg); err != nil {
 					slog.WarnContext(ctx, "mailbox append failed", "err", err, "site", "coord-bridge", "run_id", runID, "step_id", stepID, "msg_id", msg.MessageID)
 				}
- // Emit EventCoordinatorInboxMessage for observability - 
- // otherwise external observers (CLI sinks, JSON consumers,
- // E2E tests) lose visibility into bridged messages.
- // drainCoordReverseReplies emits the same event when it
- // drains from the Router mailbox; here in the bridge path
- // the MarkRead below removes the message before drain runs,
- // so emit it ourselves to keep the observability contract
- // invariant across both paths. Without this, resumed-step
- // reverse replies (and every send_message routed to
- // "coordinator") would silently bypass the JSON sink even
- // though they reach the coord runner correctly.
+				// Emit EventCoordinatorInboxMessage for observability -
+				// otherwise external observers (CLI sinks, JSON consumers,
+				// E2E tests) lose visibility into bridged messages.
+				// drainCoordReverseReplies emits the same event when it
+				// drains from the Router mailbox; here in the bridge path
+				// the MarkRead below removes the message before drain runs,
+				// so emit it ourselves to keep the observability contract
+				// invariant across both paths. Without this, resumed-step
+				// reverse replies (and every send_message routed to
+				// "coordinator") would silently bypass the JSON sink even
+				// though they reach the coord runner correctly.
 				if e.Progress != nil {
 					e.Progress.OnEvent(ctx, Event{
 						Type:        types.EventCoordinatorInboxMessage,
@@ -780,10 +780,10 @@ func (e *Executor) Run(ctx context.Context) (*WorkflowResult, error) {
 			if e.EngineClock != nil {
 				engineOpts = append(engineOpts, router.WithEngineClock(e.EngineClock))
 			}
- // Wire the router as the stepLock acquirer so the engine's
- // poll Observe+SignalWake sequence runs under stepLock.RLock,
- // eliminating the read-then-wake TOCTOU against the runner's
- // terminal-state defer (which takes stepLock.Lock).
+			// Wire the router as the stepLock acquirer so the engine's
+			// poll Observe+SignalWake sequence runs under stepLock.RLock,
+			// eliminating the read-then-wake TOCTOU against the runner's
+			// terminal-state defer (which takes stepLock.Lock).
 			if e.Router != nil {
 				engineOpts = append(engineOpts, router.WithStepLocker(e.Router))
 			}
@@ -844,13 +844,13 @@ func (e *Executor) Run(ctx context.Context) (*WorkflowResult, error) {
 				}
 			}
 		}()
- // suppress workflow-start push when this executor is
- // nested (running an inner-DAG mini-workflow for a loop /
- // forEach / include). The OUTER executor already pushed its
- // workflow-start; nested miniWF lifecycle events are internal
- // plumbing and would surface to coord LLM as confusing
- // "workflow started" events for synthetic names like
- // "debate-rounds-repeat-0".
+		// suppress workflow-start push when this executor is
+		// nested (running an inner-DAG mini-workflow for a loop /
+		// forEach / include). The OUTER executor already pushed its
+		// workflow-start; nested miniWF lifecycle events are internal
+		// plumbing and would surface to coord LLM as confusing
+		// "workflow started" events for synthetic names like
+		// "debate-rounds-repeat-0".
 		if e.namespacePrefix == "" {
 			e.pushCoordEvent(Event{
 				Type:      types.EventWorkflowStart,
@@ -888,7 +888,7 @@ func (e *Executor) Run(ctx context.Context) (*WorkflowResult, error) {
 		if abortCtx.Err() != nil {
 			return
 		}
- // : propagate skip/cancel for zero-inDegree steps.
+		// : propagate skip/cancel for zero-inDegree steps.
 		for {
 			progress := false
 			for _, s := range e.Workflow.Steps {
@@ -929,12 +929,12 @@ func (e *Executor) Run(ctx context.Context) (*WorkflowResult, error) {
 			}
 		}
 
- // -4 loop: collect ready steps, apply scheduler, evaluate conditions,
- // dispatch. Re-loop if any condition skips freed new dependents.
+		// -4 loop: collect ready steps, apply scheduler, evaluate conditions,
+		// dispatch. Re-loop if any condition skips freed new dependents.
 		for {
 			conditionSkipped := false
 
- // : collect ready steps (inDegree==0, not handled, not skipped/cascaded).
+			// : collect ready steps (inDegree==0, not handled, not skipped/cascaded).
 			readySteps := make([]Step, 0, len(e.Workflow.Steps))
 			for _, s := range e.Workflow.Steps {
 				if inDegree[s.ID] != 0 {
@@ -950,19 +950,19 @@ func (e *Executor) Run(ctx context.Context) (*WorkflowResult, error) {
 				break
 			}
 
- // : apply scheduler strategy to reorder ready steps.
+			// : apply scheduler strategy to reorder ready steps.
 			readySteps = e.scheduleOrder(readySteps, running)
 
- // : dispatch ready steps (with CEL condition evaluation).
+			// : dispatch ready steps (with CEL condition evaluation).
 			for _, s := range readySteps {
- // Evaluate CEL condition before dispatching.
+				// Evaluate CEL condition before dispatching.
 				if s.Condition != nil {
 					evalCtx := BuildEvalContext(results)
 					condResult, condErr := EvaluateCEL(*s.Condition, evalCtx)
 					if condErr != nil {
- // Distinguish runtime data errors (missing field, no such key) from
- // type/compile errors. Runtime data errors → skip (treat as false);
- // compile/type errors → fail (workflow author bug).
+						// Distinguish runtime data errors (missing field, no such key) from
+						// type/compile errors. Runtime data errors → skip (treat as false);
+						// compile/type errors → fail (workflow author bug).
 						errStr := condErr.Error()
 						isRuntimeDataErr := strings.Contains(errStr, "no such key") ||
 							strings.Contains(errStr, "no such attribute") ||
@@ -984,7 +984,7 @@ func (e *Executor) Run(ctx context.Context) (*WorkflowResult, error) {
 							conditionSkipped = true
 							continue
 						}
- // Treat other errors (type mismatch, compile) as step failure.
+						// Treat other errors (type mismatch, compile) as step failure.
 						results[s.ID] = &StepResult{
 							ID:     s.ID,
 							Status: spec.StepFailed,
@@ -1006,8 +1006,8 @@ func (e *Executor) Run(ctx context.Context) (*WorkflowResult, error) {
 						continue
 					}
 					if !condResult {
- // Condition is false - skip step. Dependents still run
- // (condition-skip does NOT cascade like failure-skip).
+						// Condition is false - skip step. Dependents still run
+						// (condition-skip does NOT cascade like failure-skip).
 						results[s.ID] = &StepResult{ID: s.ID, Status: spec.StepSkipped}
 						for _, dep := range dependents[s.ID] {
 							inDegree[dep]--
@@ -1025,28 +1025,28 @@ func (e *Executor) Run(ctx context.Context) (*WorkflowResult, error) {
 						continue
 					}
 				}
- // Mark as in-flight.
+				// Mark as in-flight.
 				results[s.ID] = nil
 				running[s.ID] = true
 				stepID := s.ID
- // Snapshot dependency results under the lock for prompt injection.
+				// Snapshot dependency results under the lock for prompt injection.
 				depResults := make(map[string]*StepResult, len(s.DependsOn))
 				for _, dep := range s.DependsOn {
 					if sr, ok := results[dep]; ok && sr != nil {
 						depResults[dep] = sr
 					}
 				}
- // G3: For inner steps with no dependsOn, inject parent dep results
- // from include step (spec §7 dependsOn rewriting).
+				// G3: For inner steps with no dependsOn, inject parent dep results
+				// from include step (spec §7 dependsOn rewriting).
 				if len(s.DependsOn) == 0 && len(e.ParentDepResults) > 0 {
 					for k, v := range e.ParentDepResults {
 						depResults[k] = v
 					}
 				}
 				wg.Go(func() {
- // Acquire semaphore with abort awareness. If abortCtx is
- // cancelled while waiting for a slot, mark step as cancelled
- // and return instead of blocking indefinitely.
+					// Acquire semaphore with abort awareness. If abortCtx is
+					// cancelled while waiting for a slot, mark step as cancelled
+					// and return instead of blocking indefinitely.
 					select {
 					case sem <- struct{}{}:
 					case <-abortCtx.Done():
@@ -1054,7 +1054,7 @@ func (e *Executor) Run(ctx context.Context) (*WorkflowResult, error) {
 						results[stepID] = &StepResult{ID: stepID, Status: spec.StepCancelled, Error: abortCtx.Err()}
 						delete(running, stepID)
 						mu.Unlock()
- // Non-blocking send: main loop may have exited after abort.
+						// Non-blocking send: main loop may have exited after abort.
 						select {
 						case done <- stepID:
 						default:
@@ -1065,8 +1065,8 @@ func (e *Executor) Run(ctx context.Context) (*WorkflowResult, error) {
 
 					step := stepMap[stepID]
 
- // Recover from panics in step execution (tool/progress/storage panics)
- // to prevent a single step from crashing the entire process.
+					// Recover from panics in step execution (tool/progress/storage panics)
+					// to prevent a single step from crashing the entire process.
 					var sr *StepResult
 					func() {
 						defer func() {
@@ -1084,9 +1084,9 @@ func (e *Executor) Run(ctx context.Context) (*WorkflowResult, error) {
 						case step.Include != "":
 							sr = e.runIncludeStep(abortCtx, runID, stepID, step, stepIndex[stepID], len(order), depResults)
 						case step.Loop != nil:
- // Retry loop for loop steps (spec: retries apply to entire loop block).
- // runStep handles its own retries internally, so only wrap runLoopStep.
- // Validation guarantees Retries >= 0, so maxAttempts >= 1.
+							// Retry loop for loop steps (spec: retries apply to entire loop block).
+							// runStep handles its own retries internally, so only wrap runLoopStep.
+							// Validation guarantees Retries >= 0, so maxAttempts >= 1.
 							maxAttempts := step.Retries + 1
 							for attempt := range maxAttempts {
 								sr = e.runLoopStep(abortCtx, runID, stepID, step, stepIndex[stepID], len(order), depResults)
@@ -1117,15 +1117,15 @@ func (e *Executor) Run(ctx context.Context) (*WorkflowResult, error) {
 						}
 					}
 
- // Decrement in-degree for dependents.
+					// Decrement in-degree for dependents.
 					for _, dep := range dependents[stepID] {
 						inDegree[dep]--
 					}
 
- // Snapshot results for coordinator (avoid data race - results is
- // written concurrently by other step goroutines under mu).
- // Used by pushStepEventToCoord to compute progress counters
- // embedded in the pushed RouterMessage Content.
+					// Snapshot results for coordinator (avoid data race - results is
+					// written concurrently by other step goroutines under mu).
+					// Used by pushStepEventToCoord to compute progress counters
+					// embedded in the pushed RouterMessage Content.
 					var resultsSnapshot map[string]*StepResult
 					if e.Coordinator != nil {
 						resultsSnapshot = make(map[string]*StepResult, len(results))
@@ -1135,7 +1135,7 @@ func (e *Executor) Run(ctx context.Context) (*WorkflowResult, error) {
 					}
 					mu.Unlock()
 
- // Persist step result.
+					// Persist step result.
 					if e.Storage != nil {
 						if sErr := e.Storage.SaveStepResult(ctx, runID, stepID, sr); sErr != nil {
 							storageErr := fmt.Errorf("run %q step %q: save step result: %w", runID, stepID, sErr)
@@ -1157,21 +1157,21 @@ func (e *Executor) Run(ctx context.Context) (*WorkflowResult, error) {
 						}
 					}
 
- // Signal step completion first so dependent steps can be
- // dispatched immediately without waiting for coordinator LLM call.
- // Non-blocking send: main loop may have exited after abort.
+					// Signal step completion first so dependent steps can be
+					// dispatched immediately without waiting for coordinator LLM call.
+					// Non-blocking send: main loop may have exited after abort.
 					select {
 					case done <- stepID:
 					default:
 					}
 
- // Coordinator OnStepEvent - runs after done signal so it
- // does not block DAG dispatch. Wrapped in recover to prevent
- // coordinator panics from crashing the step goroutine.
- // Delivery note: coordinator-targeted messages are routed
- // through the mailbox + poller stack. Wake signals re-enter
- // the running agent's tool loop so late arrivals are drained
- // before termination.
+					// Coordinator OnStepEvent - runs after done signal so it
+					// does not block DAG dispatch. Wrapped in recover to prevent
+					// coordinator panics from crashing the step goroutine.
+					// Delivery note: coordinator-targeted messages are routed
+					// through the mailbox + poller stack. Wake signals re-enter
+					// the running agent's tool loop so late arrivals are drained
+					// before termination.
 					func() {
 						defer func() {
 							if r := recover(); r != nil {
@@ -1195,12 +1195,12 @@ func (e *Executor) Run(ctx context.Context) (*WorkflowResult, error) {
 								}
 							}
 						}()
- // : split into two steps.
- // 1) push the rich step-end event into the coord
- // runner's Mailbox (was inline in notifyCoordinator).
- // 2) drain reverse-routed replies sitting in the
- // workflow Router's "coordinator" inbox (was the
- // tail of notifyCoordinator).
+						// : split into two steps.
+						// 1) push the rich step-end event into the coord
+						// runner's Mailbox (was inline in notifyCoordinator).
+						// 2) drain reverse-routed replies sitting in the
+						// workflow Router's "coordinator" inbox (was the
+						// tail of notifyCoordinator).
 						e.pushStepEventToCoord(ctx, runID, stepID, step.Agent, sr, resultsSnapshot)
 						e.drainCoordReverseReplies(ctx, runID)
 					}()
@@ -1281,12 +1281,12 @@ func (e *Executor) Run(ctx context.Context) (*WorkflowResult, error) {
 		select {
 		case <-abortCtx.Done():
 			activeAtAbort = e.ActiveSteps()
- // S4 (B2 fix): mark router cancelled BEFORE abortDrain so any
- // runStep defers that fire during the drain attribute pending
- // mailbox drops to DropReasonWorkflowCancelled (instead of the
- // generic DropReasonTargetTerminal). Otherwise the per-step
- // Router.Close inside runStep's defer chain wins the race and
- // emits "target-terminal" while the workflow is being torn down.
+			// S4 (B2 fix): mark router cancelled BEFORE abortDrain so any
+			// runStep defers that fire during the drain attribute pending
+			// mailbox drops to DropReasonWorkflowCancelled (instead of the
+			// generic DropReasonTargetTerminal). Otherwise the per-step
+			// Router.Close inside runStep's defer chain wins the race and
+			// emits "target-terminal" while the workflow is being torn down.
 			if e.Router != nil {
 				e.Router.MarkWorkflowCancelled()
 			}
@@ -1308,14 +1308,14 @@ func (e *Executor) Run(ctx context.Context) (*WorkflowResult, error) {
 	// ctx has expired.
 	if !successDrain() {
 		aborted = true
- // Capture active set before goroutines unregister so the
- // abort-flush path below can find pending mailbox messages.
+		// Capture active set before goroutines unregister so the
+		// abort-flush path below can find pending mailbox messages.
 		if activeAtAbort == nil {
 			activeAtAbort = e.ActiveSteps()
 		}
- // S4 (B2 fix): mark router cancelled so any in-flight runStep
- // defers that drain the mailbox attribute drops to
- // DropReasonWorkflowCancelled.
+		// S4 (B2 fix): mark router cancelled so any in-flight runStep
+		// defers that drain the mailbox attribute drops to
+		// DropReasonWorkflowCancelled.
 		if e.Router != nil {
 			e.Router.MarkWorkflowCancelled()
 		}
@@ -1329,16 +1329,16 @@ done_label:
 	// here, emitting EventMessageDropped per pending message so the
 	// "zero silent drops" guarantee holds even on cancellation.
 	if mailbox != nil && (aborted || abortCtx.Err() != nil) {
- // activeAtAbort is captured at abort-detect time (line 867 on
- // abortCtx.Done, line 897 on successDrain failure). e.ActiveSteps
- // returns a non-nil (possibly empty) slice, so activeAtAbort is
- // always non-nil whenever we enter this block (we only get here
- // when aborted=true OR abortCtx.Err != nil - both paths set
- // activeAtAbort first).
+		// activeAtAbort is captured at abort-detect time (line 867 on
+		// abortCtx.Done, line 897 on successDrain failure). e.ActiveSteps
+		// returns a non-nil (possibly empty) slice, so activeAtAbort is
+		// always non-nil whenever we enter this block (we only get here
+		// when aborted=true OR abortCtx.Err != nil - both paths set
+		// activeAtAbort first).
 		toFlush := activeAtAbort
- // S4: mark router as cancelled so any in-flight Send returns
- // with DropReasonWorkflowCancelled (instead of racing to land in
- // a mailbox that's about to be flushed).
+		// S4: mark router as cancelled so any in-flight Send returns
+		// with DropReasonWorkflowCancelled (instead of racing to land in
+		// a mailbox that's about to be flushed).
 		if e.Router != nil {
 			e.Router.MarkWorkflowCancelled()
 		}
@@ -1354,9 +1354,9 @@ done_label:
 		finalResults[k] = v
 	}
 	if aborted {
- // Mark any in-flight steps as cancelled in the snapshot. The stuck
- // goroutine may later write its own StepResult to the original map,
- // but the caller sees this cancelled entry in finalResults.
+		// Mark any in-flight steps as cancelled in the snapshot. The stuck
+		// goroutine may later write its own StepResult to the original map,
+		// but the caller sees this cancelled entry in finalResults.
 		for stepID := range running {
 			if existing, ok := finalResults[stepID]; !ok || existing == nil {
 				finalResults[stepID] = &StepResult{ID: stepID, Status: spec.StepCancelled, Error: abortCtx.Err()}
@@ -1388,7 +1388,7 @@ done_label:
 	hasCompleted := false
 	hasFailed := false
 	for _, sr := range result.Steps {
- // sr is guaranteed non-nil: lines 681-687 fill all missing steps with StepCancelled.
+		// sr is guaranteed non-nil: lines 681-687 fill all missing steps with StepCancelled.
 		switch sr.Status {
 		case spec.StepCompleted:
 			hasCompleted = true
@@ -1451,12 +1451,12 @@ done_label:
 	// workflow-start suppression above). Nested miniWF end events
 	// are internal plumbing.
 	if e.Coordinator != nil && e.Coordinator.mailbox != nil && e.namespacePrefix == "" {
- // (Fix 8): wrap the workflow-end Append in
- // recover so a panicking Mailbox.Append (e.g. user-supplied
- // store with a defect) cannot crash RunFlow after the DAG has
- // already completed. Symmetrical with the per-step coord-notify
- // recover at the Run-loop callsite.
- // Evidence: TestWorkflowEndAppend_RecoverPanics.
+		// (Fix 8): wrap the workflow-end Append in
+		// recover so a panicking Mailbox.Append (e.g. user-supplied
+		// store with a defect) cannot crash RunFlow after the DAG has
+		// already completed. Symmetrical with the per-step coord-notify
+		// recover at the Run-loop callsite.
+		// Evidence: TestWorkflowEndAppend_RecoverPanics.
 		func() {
 			defer func() {
 				if r := recover(); r != nil {
@@ -1493,9 +1493,9 @@ done_label:
 			}); err != nil {
 				slog.WarnContext(ctx, "mailbox append failed", "err", err, "site", "workflow-end", "run_id", runID)
 			}
- // signal Wake so the coord's goai loop re-enters
- // and observes the terminal workflow_end event (and any
- // preceding events still buffered in the mailbox).
+			// signal Wake so the coord's goai loop re-enters
+			// and observes the terminal workflow_end event (and any
+			// preceding events still buffered in the mailbox).
 			signalCoordWake(e.Coordinator)
 		}()
 	}

@@ -69,10 +69,10 @@ func TestSignalHandler_PlatformAlternatives(t *testing.T) {
 	})
 
 	t.Run("default_unknown_falls_back_to_posix_helper", func(t *testing.T) {
- // Any goos that isn't "windows" routes to platformPosixSignals.
- // We don't assert the exact length (build-tag-dependent) but
- // confirm it returns at least one signal so installSignalHandler
- // won't degrade to a no-op.
+		// Any goos that isn't "windows" routes to platformPosixSignals.
+		// We don't assert the exact length (build-tag-dependent) but
+		// confirm it returns at least one signal so installSignalHandler
+		// won't degrade to a no-op.
 		withSignalGOOS(t, "plan9") // arbitrary non-windows
 		got := platformShutdownSignals()
 		if len(got) == 0 {
@@ -112,7 +112,7 @@ func TestInstallSignalHandler_CancelOnSignal(t *testing.T) {
 	}
 	select {
 	case <-ctx.Done():
- // expected
+		// expected
 		if !errors.Is(ctx.Err(), context.Canceled) {
 			t.Errorf("ctx.Err = %v, want Canceled", ctx.Err())
 		}
@@ -177,7 +177,7 @@ func TestInstallSignalHandler_NoSignals_ReturnsCancelable(t *testing.T) {
 	cancel()
 	select {
 	case <-ctx.Done():
- // expected - cancel cancels
+	// expected - cancel cancels
 	case <-time.After(time.Second):
 		t.Fatal("cancel did not cancel ctx")
 	}

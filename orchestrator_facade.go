@@ -18,8 +18,10 @@ import (
 // falls back to <os.TempDir>/zenflow/runs so the path is always usable.
 // CLI consumers and embedders that want the standard zenflow storage
 // location should call this and pass the result to NewFileStorage:
+//
 //	storage := zenflow.NewFileStorage(zenflow.DefaultStorageDir)
 //	orch := zenflow.New(zenflow.WithStorage(storage))
+//
 // Stable.
 func DefaultStorageDir() string {
 	home, err := os.UserHomeDir()
@@ -48,49 +50,49 @@ var New = exec.New
 
 // All Orchestrator With* options re-exported from internal/exec.
 var (
-	WithModel                      = exec.WithModel
-	WithTools                      = exec.WithTools
-	WithGoAIOptions                = exec.WithGoAIOptions
-	WithStorage                    = exec.WithStorage
-	WithPermissions                = exec.WithPermissions
-	WithProgress                   = exec.WithProgress
-	WithDefaultModel               = exec.WithDefaultModel
-	WithForceModel                 = exec.WithForceModel
-	WithMaxConcurrency             = exec.WithMaxConcurrency
-	WithMaxTurns                   = exec.WithMaxTurns
-	WithMaxDepth                   = exec.WithMaxDepth
-	WithApproval                   = exec.WithApproval
-	WithApprovalTimeout            = exec.WithApprovalTimeout
-	WithSharedMemory               = exec.WithSharedMemory
-	WithTracer                     = exec.WithTracer
-	WithCoordinator                = exec.WithCoordinator
-	WithIsolation                  = exec.WithIsolation
-	WithOutputTransform            = exec.WithOutputTransform
-	WithStreaming                  = exec.WithStreaming
-	WithoutStreaming               = exec.WithoutStreaming
-	WithVerbose                    = exec.WithVerbose
-	WithoutVerbose                 = exec.WithoutVerbose
-	WithMaxWakeCycles              = exec.WithMaxWakeCycles
-	WithHoldTimeout                = exec.WithHoldTimeout
-	WithAgentHandleTTL             = exec.WithAgentHandleTTL
-	WithDropCallback               = exec.WithDropCallback
-	WithDropCallbackBufferSize     = exec.WithDropCallbackBufferSize
-	WithMaxMailboxSize             = exec.WithMaxMailboxSize
-	WithMailboxStore               = exec.WithMailboxStore
-	WithMailboxDelivery            = exec.WithMailboxDelivery
-	WithoutMailboxDelivery         = exec.WithoutMailboxDelivery
-	WithProgressBufferSize         = exec.WithProgressBufferSize
-	WithTranscriptStore            = exec.WithTranscriptStore
-	WithMaxTranscriptMessages      = exec.WithMaxTranscriptMessages
-	WithMaxTranscriptBytes         = exec.WithMaxTranscriptBytes
-	WithExternalInbox              = exec.WithExternalInbox
-	WithModelResolver              = exec.WithModelResolver
-	WithTruncationOnCapReached     = exec.WithTruncationOnCapReached
-	WithoutTruncationOnCapReached  = exec.WithoutTruncationOnCapReached
-	WithRouterObserver             = exec.WithRouterObserver
-	WithRunID                      = exec.WithRunID
-	WithFlowContext                = exec.WithFlowContext
-	WithGoalContext                = exec.WithGoalContext
+	WithModel                     = exec.WithModel
+	WithTools                     = exec.WithTools
+	WithGoAIOptions               = exec.WithGoAIOptions
+	WithStorage                   = exec.WithStorage
+	WithPermissions               = exec.WithPermissions
+	WithProgress                  = exec.WithProgress
+	WithDefaultModel              = exec.WithDefaultModel
+	WithForceModel                = exec.WithForceModel
+	WithMaxConcurrency            = exec.WithMaxConcurrency
+	WithMaxTurns                  = exec.WithMaxTurns
+	WithMaxDepth                  = exec.WithMaxDepth
+	WithApproval                  = exec.WithApproval
+	WithApprovalTimeout           = exec.WithApprovalTimeout
+	WithSharedMemory              = exec.WithSharedMemory
+	WithTracer                    = exec.WithTracer
+	WithCoordinator               = exec.WithCoordinator
+	WithIsolation                 = exec.WithIsolation
+	WithOutputTransform           = exec.WithOutputTransform
+	WithStreaming                 = exec.WithStreaming
+	WithoutStreaming              = exec.WithoutStreaming
+	WithVerbose                   = exec.WithVerbose
+	WithoutVerbose                = exec.WithoutVerbose
+	WithMaxWakeCycles             = exec.WithMaxWakeCycles
+	WithHoldTimeout               = exec.WithHoldTimeout
+	WithAgentHandleTTL            = exec.WithAgentHandleTTL
+	WithDropCallback              = exec.WithDropCallback
+	WithDropCallbackBufferSize    = exec.WithDropCallbackBufferSize
+	WithMaxMailboxSize            = exec.WithMaxMailboxSize
+	WithMailboxStore              = exec.WithMailboxStore
+	WithMailboxDelivery           = exec.WithMailboxDelivery
+	WithoutMailboxDelivery        = exec.WithoutMailboxDelivery
+	WithProgressBufferSize        = exec.WithProgressBufferSize
+	WithTranscriptStore           = exec.WithTranscriptStore
+	WithMaxTranscriptMessages     = exec.WithMaxTranscriptMessages
+	WithMaxTranscriptBytes        = exec.WithMaxTranscriptBytes
+	WithExternalInbox             = exec.WithExternalInbox
+	WithModelResolver             = exec.WithModelResolver
+	WithTruncationOnCapReached    = exec.WithTruncationOnCapReached
+	WithoutTruncationOnCapReached = exec.WithoutTruncationOnCapReached
+	WithRouterObserver            = exec.WithRouterObserver
+	WithRunID                     = exec.WithRunID
+	WithFlowContext               = exec.WithFlowContext
+	WithGoalContext               = exec.WithGoalContext
 )
 
 // ErrOrchestratorClosed is re-exported from internal/exec.

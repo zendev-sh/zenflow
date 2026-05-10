@@ -69,9 +69,9 @@ func setPlatformProcessGroup(cmd *exec.Cmd) {
 		if cmd.Process == nil {
 			return nil
 		}
- // Best effort; ignore taskkill's exit code. If the process
- // already exited cleanly we still return nil so the caller
- // doesn't see a spurious error.
+		// Best effort; ignore taskkill's exit code. If the process
+		// already exited cleanly we still return nil so the caller
+		// doesn't see a spurious error.
 		_ = exec.Command(taskkillPath, "/T", "/F", "/PID", strconv.Itoa(cmd.Process.Pid)).Run()
 		return nil
 	}

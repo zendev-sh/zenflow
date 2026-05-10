@@ -4,8 +4,10 @@
 // section, no coordinator. The step's instructions are sent to the
 // default LLM as a one-shot prompt.
 // Run from the zenflow/ directory:
+//
 //	export GEMINI_API_KEY=...
 //	go run -tags example ./examples/minimal/
+//
 // To use a different provider, swap the google.Chat(...) call below
 // for bedrock.Chat(...) or azure.Chat(...) and set the corresponding
 // env var (AWS_ACCESS_KEY_ID / AZURE_OPENAI_API_KEY).

@@ -31,11 +31,11 @@ func (h *approvalTimeoutHandler) ApprovePlan(ctx context.Context, wf *Workflow) 
 	}
 	ch := make(chan result, 1)
 	go func() {
- // Recover panics in the user-supplied ApprovalHandler.
- // Consistent with every other user-callback goroutine in the
- // codebase (RunAgentAsync registry-cleanup, TTL watchdog, agent
- // goroutine, routerObserver). A panic in approval logic would
- // otherwise crash the whole process.
+		// Recover panics in the user-supplied ApprovalHandler.
+		// Consistent with every other user-callback goroutine in the
+		// codebase (RunAgentAsync registry-cleanup, TTL watchdog, agent
+		// goroutine, routerObserver). A panic in approval logic would
+		// otherwise crash the whole process.
 		defer func() {
 			if r := recover(); r != nil {
 				slog.Warn("panic in ApprovalHandler.ApprovePlan",
@@ -51,8 +51,8 @@ func (h *approvalTimeoutHandler) ApprovePlan(ctx context.Context, wf *Workflow) 
 
 	select {
 	case r := <-ch:
- // Even if inner returned ctx.Err, surface ErrApprovalTimeout
- // so callers can distinguish "timeout" from "user cancel".
+		// Even if inner returned ctx.Err, surface ErrApprovalTimeout
+		// so callers can distinguish "timeout" from "user cancel".
 		if errors.Is(r.err, context.DeadlineExceeded) {
 			return false, ErrApprovalTimeout
 		}
@@ -75,7 +75,7 @@ func WithApprovalTimeout(d time.Duration) Option {
 		if d <= 0 || o.approval == nil {
 			return
 		}
- // Avoid double-wrapping if the option is applied twice.
+		// Avoid double-wrapping if the option is applied twice.
 		if _, ok := o.approval.(*approvalTimeoutHandler); ok {
 			return
 		}

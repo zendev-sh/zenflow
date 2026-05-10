@@ -27,7 +27,7 @@ func TestScheduler_DependencyFirst_IsDefault(t *testing.T) {
 			{ID: "b", DependsOn: []string{"a"}, Instructions: "do b"},
 			{ID: "c", DependsOn: []string{"a"}, Instructions: "do c"},
 		},
- // Options.Scheduler is empty → dependency-first default.
+		// Options.Scheduler is empty → dependency-first default.
 	}
 	exec := newTestExecutor(llm, nil, wf)
 	result, err := exec.Run(t.Context())

@@ -106,7 +106,7 @@ func AgentToolDef() goai.Tool {
 			"required": ["name", "instructions"]
 		}`),
 		Execute: func(_ context.Context, _ json.RawMessage) (string, error) {
- // No-op placeholder: actual dispatch handled by OnBeforeToolExecute hook in AgentRunner.
+			// No-op placeholder: actual dispatch handled by OnBeforeToolExecute hook in AgentRunner.
 			return "", ErrAgentToolDirectInvocation
 		},
 	}
@@ -212,12 +212,12 @@ func (s *agentSpawner) SpawnChild(ctx context.Context, call provider.ToolCall) (
 	case model == "":
 		model = s.DefaultModel
 	case isLikelyHallucinatedModel(model):
- // Silent fallback - no warning. The fallback IS the contract for
- // schema-misinterpretation; warning noise was the real bug.
+		// Silent fallback - no warning. The fallback IS the contract for
+		// schema-misinterpretation; warning noise was the real bug.
 		model = s.DefaultModel
 	case model != s.DefaultModel && s.Progress != nil:
- // Genuine override (LLM explicitly chose a different real model).
- // Keep the warning so operators can spot deliberate divergence.
+		// Genuine override (LLM explicitly chose a different real model).
+		// Keep the warning so operators can spot deliberate divergence.
 		s.Progress.OnEvent(ctx, Event{
 			Type:    types.EventMessage,
 			Message: fmt.Sprintf("child agent %q requested model %q (default: %q)", params.Name, model, s.DefaultModel),
@@ -278,13 +278,13 @@ func (s *agentSpawner) SpawnChild(ctx context.Context, call provider.ToolCall) (
 		WithRunnerStepID(childID),
 		WithRunnerSpawnDepth(childSpawner.CurrentDepth),
 		WithRunnerSpawnParentCallID(call.ID),
- // : subagent role (cfg.Prompt) flows to the system slot
- // via goai.WithSystem, mirroring the workflow-agent migration
- // in . The LLM-supplied `prompt` task-tool param is the
- // per-subagent template (option (b) in the original 
- // design): the parent agent picks the subagent's identity,
- // the system slot routes it to the LLM with proper
- // instruction-following weight + safety filtering.
+		// : subagent role (cfg.Prompt) flows to the system slot
+		// via goai.WithSystem, mirroring the workflow-agent migration
+		// in . The LLM-supplied `prompt` task-tool param is the
+		// per-subagent template (option (b) in the original
+		// design): the parent agent picks the subagent's identity,
+		// the system slot routes it to the LLM with proper
+		// instruction-following weight + safety filtering.
 		WithRunnerSystemPrompt(cfg.Prompt),
 	)
 	childRunner.spawner = childSpawner
@@ -315,13 +315,13 @@ func (s *agentSpawner) SpawnChild(ctx context.Context, call provider.ToolCall) (
 	}
 
 	if params.RunInBackground {
- // Async: launch goroutine, return immediately.
+		// Async: launch goroutine, return immediately.
 		s.childWg.Go(func() {
 			defer closeChildInbox()
 			result, err := childRunner.Run(ctx, cfg, prompt, model, tools)
 			s.mu.Lock()
 			if err != nil {
- // #9: Always store error in childErrors.
+				// #9: Always store error in childErrors.
 				s.childErrors = append(s.childErrors, fmt.Errorf("async child %q: %w", params.Name, err))
 			}
 			if result != nil {
@@ -343,12 +343,12 @@ func (s *agentSpawner) SpawnChild(ctx context.Context, call provider.ToolCall) (
 	defer closeChildInbox()
 	result, err := childRunner.Run(ctx, cfg, prompt, model, tools)
 	if err != nil {
- // Return BOTH the descriptive text (for the LLM consumer) and a
- // non-nil error. Previously returned (string, nil) which made the
- // tool-call wrapper render a green ✓ glyph despite the content
- // being an error message. With a non-nil error the wrapper
- // correctly flips to × and the chat surface no longer lies about
- // success.
+		// Return BOTH the descriptive text (for the LLM consumer) and a
+		// non-nil error. Previously returned (string, nil) which made the
+		// tool-call wrapper render a green ✓ glyph despite the content
+		// being an error message. With a non-nil error the wrapper
+		// correctly flips to × and the chat surface no longer lies about
+		// success.
 		return "agent error: " + err.Error(), fmt.Errorf("agent %q: %w", params.Name, err)
 	}
 

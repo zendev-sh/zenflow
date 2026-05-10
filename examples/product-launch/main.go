@@ -6,6 +6,7 @@
 // pricing decisions to the marketing copy writer and legal
 // constraints to both pricing and marketing.
 // Run from the zenflow/ directory:
+//
 //	export GEMINI_API_KEY=...
 //	go run -tags example ./examples/product-launch/
 package main

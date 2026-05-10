@@ -28,11 +28,11 @@ func (t *TokenBudgetTransformer) TransformStepOutput(stepID string, content stri
 	if result != nil {
 		resultJSON, err := json.Marshal(result)
 		if err == nil && len(resultJSON) > budget {
- // Return a simplified result with just the keys to signal truncation.
+			// Return a simplified result with just the keys to signal truncation.
 			simplified := make(map[string]any, 1)
 			simplified["_truncated"] = true
 			simplified["_note"] = "Result was too large and has been truncated. Key fields may be missing."
- // Try to preserve small scalar fields.
+			// Try to preserve small scalar fields.
 			for k, v := range result {
 				vJSON, _ := json.Marshal(v)
 				if len(vJSON) < 1024 {

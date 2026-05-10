@@ -36,7 +36,7 @@ func TestCoordinatorTypesRemoved(t *testing.T) {
 		if line == "" {
 			continue
 		}
- // Path is first colon-separated field.
+		// Path is first colon-separated field.
 		path := line
 		if i := strings.Index(line, ":"); i >= 0 {
 			path = line[:i]
@@ -44,9 +44,9 @@ func TestCoordinatorTypesRemoved(t *testing.T) {
 		if strings.HasSuffix(path, "_test.go") {
 			continue
 		}
- // Vendored copies of the observability sub-module live under
- // vendor/ - they are external to the package being refactored
- // and only carry a stale doc comment. Exclude them.
+		// Vendored copies of the observability sub-module live under
+		// vendor/ - they are external to the package being refactored
+		// and only carry a stale doc comment. Exclude them.
 		if strings.HasPrefix(path, "./vendor/") || strings.HasPrefix(path, "vendor/") {
 			continue
 		}

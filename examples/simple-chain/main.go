@@ -4,6 +4,7 @@
 // Each step's output becomes the next step's input via the dependsOn
 // edge. No agents block, no coordinator.
 // Run from the zenflow/ directory:
+//
 //	export GEMINI_API_KEY=...
 //	go run -tags example ./examples/simple-chain/
 package main

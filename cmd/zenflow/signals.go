@@ -39,11 +39,11 @@ var platformShutdownSignalsFn = platformShutdownSignals
 // signalGOOS and re-evaluate.
 func platformShutdownSignals() []os.Signal {
 	if signalGOOS == "windows" {
- // Windows: only os.Interrupt is reliably delivered. SIGTERM
- // exists as a Go constant but the OS doesn't dispatch it for
- // real (Win32 has no SIGTERM equivalent - services receive
- // SERVICE_CONTROL_STOP instead, which Go's signal package
- // does not surface).
+		// Windows: only os.Interrupt is reliably delivered. SIGTERM
+		// exists as a Go constant but the OS doesn't dispatch it for
+		// real (Win32 has no SIGTERM equivalent - services receive
+		// SERVICE_CONTROL_STOP instead, which Go's signal package
+		// does not surface).
 		return []os.Signal{os.Interrupt}
 	}
 	// POSIX: Ctrl+C, kill(1), terminal hang-up. We deliberately omit
@@ -69,10 +69,10 @@ func installSignalHandler(ctx context.Context) (context.Context, func()) {
 	ctx, cancel := context.WithCancel(ctx)
 	sigs := platformShutdownSignalsFn()
 	if len(sigs) == 0 {
- // Defensive: shouldn't happen, but if a future build-tag
- // branch returns nothing we still return a usable cancel
- // rather than registering an empty signal.Notify (which
- // blocks forever on Go ≥ 1.18).
+		// Defensive: shouldn't happen, but if a future build-tag
+		// branch returns nothing we still return a usable cancel
+		// rather than registering an empty signal.Notify (which
+		// blocks forever on Go ≥ 1.18).
 		return ctx, cancel
 	}
 	ch := make(chan os.Signal, 1)
@@ -80,20 +80,20 @@ func installSignalHandler(ctx context.Context) (context.Context, func()) {
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
- // First phase: wait for either a signal or external shutdown.
- // Cleanup signals shutdown by closing ch (after signal.Stop
- // guarantees no further sends), which makes the receive return
- // ok=false. We use this rather than racing on ctx.Done so the
- // shutdown path is deterministic regardless of select ordering.
+		// First phase: wait for either a signal or external shutdown.
+		// Cleanup signals shutdown by closing ch (after signal.Stop
+		// guarantees no further sends), which makes the receive return
+		// ok=false. We use this rather than racing on ctx.Done so the
+		// shutdown path is deterministic regardless of select ordering.
 		sig, ok := <-ch
 		if !ok {
 			return
 		}
 		fmt.Fprintf(stderr, "\nzenflow: received %s, shutting down (press again to force exit)\n", sig)
 		cancel()
- // Second phase: keep listening for a second signal so the user
- // can force-exit a hung shutdown. A closed ch (cleanup) lets
- // the goroutine exit cleanly here too.
+		// Second phase: keep listening for a second signal so the user
+		// can force-exit a hung shutdown. A closed ch (cleanup) lets
+		// the goroutine exit cleanly here too.
 		sig, ok = <-ch
 		if !ok {
 			return
@@ -102,10 +102,10 @@ func installSignalHandler(ctx context.Context) (context.Context, func()) {
 		exit(130)
 	}()
 	return ctx, func() {
- // signal.Stop guarantees no further sends to ch; close then
- // unblocks any pending receive in the goroutine. cancel runs
- // after the goroutine has exited so the returned context's
- // deadline propagates without racing the goroutine itself.
+		// signal.Stop guarantees no further sends to ch; close then
+		// unblocks any pending receive in the goroutine. cancel runs
+		// after the goroutine has exited so the returned context's
+		// deadline propagates without racing the goroutine itself.
 		signal.Stop(ch)
 		close(ch)
 		<-done

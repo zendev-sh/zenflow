@@ -5,6 +5,7 @@
 // final verdict. Demonstrates parallel agent execution plus
 // coordinator-mediated argument exchange.
 // Run from the zenflow/ directory:
+//
 //	export GEMINI_API_KEY=...
 //	go run -tags example ./examples/debate/
 package main

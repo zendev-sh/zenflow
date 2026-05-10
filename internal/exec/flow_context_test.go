@@ -87,7 +87,6 @@ type stringError string
 
 func (e stringError) Error() string { return string(e) }
 
-
 // TestRunFlow_FlowContext - WithFlowContext is a RunFlowOption applied
 // alongside RunFlow's variadic args, and the supplied string reaches the
 // Executor (observed via the FlowContext field set on the Executor - the
@@ -141,7 +140,6 @@ func TestRunFlow_FlowContext_NoOpWhenAbsent(t *testing.T) {
 	}
 }
 
-
 // TestCoord_ReceivesWorkflowStart - when WithCoordinator is set and
 // WithFlowContext is supplied, the coord runner's Mailbox receives a
 // RouterMessage tagged with event_type=workflow_start whose Content is
@@ -177,7 +175,6 @@ func TestCoord_ReceivesWorkflowStart(t *testing.T) {
 	}
 }
 
-
 // TestRunFlow_BlanketContextWhenNoCoordinator - coord==nil + WithFlowContext
 // must prepend the context to every step's effective user prompt.
 func TestRunFlow_BlanketContextWhenNoCoordinator(t *testing.T) {
@@ -204,7 +201,6 @@ func TestRunFlow_BlanketContextWhenNoCoordinator(t *testing.T) {
 	}
 }
 
-
 // TestRunGoal_GoalContext - WithGoalContext is a RunGoalOption; its value
 // must appear in the prompt sent to the coordinator LLM.
 func TestRunGoal_GoalContext(t *testing.T) {
@@ -220,8 +216,8 @@ func TestRunGoal_GoalContext(t *testing.T) {
 	llm := &promptCapturingModel{canned: []string{goalJSON}}
 	o := New(WithModel(llm), WithDefaultModel("test-model"))
 	if _, err := o.RunGoal(t.Context(), "ship a debate workflow", WithGoalContext("topic: AI replaces juniors")); err != nil {
- // RunGoal may still succeed; if it errors after the first call we
- // don't care here - we only assert the captured prompt.
+		// RunGoal may still succeed; if it errors after the first call we
+		// don't care here - we only assert the captured prompt.
 		t.Logf("RunGoal returned: %v (acceptable for this test)", err)
 	}
 

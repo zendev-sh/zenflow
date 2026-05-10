@@ -60,12 +60,12 @@ type Orchestrator struct {
 	// for any step or agent the orchestrator runs. Set via WithForceModel
 	// to support cross-provider CLI overrides (e.g. `zenflow flow --model
 	// X` running every agent through provider X regardless of YAML).
-	forceModel      string
-	maxConcurrency  int // see defaultMaxConcurrency in executor.go for precedence
-	maxTurns        int
-	maxDepth        int
-	streaming       bool
-	verbose         bool
+	forceModel     string
+	maxConcurrency int // see defaultMaxConcurrency in executor.go for precedence
+	maxTurns       int
+	maxDepth       int
+	streaming      bool
+	verbose        bool
 
 	// Day-1 Options API surface. All zero values = "use compile-time
 	// defaults" so unconfigured callers retain default behavior.
@@ -141,7 +141,7 @@ type Orchestrator struct {
 }
 
 // DefaultMaxBytesPerDep is the per-dependency content cap applied by the
-// default OutputTransform (TokenBudgetTransformer). 8 KiB ≈ 2 K tokens - 
+// default OutputTransform (TokenBudgetTransformer). 8 KiB ≈ 2 K tokens -
 // safe for tight context windows while still allowing larger windows to
 // work (truncation is a ceiling, not a floor). Callers that want a
 // different cap install WithOutputTransform with their own transformer.
@@ -313,17 +313,17 @@ func (o *Orchestrator) RunAgent(ctx context.Context, cfg AgentConfig) (*AgentRes
 	// state cannot leak between calls.
 	router := NewMessageRouter()
 	if o.routerObserver != nil {
- // Observer panics MUST NOT crash the agent run. Telemetry/debug
- // hooks installed in production are the most likely source of
- // unexpected panics; recover here so a buggy hook degrades to a
- // logged warning instead of taking down the whole RunAgent
- // invocation.
+		// Observer panics MUST NOT crash the agent run. Telemetry/debug
+		// hooks installed in production are the most likely source of
+		// unexpected panics; recover here so a buggy hook degrades to a
+		// logged warning instead of taking down the whole RunAgent
+		// invocation.
 		func() {
 			defer func() {
 				if r := recover(); r != nil {
- // Warn, not Error: graceful degradation means the
- // agent run continues normally; only the observer's
- // side effects are lost.
+					// Warn, not Error: graceful degradation means the
+					// agent run continues normally; only the observer's
+					// side effects are lost.
 					slog.Warn("panic in WithRouterObserver callback",
 						"hook", "routerObserver",
 						"panic", r,
@@ -339,8 +339,8 @@ func (o *Orchestrator) RunAgent(ctx context.Context, cfg AgentConfig) (*AgentRes
 	router.RegisterStep(primaryStepID)
 	router.RegisterInbox(primaryStepID)
 	defer func() {
- // Close the primary inbox so the per-call mailbox does not
- // retain dangling open-step state across calls.
+		// Close the primary inbox so the per-call mailbox does not
+		// retain dangling open-step state across calls.
 		router.Close(primaryStepID)
 	}()
 
@@ -461,11 +461,11 @@ func (o *Orchestrator) RunAgent(ctx context.Context, cfg AgentConfig) (*AgentRes
 	result, err := runner.Run(ctx, runCfg, cfg.Prompt, effectiveModel, tools, cfg.Attachments...)
 	if err != nil {
 		agentErr = err
- // Drain async children even on the parent-error path. They share
- // the same ctx that caused the parent to fail, so they exit
- // promptly via ctx.Err; waiting here makes sure their final
- // writes to sp.children / sp.childErrors land before RunAgent
- // returns to the caller.
+		// Drain async children even on the parent-error path. They share
+		// the same ctx that caused the parent to fail, so they exit
+		// promptly via ctx.Err; waiting here makes sure their final
+		// writes to sp.children / sp.childErrors land before RunAgent
+		// returns to the caller.
 		sp.childWg.Wait()
 		return nil, err
 	}
@@ -520,11 +520,11 @@ func (o *Orchestrator) RunFlow(ctx context.Context, wf *Workflow, opts ...RunFlo
 	// would otherwise never produce the event. ux.md §9.B requires the
 	// DAG card to appear for every /flow run, not only on first cold start.
 	if wf != nil && o.progress != nil {
- // Recover panics from a buggy user-supplied ProgressSink. This
- // OnEvent fires BEFORE wrapProgressNonBlocking takes effect
- // (executor.go), so a panic here would crash the RunFlow goroutine
- // entirely. The pump's recover only protects events emitted from
- // inside Executor.Run.
+		// Recover panics from a buggy user-supplied ProgressSink. This
+		// OnEvent fires BEFORE wrapProgressNonBlocking takes effect
+		// (executor.go), so a panic here would crash the RunFlow goroutine
+		// entirely. The pump's recover only protects events emitted from
+		// inside Executor.Run.
 		emitPlanReady(ctx, o.progress, Event{
 			Type:    types.EventPlanReady,
 			RunID:   runID,
@@ -604,10 +604,10 @@ func (o *Orchestrator) runFlowWithID(ctx context.Context, wf *Workflow, runID st
 		router = NewMessageRouter()
 	}
 	if o.routerObserver != nil {
- // Observer panics MUST NOT crash the run. Telemetry / debug
- // hooks installed in production are the most likely panic
- // source; recover so a buggy hook degrades to a logged warning
- // instead of taking down the whole RunFlow invocation.
+		// Observer panics MUST NOT crash the run. Telemetry / debug
+		// hooks installed in production are the most likely panic
+		// source; recover so a buggy hook degrades to a logged warning
+		// instead of taking down the whole RunFlow invocation.
 		func() {
 			defer func() {
 				if r := recover(); r != nil {
@@ -714,7 +714,7 @@ func (o *Orchestrator) ResumeFlow(ctx context.Context, runID string, wf *Workflo
 		if sr.Status == spec.StepCompleted {
 			completedSteps[step.ID] = sr
 		}
- // Failed/cancelled/skipped steps are re-executed.
+		// Failed/cancelled/skipped steps are re-executed.
 	}
 
 	// Start with orchestrator's shared memory (if configured), then overlay persisted entries.
@@ -876,10 +876,10 @@ func (o *Orchestrator) RunGoal(ctx context.Context, goal string, opts ...RunGoal
 	)
 
 	for {
- // Race CoordinatorChat against ctx.Done. If the provider's DoGenerate
- // does not honor ctx (e.g., stuck in a network read), the goroutine is
- // orphaned but RunGoal still returns promptly so `zenflow goal --timeout`
- // exits on time. See.
+		// Race CoordinatorChat against ctx.Done. If the provider's DoGenerate
+		// does not honor ctx (e.g., stuck in a network read), the goroutine is
+		// orphaned but RunGoal still returns promptly so `zenflow goal --timeout`
+		// exits on time. See.
 		type chatOut struct {
 			content string
 			tokens  provider.Usage
@@ -887,9 +887,9 @@ func (o *Orchestrator) RunGoal(ctx context.Context, goal string, opts ...RunGoal
 		}
 		chatCh := make(chan chatOut, 1)
 		go func(prompt string) {
- // Defensive recover: surface a panic inside CoordinatorChat /
- // CoordinatorStreamChat as a normal chatErr instead of crashing
- // RunGoal's caller.
+			// Defensive recover: surface a panic inside CoordinatorChat /
+			// CoordinatorStreamChat as a normal chatErr instead of crashing
+			// RunGoal's caller.
 			defer func() {
 				if r := recover(); r != nil {
 					var perr error
@@ -940,7 +940,7 @@ func (o *Orchestrator) RunGoal(ctx context.Context, goal string, opts ...RunGoal
 			break // Success
 		}
 
- // Classify error using typed errors instead of string prefix matching.
+		// Classify error using typed errors instead of string prefix matching.
 		var jsonErr *JSONParseError
 		var valErr *CoordinatorValidationError
 		if errors.As(lastErr, &jsonErr) && jsonRetries < maxJSONRetries {

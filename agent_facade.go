@@ -85,9 +85,9 @@ type AgentError = exec.AgentError
 
 // AgentError sentinels re-exported from internal/exec.
 var (
-	ErrAgentHandleTimeout     = exec.ErrAgentHandleTimeout
-	ErrAgentCancelled         = exec.ErrAgentCancelled
-	ErrAgentPanicked          = exec.ErrAgentPanicked
+	ErrAgentHandleTimeout        = exec.ErrAgentHandleTimeout
+	ErrAgentCancelled            = exec.ErrAgentCancelled
+	ErrAgentPanicked             = exec.ErrAgentPanicked
 	ErrAgentTurnLimitExceeded    = exec.ErrAgentTurnLimitExceeded
 	ErrAgentNoSubmitResult       = exec.ErrAgentNoSubmitResult
 	ErrInvalidAgentHandleID      = exec.ErrInvalidAgentHandleID

@@ -84,7 +84,7 @@ func setupTest(t *testing.T, cliArgs ...string) (*testEnv, func()) {
 	t.Helper()
 	// Default scrub: every test that goes through setupTest must run
 	// against a clean provider env so a developer's shell with
-	// `set -a && source .env && set +a` (the documented 
+	// `set -a && source .env && set +a` (the documented
 	// workflow per CLAUDE.md "Running E2E Tests") doesn't flip
 	// `exit==3` assertions to `exit==1` by routing through a real
 	// LLM. Tests that NEED a provider env var explicitly call
@@ -261,7 +261,7 @@ func TestMain_VersionFlags(t *testing.T) {
 			if !strings.Contains(out, "zenflow v1.2.3-test") {
 				t.Errorf("stdout = %q, want 'zenflow v1.2.3-test' prefix", out)
 			}
- // Provenance suppressed when commit/date are unset.
+			// Provenance suppressed when commit/date are unset.
 			if strings.Contains(out, "commit=") {
 				t.Errorf("stdout = %q, did not expect 'commit=' when commit is unknown", out)
 			}
@@ -1757,8 +1757,8 @@ func TestStartCoordRunner_CleanupTimerFires(t *testing.T) {
 	go func() { cleanup(); close(doneCh) }()
 	select {
 	case <-doneCh:
- // cleanup returned via the timer path - the goroutine leaks until
- // the deferred cancel reaps it.
+	// cleanup returned via the timer path - the goroutine leaks until
+	// the deferred cancel reaps it.
 	case <-time.After(2 * time.Second):
 		t.Fatal("cleanup did not return within 2s via timer path")
 	}
@@ -1791,7 +1791,7 @@ func (c *cliGateErrLLM) ModelID() string { return "cli-gate-err-mock" }
 func (c *cliGateErrLLM) DoGenerate(ctx context.Context, _ provider.GenerateParams) (*provider.GenerateResult, error) {
 	select {
 	case <-c.release:
- // Release fired - return the configured error (context is still active).
+		// Release fired - return the configured error (context is still active).
 		if ctx.Err() != nil {
 			return nil, ctx.Err()
 		}

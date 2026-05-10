@@ -61,7 +61,7 @@ func (e *Executor) runIncludeStep(ctx context.Context, runID, stepID string, ste
 		}
 	}
 	if fullPath == "" {
- // Not found in includes registry - treat as direct file path.
+		// Not found in includes registry - treat as direct file path.
 		fullPath = step.Include
 		if e.Workflow.BaseDir != "" && !filepath.IsAbs(step.Include) {
 			fullPath = filepath.Join(e.Workflow.BaseDir, step.Include)
@@ -85,7 +85,7 @@ func (e *Executor) runIncludeStep(ctx context.Context, runID, stepID string, ste
 			return &StepResult{ID: stepID, Status: spec.StepFailed, Error: stepTraceErr}
 		}
 	} else {
- // Resolve symlinks before the prefix check to prevent symlink bypass.
+		// Resolve symlinks before the prefix check to prevent symlink bypass.
 		absResolved, _ := filepath.Abs(fullPath)
 		if realResolved, err := filepath.EvalSymlinks(absResolved); err == nil {
 			absResolved = realResolved
@@ -98,8 +98,8 @@ func (e *Executor) runIncludeStep(ctx context.Context, runID, stepID string, ste
 			stepTraceErr = fmt.Errorf("step %q include %q: %w", stepID, step.Include, ErrIncludePathEscape)
 			return &StepResult{ID: stepID, Status: spec.StepFailed, Error: stepTraceErr}
 		}
- // Use the resolved path to prevent TOCTOU race where a symlink could
- // be swapped between the security check and the actual file read.
+		// Use the resolved path to prevent TOCTOU race where a symlink could
+		// be swapped between the security check and the actual file read.
 		fullPath = absResolved
 	}
 
@@ -242,7 +242,7 @@ func (e *Executor) runIncludeStep(ctx context.Context, runID, stepID string, ste
 	innerSteps := make(map[string]any, len(subResult.Steps))
 	if subResult.Status == spec.StatusCompleted {
 		sr.Status = spec.StepCompleted
- // Build namespaced result map from all inner steps.
+		// Build namespaced result map from all inner steps.
 		for innerID, subSR := range subResult.Steps {
 			namespacedID := stepID + "." + innerID
 			innerSteps[namespacedID] = map[string]any{
@@ -250,8 +250,8 @@ func (e *Executor) runIncludeStep(ctx context.Context, runID, stepID string, ste
 				"status":  string(subSR.Status),
 			}
 		}
- // Use the topologically last completed step's content (deterministic).
- // Iterate sub-workflow steps in declaration order (stable) to find the last completed.
+		// Use the topologically last completed step's content (deterministic).
+		// Iterate sub-workflow steps in declaration order (stable) to find the last completed.
 		for i := len(subWF.Steps) - 1; i >= 0; i-- {
 			innerID := subWF.Steps[i].ID
 			if subSR, ok := subResult.Steps[innerID]; ok && subSR.Status == spec.StepCompleted {

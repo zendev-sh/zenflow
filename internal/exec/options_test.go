@@ -357,7 +357,7 @@ func TestWithForceModel_Precedence(t *testing.T) {
 
 // New must install the default TokenBudgetTransformer when the caller
 // does not provide WithOutputTransform. Without this, every consumer
-// (CLI + library callers) had to install the transform themselves - 
+// (CLI + library callers) had to install the transform themselves -
 // which the OSS CLI did unconditionally (B12 promotion: move the
 // install into the library).
 func TestNewDefault_OutputTransformInstalled(t *testing.T) {

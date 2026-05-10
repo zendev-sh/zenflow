@@ -234,7 +234,7 @@ steps:
 
 	wf := &Workflow{
 		Name: "direct-include-test",
- // No Includes map - the include value should be treated as a direct file path.
+		// No Includes map - the include value should be treated as a direct file path.
 		Steps: []Step{
 			{ID: "do-it", Include: "sub-workflow.yaml"},
 		},

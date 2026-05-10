@@ -167,7 +167,7 @@ func TestAgentRunner_NoEventsWithoutProgress(t *testing.T) {
 	runner := &AgentRunner{
 		model: model,
 		tools: []goai.Tool{echoTool},
- // No Progress set - should not panic.
+		// No Progress set - should not panic.
 	}
 
 	cfg := AgentConfig{MaxTurns: 10}

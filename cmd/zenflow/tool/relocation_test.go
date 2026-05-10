@@ -25,16 +25,16 @@ import (
 // invariant.
 func TestCLITools_RelocatedSuccessfully(t *testing.T) {
 	t.Run("legacy_zenflow_tool_dir_removed", func(t *testing.T) {
- // Walk up from this test file until we hit the `zenflow/` module
- // root, then check that `tool/` no longer sits beside it. We
- // can't hardcode an absolute path (CI runners use a different
- // checkout root) so we resolve via runtime.Caller.
+		// Walk up from this test file until we hit the `zenflow/` module
+		// root, then check that `tool/` no longer sits beside it. We
+		// can't hardcode an absolute path (CI runners use a different
+		// checkout root) so we resolve via runtime.Caller.
 		_, thisFile, _, ok := runtime.Caller(0)
 		if !ok {
 			t.Fatal("runtime.Caller(0) failed - cannot locate test file")
 		}
- // thisFile = .../zenflow/cmd/zenflow/tool/relocation_test.go
- // We want .../zenflow/tool - which must NOT exist.
+		// thisFile = .../zenflow/cmd/zenflow/tool/relocation_test.go
+		// We want .../zenflow/tool - which must NOT exist.
 		thisDir := filepath.Dir(thisFile)   // .../cmd/zenflow/tool
 		cmdZenflow := filepath.Dir(thisDir) // .../cmd/zenflow
 		cmdDir := filepath.Dir(cmdZenflow)  // .../cmd
@@ -55,9 +55,9 @@ func TestCLITools_RelocatedSuccessfully(t *testing.T) {
 		if len(tools) == 0 {
 			t.Fatal("DefaultTools() returned empty - relocation broke the catalog")
 		}
- // The doc commits to the 5-tool catalog (bash, read, write,
- // glob, grep). If the count drifts, the design log + user-guide
- // reference must be updated together - fail loudly here.
+		// The doc commits to the 5-tool catalog (bash, read, write,
+		// glob, grep). If the count drifts, the design log + user-guide
+		// reference must be updated together - fail loudly here.
 		const want = 5
 		if got := len(tools); got != want {
 			names := make([]string, 0, got)

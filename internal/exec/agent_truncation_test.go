@@ -184,7 +184,7 @@ func TestExecutor_OutputTransform_RespectsPreserveContent(t *testing.T) {
 			continue
 		}
 		if sr.PreserveContent {
- // The follow-up branch under test.
+			// The follow-up branch under test.
 			continue
 		}
 		newContent, newResult := exec.OutputTransform.TransformStepOutput(depID, sr.Content, sr.Result, model_)

@@ -49,10 +49,10 @@ func BenchmarkTopoSort(b *testing.B) {
 			b.ResetTimer()
 			b.ReportAllocs()
 			for b.Loop() {
- // Pass a fresh slice header each iteration; the underlying
- // array is read-only (TopoSort only reads DependsOn), so
- // sharing is safe and avoids per-iteration allocation of the
- // input slice itself.
+				// Pass a fresh slice header each iteration; the underlying
+				// array is read-only (TopoSort only reads DependsOn), so
+				// sharing is safe and avoids per-iteration allocation of the
+				// input slice itself.
 				order, err := TopoSort(steps)
 				if err != nil {
 					b.Fatalf("TopoSort: %v", err)

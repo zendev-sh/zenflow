@@ -126,7 +126,7 @@ func TestSplitProviderModel_TrimsWhitespace(t *testing.T) {
 	}
 }
 
-// TestResolveProvider_RejectsEmptyModelID covers the 
+// TestResolveProvider_RejectsEmptyModelID covers the
 // `provider/` empty-model-id guard. Before the fix, `--model "google/"`
 // produced a non-nil model with empty model ID, HasLLM returned true,
 // and the request 404ed at HTTP. Now the empty model ID short-circuits
@@ -169,7 +169,7 @@ func TestResolveProvider_VertexPrefix(t *testing.T) {
 	}
 }
 
-// TestResolveProvider_VertexAnthropicPrefix covers the 
+// TestResolveProvider_VertexAnthropicPrefix covers the
 // `vertex-anthropic/` prefix for Claude on Vertex.
 func TestResolveProvider_VertexAnthropicPrefix(t *testing.T) {
 	llm, modelID := resolveProvider("vertex-anthropic/claude-sonnet-4@20250514")

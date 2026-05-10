@@ -73,21 +73,21 @@ func (e *Executor) runLoopStep(ctx context.Context, runID, stepID string, step S
 	// Also ends the zenflow.loop span and emits EventStepEnd/EventError.
 	defer func() {
 		if lastResult != nil {
- // Fix #3: outputMode=cumulative overrides Content with the full
- // iteration history so dependent aggregator steps see ALL rounds,
- // not just the final iteration's last inner step. Default ("last")
- // preserves the pre-fix behavior where downstream sees only the
- // final inner step content (right for refine-style loops where
- // each iteration supersedes the prior).
+			// Fix #3: outputMode=cumulative overrides Content with the full
+			// iteration history so dependent aggregator steps see ALL rounds,
+			// not just the final iteration's last inner step. Default ("last")
+			// preserves the pre-fix behavior where downstream sees only the
+			// final inner step content (right for refine-style loops where
+			// each iteration supersedes the prior).
 			if loop.OutputMode == spec.LoopOutputModeCumulative && iterationHistory.Len() > 0 {
 				lastResult.Content = iterationHistory.String()
- // cumulative content is intentionally large - opt out
- // of writeDepSection's 16KB per-dep truncation so dependent
- // aggregator steps (verdict, summarizer) actually receive the
- // full history they were designed to consume. Without this
- // flag, the cumulative content gets cut at 16KB and the
- // dependent step sees `[truncated for context limit]`.
- // The overall 120KB prompt cap (maxPromptBytes) still applies.
+				// cumulative content is intentionally large - opt out
+				// of writeDepSection's 16KB per-dep truncation so dependent
+				// aggregator steps (verdict, summarizer) actually receive the
+				// full history they were designed to consume. Without this
+				// flag, the cumulative content gets cut at 16KB and the
+				// dependent step sees `[truncated for context limit]`.
+				// The overall 120KB prompt cap (maxPromptBytes) still applies.
 				lastResult.PreserveContent = true
 			}
 			lastResult.Tokens = loopTokens
@@ -100,7 +100,7 @@ func (e *Executor) runLoopStep(ctx context.Context, runID, stepID string, step S
 			}
 			e.Tracer.EndSpan(ctx, loopErr)
 		}
- // Emit EventStepEnd or EventError for the loop step.
+		// Emit EventStepEnd or EventError for the loop step.
 		if e.Progress != nil && lastResult != nil {
 			evType := types.EventStepEnd
 			if lastResult.Status == spec.StepFailed {
@@ -120,7 +120,7 @@ func (e *Executor) runLoopStep(ctx context.Context, runID, stepID string, step S
 	}()
 
 	for iteration := range maxIter {
- // Apply delay between iterations (not before the first).
+		// Apply delay between iterations (not before the first).
 		if loop.Delay.D() > 0 && iteration > 0 {
 			delayTimer := time.NewTimer(loop.Delay.D())
 			select {
@@ -132,7 +132,7 @@ func (e *Executor) runLoopStep(ctx context.Context, runID, stepID string, step S
 			}
 		}
 
- // Start zenflow.loop.iteration span.
+		// Start zenflow.loop.iteration span.
 		iterCtx := ctx
 		if e.Tracer != nil {
 			iterCtx = e.Tracer.StartSpan(ctx, "zenflow.loop.iteration", map[string]string{
@@ -141,17 +141,17 @@ func (e *Executor) runLoopStep(ctx context.Context, runID, stepID string, step S
 			})
 		}
 
- // Inject previous iteration output so the worker sees what was produced before.
+		// Inject previous iteration output so the worker sees what was produced before.
 		iterStep := step
 		if iteration > 0 && lastResult != nil {
 			iterStep.Instructions = fmt.Sprintf("## Previous Iteration Output (Iteration %d)\n%s\n\n%s",
 				iteration, lastResult.Content, step.Instructions)
 		}
 
- // Run the worker step (or inner DAG) with step-level tracing suppressed (loop manages spans).
+		// Run the worker step (or inner DAG) with step-level tracing suppressed (loop manages spans).
 		var innerDAGResults map[string]*StepResult // populated when loop has inner steps
 		if len(loop.Steps) > 0 {
- // Inner DAG: build a mini-workflow from loop.steps and execute per iteration.
+			// Inner DAG: build a mini-workflow from loop.steps and execute per iteration.
 			lastResult, innerDAGResults = e.runRepeatUntilInnerDAG(iterCtx, runID, stepID, iterStep, loop.Steps, iteration, depResults)
 		} else {
 			stepCtx := withSkipStepTrace(iterCtx)
@@ -165,10 +165,10 @@ func (e *Executor) runLoopStep(ctx context.Context, runID, stepID string, step S
 			return lastResult // defer sets Tokens
 		}
 
- // Build cumulative iteration history for judge context. In cumulative
- // outputMode + inner-DAG, expand into per-inner-step subsections so
- // downstream aggregators (e.g. a verdict summarizer reading the loop
- // step's Content) see ALL inner steps' outputs, not just the last one.
+		// Build cumulative iteration history for judge context. In cumulative
+		// outputMode + inner-DAG, expand into per-inner-step subsections so
+		// downstream aggregators (e.g. a verdict summarizer reading the loop
+		// step's Content) see ALL inner steps' outputs, not just the last one.
 		if loop.OutputMode == spec.LoopOutputModeCumulative && len(innerDAGResults) > 0 {
 			fmt.Fprintf(&iterationHistory, "## Iteration %d\n", iteration+1)
 			for _, innerStep := range loop.Steps {
@@ -180,12 +180,12 @@ func (e *Executor) runLoopStep(ctx context.Context, runID, stepID string, step S
 			fmt.Fprintf(&iterationHistory, "## Iteration %d\n%s\n\n", iteration+1, lastResult.Content)
 		}
 
- // Evaluate CEL until expression after each iteration.
- // iteration is 0-based: first iteration = 0, second = 1, etc.
+		// Evaluate CEL until expression after each iteration.
+		// iteration is 0-based: first iteration = 0, second = 1, etc.
 		if loop.Until != nil {
 			evalCtx := BuildEvalContext(depResults)
- // Merge inner DAG step results into the CEL context so until
- // expressions can reference inner step outputs (e.g., steps.test.status).
+			// Merge inner DAG step results into the CEL context so until
+			// expressions can reference inner step outputs (e.g., steps.test.status).
 			for id, sr := range innerDAGResults {
 				evalCtx.Steps[id] = &EvalStepContext{
 					Content: sr.Content,
@@ -199,8 +199,8 @@ func (e *Executor) runLoopStep(ctx context.Context, runID, stepID string, step S
 			if lastResult.Result != nil {
 				evalCtx.Result = lastResult.Result
 			}
- // Item and Index are not applicable in repeat-until loops
- // (only meaningful in forEach mode).
+			// Item and Index are not applicable in repeat-until loops
+			// (only meaningful in forEach mode).
 			done, err := EvaluateCEL(*loop.Until, evalCtx)
 			if err != nil {
 				lastResult.Status = spec.StepFailed
@@ -218,7 +218,7 @@ func (e *Executor) runLoopStep(ctx context.Context, runID, stepID string, step S
 			}
 		}
 
- // If no untilAgent, just run maxIterations times.
+		// If no untilAgent, just run maxIterations times.
 		if loop.UntilAgent == "" {
 			if e.Tracer != nil {
 				e.Tracer.EndSpan(iterCtx, nil)
@@ -226,8 +226,8 @@ func (e *Executor) runLoopStep(ctx context.Context, runID, stepID string, step S
 			continue
 		}
 
- // Run judge agent. Validation guarantees UntilAgent exists in Agents map
- // for flows through Run. Direct callers of runLoopStep may bypass validation.
+		// Run judge agent. Validation guarantees UntilAgent exists in Agents map
+		// for flows through Run. Direct callers of runLoopStep may bypass validation.
 		judgeAgent, ok := e.Workflow.Agents[loop.UntilAgent]
 		if !ok {
 			lastResult.Status = spec.StepFailed
@@ -238,9 +238,9 @@ func (e *Executor) runLoopStep(ctx context.Context, runID, stepID string, step S
 			return lastResult // defer sets Tokens
 		}
 
- // P7.7.11: Build judge prompt with explicit instructions + cumulative iteration history.
- // Without explicit instructions, judges frequently exhaust all turns without
- // calling submit_result or never return done:true, causing loop failures.
+		// P7.7.11: Build judge prompt with explicit instructions + cumulative iteration history.
+		// Without explicit instructions, judges frequently exhaust all turns without
+		// calling submit_result or never return done:true, causing loop failures.
 		var judgePromptBuf strings.Builder
 		judgePromptBuf.WriteString("## Your Task: Evaluate Loop Progress\n\n")
 		judgePromptBuf.WriteString("You are a judge evaluating whether the worker agent has completed its task satisfactorily.\n")
@@ -256,23 +256,23 @@ func (e *Executor) runLoopStep(ctx context.Context, runID, stepID string, step S
 		}
 		judgePrompt := judgePromptBuf.String()
 
- // Precedence (high → low): ForceModel (WithForceModel CLI override),
- // judgeAgent.Model, DefaultModel.
+		// Precedence (high → low): ForceModel (WithForceModel CLI override),
+		// judgeAgent.Model, DefaultModel.
 		judgeModel := cmp.Or(e.ForceModel, judgeAgent.Model, e.DefaultModel)
 
- // Resolve judge tools.
+		// Resolve judge tools.
 		judgeTools := FilterTools(e.Runner.tools, judgeAgent.Tools, judgeAgent.DisallowedTools)
- // submit_result is auto-injected by AgentRunner when ResultSchema is set.
+		// submit_result is auto-injected by AgentRunner when ResultSchema is set.
 
- // Fix #1: clone e.Runner with a derived StepID so judge events carry
- // {stepID}.judge instead of the shared template runner's empty StepID.
- // Without this, stdout sink renders judge AgentTurn / ToolCall events
- // with empty brackets ("[] Thinking...", "[] submit_result"), making
- // it impossible to attribute judge activity when multiple loop:untilAgent
- // steps run in parallel. Per-step runner construction in runStep
- // follows the same pattern. Mutex/atomic finalize state on the original
- // runner is intentionally NOT carried - judge gets fresh zero-value
- // state and never participates in coord finalize signaling.
+		// Fix #1: clone e.Runner with a derived StepID so judge events carry
+		// {stepID}.judge instead of the shared template runner's empty StepID.
+		// Without this, stdout sink renders judge AgentTurn / ToolCall events
+		// with empty brackets ("[] Thinking...", "[] submit_result"), making
+		// it impossible to attribute judge activity when multiple loop:untilAgent
+		// steps run in parallel. Per-step runner construction in runStep
+		// follows the same pattern. Mutex/atomic finalize state on the original
+		// runner is intentionally NOT carried - judge gets fresh zero-value
+		// state and never participates in coord finalize signaling.
 		judgeRunner := &AgentRunner{
 			model:        e.Runner.model,
 			tools:        e.Runner.tools,
@@ -290,13 +290,13 @@ func (e *Executor) runLoopStep(ctx context.Context, runID, stepID string, step S
 		}
 		judgeResult, err := judgeRunner.Run(ctx, judgeAgent, judgePrompt, judgeModel, judgeTools)
 
- // Accumulate judge tokens even on failure (partial results may carry token data).
+		// Accumulate judge tokens even on failure (partial results may carry token data).
 		if judgeResult != nil {
 			addUsage(&loopTokens, judgeResult.Tokens)
 		}
 
 		if err != nil {
- // Judge failure - fail-open by design. The loop continues bounded by maxIterations.
+			// Judge failure - fail-open by design. The loop continues bounded by maxIterations.
 			if e.Progress != nil {
 				e.Progress.OnEvent(ctx, Event{
 					Type:      types.EventError,
@@ -312,13 +312,13 @@ func (e *Executor) runLoopStep(ctx context.Context, runID, stepID string, step S
 			continue
 		}
 
- // Append judge feedback to iteration history so the next work agent
- // iteration sees the judge's content as context (per spec).
+		// Append judge feedback to iteration history so the next work agent
+		// iteration sees the judge's content as context (per spec).
 		if judgeResult.Content != "" {
 			fmt.Fprintf(&iterationHistory, "## Judge Feedback (Iteration %d)\n%s\n\n", iteration+1, judgeResult.Content)
 		}
 
- // Check result.done.
+		// Check result.done.
 		if judgeResult.Result != nil {
 			if done, ok := judgeResult.Result["done"].(bool); ok && done {
 				if e.Tracer != nil {
@@ -328,7 +328,7 @@ func (e *Executor) runLoopStep(ctx context.Context, runID, stepID string, step S
 			}
 		}
 
- // End iteration span (judge did not say done, continue looping).
+		// End iteration span (judge did not say done, continue looping).
 		if e.Tracer != nil {
 			e.Tracer.EndSpan(iterCtx, nil)
 		}
@@ -363,7 +363,7 @@ func (e *Executor) runForEachStep(ctx context.Context, runID, stepID string, ste
 	case []any:
 		items = v
 	case string:
- // CEL expression - evaluate to produce array.
+		// CEL expression - evaluate to produce array.
 		resolved, err := e.evaluateForEachCEL(v, stepID, depResults)
 		if err != nil {
 			return &StepResult{ID: stepID, Status: spec.StepFailed, Error: fmt.Errorf("forEach cel eval: %w", err)}
@@ -449,8 +449,8 @@ func (e *Executor) runForEachStep(ctx context.Context, runID, stepID string, ste
 					mu.Unlock()
 				}
 			}()
- // ctx here is abortCtx from the dispatch goroutine (passed through
- // runLoopStep -> runForEachStep), so ctx.Done correctly respects abort.
+			// ctx here is abortCtx from the dispatch goroutine (passed through
+			// runLoopStep -> runForEachStep), so ctx.Done correctly respects abort.
 			select {
 			case sem <- struct{}{}:
 			case <-ctx.Done():
@@ -459,7 +459,7 @@ func (e *Executor) runForEachStep(ctx context.Context, runID, stepID string, ste
 			}
 			defer func() { <-sem }()
 
- // Check if a previous iteration already failed.
+			// Check if a previous iteration already failed.
 			mu.Lock()
 			hasErr := len(errs) > 0
 			mu.Unlock()
@@ -468,7 +468,7 @@ func (e *Executor) runForEachStep(ctx context.Context, runID, stepID string, ste
 				return
 			}
 
- // Start per-iteration trace span.
+			// Start per-iteration trace span.
 			iterCtx := ctx
 			if e.Tracer != nil {
 				iterCtx = e.Tracer.StartSpan(ctx, "zenflow.loop.iteration", map[string]string{
@@ -480,18 +480,18 @@ func (e *Executor) runForEachStep(ctx context.Context, runID, stepID string, ste
 			iterStepID := fmt.Sprintf("%s[%d]", stepID, i)
 			var sr *StepResult
 			if len(loop.Steps) > 0 {
- // Inner DAG: build a mini-workflow from loop.steps and execute.
+				// Inner DAG: build a mini-workflow from loop.steps and execute.
 				sr = e.runForEachInnerDAG(iterCtx, runID, stepID, step, loop.Steps, item, i, depResults)
 			} else {
- // Re-run parent step with forEach item injected into prompt via context.
- // Uses runStep so forEach iterations inherit isolation, tracing, SharedMem,
- // coordinator inbox, progress events, and storage persistence.
+				// Re-run parent step with forEach item injected into prompt via context.
+				// Uses runStep so forEach iterations inherit isolation, tracing, SharedMem,
+				// coordinator inbox, progress events, and storage persistence.
 				feCtx := withForEachCtx(withSkipStepTrace(iterCtx), &ForEachContext{Item: item, Index: i})
 				sr = e.runStep(feCtx, runID, iterStepID, step, index, total, depResults)
 				sr.ID = stepID // Restore original step ID for result aggregation.
 			}
 
- // End per-iteration trace span.
+			// End per-iteration trace span.
 			if e.Tracer != nil {
 				e.Tracer.EndSpan(iterCtx, sr.Error)
 			}
@@ -699,8 +699,8 @@ func (e *Executor) runRepeatUntilInnerDAG(ctx context.Context, runID, parentStep
 	} else {
 		sr.Status = spec.StepFailed
 		sr.Error = fmt.Errorf("run %q step %q: repeat-until inner DAG (iteration %d) status: %s", runID, parentStepID, iteration, result.Status)
- // sr.Content and sr.Result are already set from lastContent/lastResult above,
- // preserving partial content from completed inner steps even on failure.
+		// sr.Content and sr.Result are already set from lastContent/lastResult above,
+		// preserving partial content from completed inner steps even on failure.
 	}
 	return sr, result.Steps
 }

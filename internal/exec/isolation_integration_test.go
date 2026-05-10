@@ -194,7 +194,7 @@ func TestIsolation_NoopByDefault(t *testing.T) {
 		Runner:       &AgentRunner{model: llm, tools: nil},
 		Workflow:     wf,
 		DefaultModel: "gpt-4o",
- // Isolation is nil - no isolation.
+		// Isolation is nil - no isolation.
 	}
 	result, err := exec.Run(t.Context())
 	if err != nil {

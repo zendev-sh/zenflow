@@ -53,10 +53,10 @@ func TestExecutor_AgentStateAccessor(t *testing.T) {
 			t.Fatalf("AgentState(%q) is nil", id)
 		}
 		kind, step := st.Observe()
- // G3 : AgentRunner.Run sets StepDone via SetTerminal on
- // natural completion. StepIdle would only persist if SetTerminal
- // was never invoked (e.g. consumer that drives AgentState
- // without the runner).
+		// G3 : AgentRunner.Run sets StepDone via SetTerminal on
+		// natural completion. StepIdle would only persist if SetTerminal
+		// was never invoked (e.g. consumer that drives AgentState
+		// without the runner).
 		if kind != goai.StepDone {
 			t.Fatalf("step %q kind = %v (want StepDone), step=%d", id, kind, step)
 		}

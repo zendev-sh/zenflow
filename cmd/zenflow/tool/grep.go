@@ -36,7 +36,7 @@ func grepToolIn(workdir string) goai.Tool {
 				return "", err
 			}
 
- // Resolve and validate the search path against workdir.
+			// Resolve and validate the search path against workdir.
 			searchPath := p.Path
 			if workdir != "" {
 				if searchPath == "" {
@@ -50,22 +50,22 @@ func grepToolIn(workdir string) goai.Tool {
 				}
 			}
 
- // Pre-check path existence: mirrors Unix grep exit code 2 +
- // "No such file or directory" stderr message. Without this,
- // Windows PowerShell would silently return empty output for a
- // missing path, making it indistinguishable from "no matches".
+			// Pre-check path existence: mirrors Unix grep exit code 2 +
+			// "No such file or directory" stderr message. Without this,
+			// Windows PowerShell would silently return empty output for a
+			// missing path, making it indistinguishable from "no matches".
 			if _, statErr := os.Stat(searchPath); statErr != nil {
 				return "", fmt.Errorf("grep: %s: %w", searchPath, statErr)
 			}
 
- // Apply per-invocation timeout.
+			// Apply per-invocation timeout.
 			grepCtx, cancel := context.WithTimeout(ctx, grepTimeout)
 			defer cancel()
 
 			cmd := buildGrepCmd(grepCtx, p.Pattern, searchPath, p.Regex)
 			setProcessGroup(cmd)
 
- // Cap output size.
+			// Cap output size.
 			var stdout, stderr bytes.Buffer
 			cmd.Stdout = &limitedWriter{w: &stdout, remaining: grepMaxOutput}
 			cmd.Stderr = &limitedWriter{w: &stderr, remaining: grepMaxOutput}

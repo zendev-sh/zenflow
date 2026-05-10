@@ -28,7 +28,7 @@ func NewSharedMemory() *SharedMemory {
 // Agent names must not contain "/" to avoid namespace collisions.
 func (sm *SharedMemory) Write(agent, key, value string) {
 	if strings.Contains(agent, "/") {
- // Silently sanitize: replace "/" with "_" to prevent namespace collision.
+		// Silently sanitize: replace "/" with "_" to prevent namespace collision.
 		agent = strings.ReplaceAll(agent, "/", "_")
 	}
 	sm.mu.Lock()

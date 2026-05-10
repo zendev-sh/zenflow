@@ -15,7 +15,6 @@ import (
 
 	"github.com/zendev-sh/goai"
 	"github.com/zendev-sh/goai/provider"
-
 )
 
 // NOTE: TestAgentConfig_CarriesToolsAndProgressSink was removed. The

@@ -197,8 +197,8 @@ func TestOrchestrator_RequiresCallerStartedRunner(t *testing.T) {
 			".",
 		)
 		out, err := cmd.Output()
- // grep exit codes: 0 = match found (FAIL for us), 1 = no match
- // (PASS), 2+ = real error.
+		// grep exit codes: 0 = match found (FAIL for us), 1 = no match
+		// (PASS), 2+ = real error.
 		var exitErr *exec.ExitError
 		if errors.As(err, &exitErr) && exitErr.ExitCode() > 1 {
 			t.Fatalf("grep failed with exit code %d: %v", exitErr.ExitCode(), err)
@@ -209,7 +209,7 @@ func TestOrchestrator_RequiresCallerStartedRunner(t *testing.T) {
 			if line == "" {
 				continue
 			}
- // Parse "file:line:content" - extract path and "file:line".
+			// Parse "file:line:content" - extract path and "file:line".
 			path := line
 			fileLine := line
 			if i := strings.Index(line, ":"); i >= 0 {
@@ -224,9 +224,9 @@ func TestOrchestrator_RequiresCallerStartedRunner(t *testing.T) {
 			if strings.HasPrefix(path, "./vendor/") || strings.HasPrefix(path, "vendor/") {
 				continue
 			}
- // Allowlist check: legitimate `go X.Run(...)` callsites carry
- // an explicit entry in allowedGoRunCallsites. Strip a leading
- // "./" so allowlist keys don't depend on grep's path prefix.
+			// Allowlist check: legitimate `go X.Run(...)` callsites carry
+			// an explicit entry in allowedGoRunCallsites. Strip a leading
+			// "./" so allowlist keys don't depend on grep's path prefix.
 			key := strings.TrimPrefix(fileLine, "./")
 			if _, ok := allowedGoRunCallsites[key]; ok {
 				continue
@@ -248,7 +248,7 @@ func TestOrchestrator_RequiresCallerStartedRunner(t *testing.T) {
 	runner := &AgentRunner{
 		stepID:  "coordinator",
 		mailbox: mailbox,
- // No Run goroutine. Run was never called.
+		// No Run goroutine. Run was never called.
 	}
 	model := &mockModel{}
 	wf := &Workflow{

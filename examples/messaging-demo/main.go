@@ -6,6 +6,7 @@
 // then narrates a closing summary. Demonstrates hub-and-spoke routing
 // where peer agents never address each other directly.
 // Run from the zenflow/ directory:
+//
 //	export GEMINI_API_KEY=...
 //	go run -tags example ./examples/messaging-demo/
 package main

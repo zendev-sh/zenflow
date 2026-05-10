@@ -152,9 +152,9 @@ func (s *InMemoryTranscriptStore) Append(runID, stepID string, msgs []provider.M
 	projectedBytes := runBytes[stepID] + addBytes
 
 	if projectedMessages > s.maxMessages || projectedBytes > s.maxBytes {
- // F3: seal this (runID,stepID) slot so subsequent Load calls
- // also surface ErrTranscriptTooLarge - matching the contract
- // documented in the TranscriptStore interface.
+		// F3: seal this (runID,stepID) slot so subsequent Load calls
+		// also surface ErrTranscriptTooLarge - matching the contract
+		// documented in the TranscriptStore interface.
 		sealRun, ok := s.sealed[runID]
 		if !ok {
 			sealRun = make(map[string]bool)

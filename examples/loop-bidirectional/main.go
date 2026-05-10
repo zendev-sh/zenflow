@@ -7,6 +7,7 @@
 // `loop-stages.<i>.worker` form. Both routes resolve to the active
 // iteration's nested router via root-router delegation.
 // Run from the zenflow/ directory:
+//
 //	export GEMINI_API_KEY=...
 //	go run -tags example ./examples/loop-bidirectional/
 package main

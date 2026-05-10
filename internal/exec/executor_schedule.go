@@ -30,7 +30,7 @@ func (e *Executor) scheduleOrder(ready []Step, running map[string]bool) []Step {
 	case spec.SchedulerLeastBusy:
 		return scheduleLeastBusy(ready, running, e.Workflow.Steps)
 	default:
- // dependency-first or empty: topological order (as-is).
+		// dependency-first or empty: topological order (as-is).
 		return ready
 	}
 }

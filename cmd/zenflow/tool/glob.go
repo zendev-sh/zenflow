@@ -29,7 +29,7 @@ func globToolIn(workdir string) goai.Tool {
 			}
 
 			if workdir == "" {
- // Legacy / unconstrained mode.
+				// Legacy / unconstrained mode.
 				matches, err := filepath.Glob(p.Pattern)
 				if err != nil {
 					return "", err
@@ -37,8 +37,8 @@ func globToolIn(workdir string) goai.Tool {
 				return strings.Join(matches, "\n"), nil
 			}
 
- // Workdir-contained mode.
- // Reject patterns that are absolute or start with "..".
+			// Workdir-contained mode.
+			// Reject patterns that are absolute or start with "..".
 			cleaned := filepath.Clean(p.Pattern)
 			if filepath.IsAbs(cleaned) {
 				return "", fmt.Errorf("glob pattern %q is an absolute path - use a relative pattern within the workdir", p.Pattern)
@@ -47,14 +47,14 @@ func globToolIn(workdir string) goai.Tool {
 				return "", fmt.Errorf("glob pattern %q escapes the workdir", p.Pattern)
 			}
 
- // Root the pattern under workdir.
+			// Root the pattern under workdir.
 			rootedPattern := filepath.Join(workdir, p.Pattern)
 			matches, err := filepath.Glob(rootedPattern)
 			if err != nil {
 				return "", err
 			}
 
- // Filter: drop any match that resolves outside workdir (e.g. via symlink).
+			// Filter: drop any match that resolves outside workdir (e.g. via symlink).
 			safe := matches[:0]
 			for _, m := range matches {
 				if _, verr := resolveUnderWorkdir(m, workdir); verr == nil {

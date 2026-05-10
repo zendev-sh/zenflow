@@ -7,6 +7,7 @@
 // events back. Demonstrates concurrent loop iterations with
 // per-iteration messaging isolation.
 // Run from the zenflow/ directory:
+//
 //	export GEMINI_API_KEY=...
 //	go run -tags example ./examples/loop-parallel-bidirectional/
 package main

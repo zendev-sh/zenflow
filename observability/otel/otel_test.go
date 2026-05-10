@@ -374,7 +374,7 @@ func (m *coordinatorLLM) DoGenerate(_ context.Context, _ provider.GenerateParams
 	call := m.calls
 	m.mu.Unlock()
 	if call == 1 {
- // Coordinator response: valid JSON workflow.
+		// Coordinator response: valid JSON workflow.
 		return &provider.GenerateResult{
 			Text: `{
 				"name": "goal-workflow",

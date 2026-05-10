@@ -228,7 +228,7 @@ func TestCLI_FlowJSON_NoLLM(t *testing.T) {
 		t.Fatal("expected non-zero exit for flow --json without LLM")
 	}
 	if exitErr, ok := err.(*exec.ExitError); ok {
- // Should exit 3 (config error: no LLM), not 2 (validation) - --json is valid.
+		// Should exit 3 (config error: no LLM), not 2 (validation) - --json is valid.
 		if exitErr.ExitCode() != 3 {
 			t.Errorf("exit code = %d, want 3\noutput: %s", exitErr.ExitCode(), out)
 		}
@@ -755,12 +755,12 @@ func TestSplitPositionalContext(t *testing.T) {
 		{"only context", []string{"topic: x"}, "topic: x", []string{}},
 		{"context + flag", []string{"topic: x", "--quiet"}, "topic: x", []string{"--quiet"}},
 		{"context + flag with value", []string{"goal context", "--model", "gemini"}, "goal context", []string{"--model", "gemini"}},
- // / - single-dash flags are flags, not
- // positional context. Without these, `zenflow flow file.yaml -v`
- // silently swallowed `-v` as the flow context. The agent
- // subcommand (which doesn't go through splitPositionalContext)
- // already rejected unknown short flags; bringing flow/goal to
- // parity is the point.
+		// / - single-dash flags are flags, not
+		// positional context. Without these, `zenflow flow file.yaml -v`
+		// silently swallowed `-v` as the flow context. The agent
+		// subcommand (which doesn't go through splitPositionalContext)
+		// already rejected unknown short flags; bringing flow/goal to
+		// parity is the point.
 		{"only short flag", []string{"-v"}, "", []string{"-v"}},
 		{"context + short flag", []string{"topic: x", "-v"}, "topic: x", []string{"-v"}},
 		{"only short help", []string{"-h"}, "", []string{"-h"}},
@@ -960,7 +960,7 @@ func TestStartCoordRunner_NonNilRunner(t *testing.T) {
 	}()
 	select {
 	case <-doneCh:
- // good
+	// good
 	case <-time.After(3 * time.Second):
 		t.Fatal("cleanup did not return within 3s")
 	}

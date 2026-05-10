@@ -29,20 +29,20 @@ func readToolIn(workdir string) goai.Tool {
 			if err := json.Unmarshal(args, &p); err != nil {
 				return "", err
 			}
- // normalize path separators so a Windows caller
- // passing `subdir/file.txt` works the same as
- // `subdir\file.txt`. Containment + workdir join already
- // run inside resolveUnderWorkdir; normalizePath here
- // canonicalises before that.
+			// normalize path separators so a Windows caller
+			// passing `subdir/file.txt` works the same as
+			// `subdir\file.txt`. Containment + workdir join already
+			// run inside resolveUnderWorkdir; normalizePath here
+			// canonicalises before that.
 			resolved, err := resolveUnderWorkdir(normalizePath(p.Path), workdir)
 			if err != nil {
 				return "", err
 			}
- // read returns the raw bytes verbatim, so CRLF
- // content authored on Windows survives a round-trip
- // untouched. We deliberately do NOT translate CRLF↔LF -
- // callers (LLMs editing source files) need to see what is
- // actually on disk.
+			// read returns the raw bytes verbatim, so CRLF
+			// content authored on Windows survives a round-trip
+			// untouched. We deliberately do NOT translate CRLF↔LF -
+			// callers (LLMs editing source files) need to see what is
+			// actually on disk.
 			f, err := os.Open(resolved)
 			if err != nil {
 				return "", err

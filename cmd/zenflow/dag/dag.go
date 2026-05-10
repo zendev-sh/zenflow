@@ -76,7 +76,7 @@ func Render(wf *zenflow.Workflow) string {
 
 		positions[layer] = layerPos{boxY: y}
 
- // Compute box centers.
+		// Compute box centers.
 		startX := (maxTotalWidth - layerWidths[layer]) / 2
 		x := startX
 		maxHeight := 0
@@ -94,7 +94,7 @@ func Render(wf *zenflow.Workflow) string {
 		positions[layer] = layerPos{boxY: y, bottomY: y + maxHeight}
 		y += maxHeight
 
- // Reserve space for connectors (estimate).
+		// Reserve space for connectors (estimate).
 		if layer < maxLayer {
 			y += 3 // │ + merge bar + │ + ▼ (worst case)
 		}
@@ -135,7 +135,7 @@ func Render(wf *zenflow.Workflow) string {
 		if e.toLayer-e.fromLayer > 1 {
 			cx := boxCenters[e.fromID]
 			for l := e.fromLayer + 1; l < e.toLayer; l++ {
- // Route to the left of boxes in this layer.
+				// Route to the left of boxes in this layer.
 				layerStart := (maxTotalWidth - layerWidths[l]) / 2
 				ptX := layerStart - 2
 				if ptX < 0 {
@@ -151,8 +151,8 @@ func Render(wf *zenflow.Workflow) string {
 	ptCenterOverride := make(map[string]int) // fromID → override x at destination
 	for _, e := range allEdges {
 		if e.toLayer-e.fromLayer > 1 {
- // The pass-through line arrives at the layer just before destination
- // at the shifted x position.
+			// The pass-through line arrives at the layer just before destination
+			// at the shifted x position.
 			destPrevLayer := e.toLayer - 1
 			layerStart := (maxTotalWidth - layerWidths[destPrevLayer]) / 2
 			ptX := layerStart - 2
@@ -177,7 +177,7 @@ func Render(wf *zenflow.Workflow) string {
 
 		positions[layer] = layerPos{boxY: y}
 
- // Draw boxes.
+		// Draw boxes.
 		startX := (maxTotalWidth - layerWidths[layer]) / 2
 		x := startX
 		maxHeight := 0
@@ -194,7 +194,7 @@ func Render(wf *zenflow.Workflow) string {
 			x += w
 		}
 
- // Draw pass-through lines alongside boxes in this layer.
+		// Draw pass-through lines alongside boxes in this layer.
 		if pts, ok := passThrough[layer]; ok {
 			for _, pt := range pts {
 				for row := y; row < y+maxHeight; row++ {
@@ -206,7 +206,7 @@ func Render(wf *zenflow.Workflow) string {
 		positions[layer] = layerPos{boxY: y, bottomY: y + maxHeight}
 		y += maxHeight
 
- // Draw connectors to next layer.
+		// Draw connectors to next layer.
 		if layer < maxLayer {
 			connStartY := y
 			allPrevious := make([]string, 0, len(order))
@@ -214,7 +214,7 @@ func Render(wf *zenflow.Workflow) string {
 				allPrevious = append(allPrevious, layerGroups[l]...)
 			}
 			nextGroup := layerGroups[layer+1]
- // Build effective centers: use pass-through x for cross-layer sources.
+			// Build effective centers: use pass-through x for cross-layer sources.
 			effectiveCenters := make(map[string]int)
 			for k, v := range boxCenters {
 				effectiveCenters[k] = v
@@ -224,18 +224,18 @@ func Render(wf *zenflow.Workflow) string {
 			}
 			y = drawConnectors(c, y, allPrevious, nextGroup, effectiveCenters, stepMap)
 
- // Draw pass-through lines through the connector area for edges
- // that pass through the next layer.
+			// Draw pass-through lines through the connector area for edges
+			// that pass through the next layer.
 			if pts, ok := passThrough[layer+1]; ok {
 				for _, pt := range pts {
- // Draw │ from connector start to end.
+					// Draw │ from connector start to end.
 					for row := connStartY; row < y; row++ {
 						if c.getCell(pt.x, row) == ' ' {
 							c.writeStr(pt.x, row, "│")
 						}
 					}
- // Draw horizontal bend from source center to pass-through x
- // if the source is in this layer (first transition).
+					// Draw horizontal bend from source center to pass-through x
+					// if the source is in this layer (first transition).
 					if pt.origX != pt.x {
 						bendY := connStartY // use first row of connector area
 						for bx := pt.x; bx <= pt.origX; bx++ {
@@ -244,7 +244,7 @@ func Render(wf *zenflow.Workflow) string {
 								c.writeStr(bx, bendY, "─")
 							}
 						}
- // Corner: pass-through is left of source → ┌──┘
+						// Corner: pass-through is left of source → ┌──┘
 						c.writeStr(pt.x, bendY, "┌")
 						c.writeStr(pt.origX, bendY, "┘")
 					}
@@ -374,21 +374,21 @@ func drawConnectors(c *canvas, y int, fromGroup, toGroup []string, boxCenters ma
 
 		var ch string
 		switch {
- // Endpoints (leftmost).
+		// Endpoints (leftmost).
 		case atLeft && up && down:
 			ch = "├"
 		case atLeft && up:
 			ch = "└"
 		case atLeft && down:
 			ch = "┌"
- // Endpoints (rightmost).
+			// Endpoints (rightmost).
 		case atRight && up && down:
 			ch = "┤"
 		case atRight && up:
 			ch = "┘"
 		case atRight && down:
 			ch = "┐"
- // Interior.
+			// Interior.
 		case up && down:
 			ch = "┼"
 		case up:

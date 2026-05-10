@@ -21,6 +21,7 @@ import (
 // empty mailbox) and explicitly defers finalize until the workflow
 // has actually completed.
 // Use directly or as a starting point for a customised prompt:
+//
 //	userMsg := zenflow.DefaultCoordColdStartPrompt + zenflow.BuildCoordStepMenu(runner)
 const DefaultCoordColdStartPrompt = "Coordinate the workflow. Your mailbox starts empty; wait silently for step lifecycle events to arrive (do NOT narrate before any event is in your mailbox). When events arrive, follow your narration cadence rules. CRITICAL: do NOT call finalize yet - the workflow is just starting; many step events will arrive later. Only finalize AFTER you have seen EventStepEnd for the LAST workflow step."
 
@@ -39,7 +40,9 @@ const DefaultCoordContinuationPrompt = "Process the new mailbox events. Follow y
 // (Loop / Include) registered via Router.RegisterWrapperStep. Designed
 // to be appended to coord prompts each wake so the LLM sees an
 // up-to-date snapshot as new loop iterations register sub-steps:
+//
 //	userMsg := zenflow.DefaultCoordContinuationPrompt + zenflow.BuildCoordStepMenu(runner)
+//
 // Returns the empty string when:
 // - runner / runner.Router is nil
 // - no steps registered (cold-start before executor begins)
@@ -96,13 +99,17 @@ func BuildCoordStepMenu(runner *AgentRunner) string {
 // 3. Otherwise block on Wake | ctx.Done.
 // Returns true to proceed to the next runner.Run, false to terminate
 // the loop. Typical usage:
+//
 //	for {
+//
 // runner.Run(ctx, cfg, userMsg, modelID, runner.Tools)
 // if !zenflow.WaitForCoordWake(ctx, runner) {
 // return
 // }
 // userMsg = zenflow.DefaultCoordContinuationPrompt + zenflow.BuildCoordStepMenu(runner)
+//
 //	}
+//
 // Consumers with additional wake sources (e.g. a TUI's chat-input
 // channel) should compose their own select rather than calling this
 // helper - the runner.Wake / runner.Mailbox primitives are public.
@@ -114,9 +121,9 @@ func WaitForCoordWake(ctx context.Context, runner *AgentRunner) bool {
 		return true
 	}
 	if runner == nil || runner.wake == nil {
- // No wake channel: degenerate case (no mailbox mode). Fall
- // through to ctx.Done so the loop exits cleanly on cancel
- // instead of busy-spinning on Run.
+		// No wake channel: degenerate case (no mailbox mode). Fall
+		// through to ctx.Done so the loop exits cleanly on cancel
+		// instead of busy-spinning on Run.
 		<-ctx.Done()
 		return false
 	}

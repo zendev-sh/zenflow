@@ -565,10 +565,10 @@ func (r *AgentRunner) Run(ctx context.Context, cfg AgentConfig, userMessage stri
 	// started should land in the first LLM call so single-turn agents
 	// see them. Cancel messages short-circuit immediately.
 	if mailboxMode {
- // Test-only: block until the gate is closed/sent. Lets a test
- // finish setting up mailbox preconditions (e.g. admitting up to
- // cap, then confirming the cap rejects subsequent Appends)
- // before the drain consumes anything. Also observes ctx cancel.
+		// Test-only: block until the gate is closed/sent. Lets a test
+		// finish setting up mailbox preconditions (e.g. admitting up to
+		// cap, then confirming the cap rejects subsequent Appends)
+		// before the drain consumes anything. Also observes ctx cancel.
 		if r.preStartDrainGate != nil {
 			select {
 			case <-r.preStartDrainGate:
@@ -617,18 +617,18 @@ func (r *AgentRunner) Run(ctx context.Context, cfg AgentConfig, userMessage stri
 	// at Run exit, which the deferred flush persists.
 	var (
 		persistedCount int
- // transcriptSealed records whether a prior Append hit
- // ErrTranscriptTooLarge (cap seal) so subsequent attempts are
- // skipped instead of looping over the rejected cap-exceeded
- // path.: only set on IRREVERSIBLE errors (cap). Transient
- // IO errors go through transcriptErrored instead so subsequent
- // Append can retry.
+		// transcriptSealed records whether a prior Append hit
+		// ErrTranscriptTooLarge (cap seal) so subsequent attempts are
+		// skipped instead of looping over the rejected cap-exceeded
+		// path.: only set on IRREVERSIBLE errors (cap). Transient
+		// IO errors go through transcriptErrored instead so subsequent
+		// Append can retry.
 		transcriptSealed bool
- // transcriptErrored is a one-shot flag that suppresses
- // duplicate EventTranscriptSealed emissions for non-cap store
- // errors. Next Append still runs - transient failures (flaky
- // disk, network blip) must not permanently lose transcript
- // persistence for the rest of the Run.
+		// transcriptErrored is a one-shot flag that suppresses
+		// duplicate EventTranscriptSealed emissions for non-cap store
+		// errors. Next Append still runs - transient failures (flaky
+		// disk, network blip) must not permanently lose transcript
+		// persistence for the rest of the Run.
 		transcriptErrored bool
 	)
 	flushTranscript := func(allMsgs []provider.Message) {
@@ -639,16 +639,16 @@ func (r *AgentRunner) Run(ctx context.Context, cfg AgentConfig, userMessage stri
 			return
 		}
 		tail := allMsgs[persistedCount:]
- // Defensive copy so the store can't later see mutations from
- // the goai tool loop reusing the backing array.
+		// Defensive copy so the store can't later see mutations from
+		// the goai tool loop reusing the backing array.
 		cp := make([]provider.Message, len(tail))
 		copy(cp, tail)
 		if err := r.transcript.Append(r.runID, r.stepID, cp); err != nil {
 			isCap := errors.Is(err, resume.ErrTranscriptTooLarge)
- // only cap trips seal permanently. Non-cap errors
- // (transient IO) leave transcriptSealed=false so the next
- // Append can retry. The event is still emitted (once) so
- // operators see the failure signal.
+			// only cap trips seal permanently. Non-cap errors
+			// (transient IO) leave transcriptSealed=false so the next
+			// Append can retry. The event is still emitted (once) so
+			// operators see the failure signal.
 			emitEvent := false
 			if isCap {
 				transcriptSealed = true
@@ -675,8 +675,8 @@ func (r *AgentRunner) Run(ctx context.Context, cfg AgentConfig, userMessage stri
 			}
 			return
 		}
- // Success - reset the transient-error latch so a future
- // failure can re-emit, and advance the persisted cursor.
+		// Success - reset the transient-error latch so a future
+		// failure can re-emit, and advance the persisted cursor.
 		transcriptErrored = false
 		persistedCount = len(allMsgs)
 	}
@@ -769,10 +769,10 @@ func (r *AgentRunner) Run(ctx context.Context, cfg AgentConfig, userMessage stri
 				return goai.BeforeToolExecuteResult{Skip: true, Result: "result submitted successfully"}
 			}
 		}
- // Built-in coord-routing tool: bypass permission gate. send_message
- // is internal hub-only routing (agent → coord), not user-facing IO,
- // so it must not trigger an interactive permission prompt. The
- // tool's own Execute (in internal/coord) handles router.Send.
+		// Built-in coord-routing tool: bypass permission gate. send_message
+		// is internal hub-only routing (agent → coord), not user-facing IO,
+		// so it must not trigger an interactive permission prompt. The
+		// tool's own Execute (in internal/coord) handles router.Send.
 		if info.ToolName == toolNameSendMessage {
 			return goai.BeforeToolExecuteResult{}
 		}
@@ -832,12 +832,12 @@ func (r *AgentRunner) Run(ctx context.Context, cfg AgentConfig, userMessage stri
 				AgentName: agentID,
 				Data:      map[string]any{"phase": "request", "turn": info.MessageCount, "model": model},
 			})
- // Note: don't emit a bare Reasoning Output here. The
- // "◎ Thinking..." header should only appear when there's
- // actual reasoning content - driven by provider.ChunkReasoning
- // in streaming mode or by genResult.Reasoning in non-streaming.
- // Emitting on every request lit up the header every turn even
- // when thinking was disabled.
+			// Note: don't emit a bare Reasoning Output here. The
+			// "◎ Thinking..." header should only appear when there's
+			// actual reasoning content - driven by provider.ChunkReasoning
+			// in streaming mode or by genResult.Reasoning in non-streaming.
+			// Emitting on every request lit up the header every turn even
+			// when thinking was disabled.
 		}))
 		baseOpts = append(baseOpts, goai.WithOnResponse(func(info goai.ResponseInfo) {
 			usage := info.Usage
@@ -856,16 +856,16 @@ func (r *AgentRunner) Run(ctx context.Context, cfg AgentConfig, userMessage stri
 				"phase":        "start",
 				"tool_name":    info.ToolName,
 				"tool_call_id": info.ToolCallID,
- // Pass the redacted JSON arguments through so consumers
- // (TUI integrations) can populate the tool card's input
- // section with the path/command being invoked.
- // redact secrets before emitting to sinks.
+				// Pass the redacted JSON arguments through so consumers
+				// (TUI integrations) can populate the tool card's input
+				// section with the path/command being invoked.
+				// redact secrets before emitting to sinks.
 				"input": redactSecrets(string(info.Input)),
 			}
- // When this runner is a nested child (SpawnDepth > 0),
- // attach the spawn metadata so TUI consumers can collapse
- // the resulting tool_call event under the parent's
- // children list.
+			// When this runner is a nested child (SpawnDepth > 0),
+			// attach the spawn metadata so TUI consumers can collapse
+			// the resulting tool_call event under the parent's
+			// children list.
 			if r.spawnDepth > 0 {
 				data["depth"] = r.spawnDepth
 			}
@@ -886,10 +886,10 @@ func (r *AgentRunner) Run(ctx context.Context, cfg AgentConfig, userMessage stri
 				"phase":        "end",
 				"tool_name":    info.ToolName,
 				"tool_call_id": info.ToolCallID,
- // Mirror start: include input on end too so reconnecting
- // consumers that miss the start frame can still
- // reconstruct the card.
- // redact secrets before emitting to sinks.
+				// Mirror start: include input on end too so reconnecting
+				// consumers that miss the start frame can still
+				// reconstruct the card.
+				// redact secrets before emitting to sinks.
 				"input":  redactSecrets(string(info.Input)),
 				"output": info.Output,
 			}
@@ -947,9 +947,9 @@ func (r *AgentRunner) Run(ctx context.Context, cfg AgentConfig, userMessage stri
 		if ctx.Err() != nil {
 			break
 		}
- // B3: emit max-wake-cycles warning once at the configured
- // fraction of the cap (mailbox mode only - non-mailbox path
- // always runs exactly one iteration).
+		// B3: emit max-wake-cycles warning once at the configured
+		// fraction of the cap (mailbox mode only - non-mailbox path
+		// always runs exactly one iteration).
 		if mailboxMode && !warnEmitted && iter+1 >= warnAt && r.progress != nil {
 			warnEmitted = true
 			unread := 0
@@ -975,28 +975,28 @@ func (r *AgentRunner) Run(ctx context.Context, cfg AgentConfig, userMessage stri
 			stream, streamErr := goai.StreamText(ctx, r.model, opts...)
 			if streamErr != nil {
 				if result == nil {
- // A5#9 + B5#4: emit drops for any residual mailbox
- // messages already delivered before the first call
- // failed (e.g. ctx-cancel during first stream open).
- // Otherwise the post-loop drain at the bottom of Run
- // is skipped via this early-return and messages are
- // silently dropped without an EventMessageDropped.
+					// A5#9 + B5#4: emit drops for any residual mailbox
+					// messages already delivered before the first call
+					// failed (e.g. ctx-cancel during first stream open).
+					// Otherwise the post-loop drain at the bottom of Run
+					// is skipped via this early-return and messages are
+					// silently dropped without an EventMessageDropped.
 					r.emitResidualDrops(ctx, mailboxMode, dropReasonForErr(ctx, streamErr))
 					return nil, fmt.Errorf("agent stream (model %q): %w", model, streamErr)
 				}
 				break
 			}
- // drop `&& r.Verbose` gate on emitText in streaming
- // path. Previous behaviour: --stream alone was a no-op (text
- // chunks read from goai stream but discarded before reaching
- // the sink), so users saw zero difference between `--stream`
- // and default mode. Now `--stream` actually streams agent
- // text token-by-token. The sink (sink/stdout.go:384) does NOT
- // gate text deltas on verbose, mirroring the runner here.
- // Reasoning text remains conditionally rendered: header
- // always shown via sink:365, body only when --verbose
- // (sink:368). --verbose without --stream still emits agent
- // text (line 785 below) but as one batched chunk at turn end.
+			// drop `&& r.Verbose` gate on emitText in streaming
+			// path. Previous behaviour: --stream alone was a no-op (text
+			// chunks read from goai stream but discarded before reaching
+			// the sink), so users saw zero difference between `--stream`
+			// and default mode. Now `--stream` actually streams agent
+			// text token-by-token. The sink (sink/stdout.go:384) does NOT
+			// gate text deltas on verbose, mirroring the runner here.
+			// Reasoning text remains conditionally rendered: header
+			// always shown via sink:365, body only when --verbose
+			// (sink:368). --verbose without --stream still emits agent
+			// text (line 785 below) but as one batched chunk at turn end.
 			emitText := r.progress != nil
 			emitReasoning := r.progress != nil
 			for chunk := range stream.Stream() {
@@ -1023,7 +1023,7 @@ func (r *AgentRunner) Run(ctx context.Context, cfg AgentConfig, userMessage stri
 			genResult := stream.Result()
 			if stream.Err() != nil {
 				if result == nil {
- // A5#9 + B5#4: see comment on streamErr branch above.
+					// A5#9 + B5#4: see comment on streamErr branch above.
 					r.emitResidualDrops(ctx, mailboxMode, dropReasonForErr(ctx, stream.Err()))
 					return nil, fmt.Errorf("agent stream (model %q): %w", model, stream.Err())
 				}
@@ -1034,24 +1034,24 @@ func (r *AgentRunner) Run(ctx context.Context, cfg AgentConfig, userMessage stri
 			genResult, genErr := goai.GenerateText(ctx, r.model, opts...)
 			if genErr != nil {
 				if result == nil {
- // A5#9 + B5#4: emit residual mailbox drops before
- // returning. The post-loop drain at line ~1214 is
- // skipped via this early-return path, so without this
- // call any messages already delivered to the mailbox
- // (e.g. ctx-cancel mid-call) would be silently lost.
+					// A5#9 + B5#4: emit residual mailbox drops before
+					// returning. The post-loop drain at line ~1214 is
+					// skipped via this early-return path, so without this
+					// call any messages already delivered to the mailbox
+					// (e.g. ctx-cancel mid-call) would be silently lost.
 					r.emitResidualDrops(ctx, mailboxMode, dropReasonForErr(ctx, genErr))
 					return nil, fmt.Errorf("agent generate (model %q): %w", model, genErr)
 				}
 				break
 			}
- // Emit reasoning + text on the first iteration only -
- // subsequent wake-driven iterations are continuations and
- // duplicating the buffered output would double-print.
+			// Emit reasoning + text on the first iteration only -
+			// subsequent wake-driven iterations are continuations and
+			// duplicating the buffered output would double-print.
 			if r.progress != nil && result == nil {
- // Reasoning is surfaced regardless of r.Verbose so the
- // "Thinking..." header (driven by Reasoning=true) appears
- // in non-streaming mode too. Sink controls whether the
- // delta text is rendered (verbose-only).
+				// Reasoning is surfaced regardless of r.Verbose so the
+				// "Thinking..." header (driven by Reasoning=true) appears
+				// in non-streaming mode too. Sink controls whether the
+				// delta text is rendered (verbose-only).
 				if genResult.Reasoning != "" {
 					r.progress.OnOutput(ctx, Output{
 						RunID: r.runID, StepID: r.stepID, AgentID: agentID,
@@ -1070,16 +1070,16 @@ func (r *AgentRunner) Run(ctx context.Context, cfg AgentConfig, userMessage stri
 			result = mergeTextResult(result, genResult)
 		}
 
- // authoritative incremental flush after each
- // goai iteration. The full conversation snapshot for this
- // iteration is `messages + result.ResponseMessages`.
+		// authoritative incremental flush after each
+		// goai iteration. The full conversation snapshot for this
+		// iteration is `messages + result.ResponseMessages`.
 		if r.transcript != nil && result != nil {
 			full := make([]provider.Message, 0, len(messages)+len(result.ResponseMessages))
 			full = append(full, messages...)
 			full = append(full, result.ResponseMessages...)
 			flushTranscript(full)
 		}
- // Keep the deferred final-flush in sync with the latest result.
+		// Keep the deferred final-flush in sync with the latest result.
 		*finalResultRef = result
 
 		if submitDone.Load() {
@@ -1088,30 +1088,30 @@ func (r *AgentRunner) Run(ctx context.Context, cfg AgentConfig, userMessage stri
 		if !mailboxMode {
 			break
 		}
- // Continuation trigger: a wake-predicate stop OR a natural exit
- // while the mailbox still has unread messages. The latter
- // covers agents that finish their tool loop before the engine
- // observes StepIdle (single-shot text completions, fast tool
- // loops); without this branch, late mailbox writes would be
- // dropped silently.
+		// Continuation trigger: a wake-predicate stop OR a natural exit
+		// while the mailbox still has unread messages. The latter
+		// covers agents that finish their tool loop before the engine
+		// observes StepIdle (single-shot text completions, fast tool
+		// loops); without this branch, late mailbox writes would be
+		// dropped silently.
 		pendingNow := len(r.mailbox.Unread(r.stepID))
 		hasPending := pendingNow > 0
- // B3: if this was the LAST permitted iteration, do not drain -
- // leave any unread messages in the mailbox so the post-loop
- // cap-hit handler can emit them as max-wake-cycles drops.
- // Without this guard, the per-iteration drain at the bottom of
- // the loop body would silently MarkRead the messages even
- // though the next LLM call will never run.
+		// B3: if this was the LAST permitted iteration, do not drain -
+		// leave any unread messages in the mailbox so the post-loop
+		// cap-hit handler can emit them as max-wake-cycles drops.
+		// Without this guard, the per-iteration drain at the bottom of
+		// the loop body would silently MarkRead the messages even
+		// though the next LLM call will never run.
 		if iter+1 >= iterCap && hasPending {
 			hitWakeCap = true // distinguish cap exhaustion from ctx-cancel exit
 			break
 		}
 		if stoppedBy != provider.StopCausePredicate && !hasPending {
- // B6: agent reached natural completion with no unread
- // messages - emit EventAgentIdle so observers know the
- // agent is parked. We exit immediately rather than
- // blocking on Wake (the engine will re-spawn this Run
- // flow on the next workflow turn if needed).
+			// B6: agent reached natural completion with no unread
+			// messages - emit EventAgentIdle so observers know the
+			// agent is parked. We exit immediately rather than
+			// blocking on Wake (the engine will re-spawn this Run
+			// flow on the next workflow turn if needed).
 			if r.progress != nil {
 				r.progress.OnEvent(ctx, Event{
 					Type:      types.EventAgentIdle,
@@ -1125,27 +1125,27 @@ func (r *AgentRunner) Run(ctx context.Context, cfg AgentConfig, userMessage stri
 			}
 			break
 		}
- // Drain any pending wake signal so it doesn't immediately
- // re-fire the predicate on the next iteration before any new
- // messages arrive.
+		// Drain any pending wake signal so it doesn't immediately
+		// re-fire the predicate on the next iteration before any new
+		// messages arrive.
 		select {
 		case <-r.wake:
 		default:
 		}
 
- // Wake fired - drain the mailbox into the next call's messages.
+		// Wake fired - drain the mailbox into the next call's messages.
 		nextMessages := make([]provider.Message, 0, len(messages)+len(result.ResponseMessages)+4)
 		nextMessages = append(nextMessages, messages...)
 		nextMessages = append(nextMessages, result.ResponseMessages...)
 		drainCancel, drained := r.drainMailboxIntoMessages(ctx, &nextMessages)
 		if drainCancel {
- // A7#1 + B7#1: drainMailboxIntoMessages MarkReads only up to
- // the cancel marker (consumed = cancelIdx+1). Any messages
- // after the marker - or appended between the Unread snapshot
- // and cancel detection - remain unread and would otherwise be
- // silently abandoned by this early-return path. Emit residual
- // drops here so they surface as EventMessageDropped, matching
- // the other 5 cancel-exit sites.
+			// A7#1 + B7#1: drainMailboxIntoMessages MarkReads only up to
+			// the cancel marker (consumed = cancelIdx+1). Any messages
+			// after the marker - or appended between the Unread snapshot
+			// and cancel detection - remain unread and would otherwise be
+			// silently abandoned by this early-return path. Emit residual
+			// drops here so they surface as EventMessageDropped, matching
+			// the other 5 cancel-exit sites.
 			r.emitResidualDrops(ctx, mailboxMode, router.DropReasonWorkflowCancelled)
 			return &AgentResult{
 				Content:  "cancelled",
@@ -1158,12 +1158,12 @@ func (r *AgentRunner) Run(ctx context.Context, cfg AgentConfig, userMessage stri
 		if !drained {
 			break
 		}
- // Inject a fresh dynamic-context snapshot per wake cycle, so
- // each re-entry sees up-to-date ambient state alongside the
- // drained mailbox messages.
+		// Inject a fresh dynamic-context snapshot per wake cycle, so
+		// each re-entry sees up-to-date ambient state alongside the
+		// drained mailbox messages.
 		r.appendWakeContext(&nextMessages)
- // B6: emit EventAgentWake noting how many messages were
- // drained on this cycle.
+		// B6: emit EventAgentWake noting how many messages were
+		// drained on this cycle.
 		wakeCycles++
 		if r.progress != nil {
 			r.progress.OnEvent(ctx, Event{
@@ -1196,10 +1196,10 @@ func (r *AgentRunner) Run(ctx context.Context, cfg AgentConfig, userMessage stri
 	// is a clean terminal exit, NOT a cancellation - mislabeling it
 	// as workflow-cancelled would lie about the run's outcome.
 	if mailboxMode {
- // Default: terminal-clean exit (submit_done, natural stop with
- // no pending msgs but a race delivered one between the check
- // and this point, etc.). Override only for the two known
- // non-terminal exits: cap exhaustion and ctx cancellation.
+		// Default: terminal-clean exit (submit_done, natural stop with
+		// no pending msgs but a race delivered one between the check
+		// and this point, etc.). Override only for the two known
+		// non-terminal exits: cap exhaustion and ctx cancellation.
 		dropReason := router.DropReasonTargetTerminal
 		switch {
 		case hitWakeCap:
@@ -1211,14 +1211,14 @@ func (r *AgentRunner) Run(ctx context.Context, cfg AgentConfig, userMessage stri
 	}
 
 	if result == nil {
- // Reachable only when ctx was cancelled before the first goai
- // iteration ran (the loop's `if ctx.Err != nil { break }` guard
- // at the top fires before any GenerateText call assigns result).
- // Every other nil-result path returns earlier inside the loop:
- // genErr with result==nil returns immediately (line 416),
- // streamErr with result==nil returns immediately (line 377).
- // Surface ctx.Err so callers can errors.Is against
- // context.Canceled / context.DeadlineExceeded.
+		// Reachable only when ctx was cancelled before the first goai
+		// iteration ran (the loop's `if ctx.Err != nil { break }` guard
+		// at the top fires before any GenerateText call assigns result).
+		// Every other nil-result path returns earlier inside the loop:
+		// genErr with result==nil returns immediately (line 416),
+		// streamErr with result==nil returns immediately (line 377).
+		// Surface ctx.Err so callers can errors.Is against
+		// context.Canceled / context.DeadlineExceeded.
 		return nil, fmt.Errorf("agent generate (model %q): %w", model, ctx.Err())
 	}
 
@@ -1230,10 +1230,10 @@ func (r *AgentRunner) Run(ctx context.Context, cfg AgentConfig, userMessage stri
 		if retryErr == nil && retryResult != nil {
 			addUsage(&result.TotalUsage, retryResult.TotalUsage)
 		}
- // retryErr is best-effort: the primary outcome is encoded in
- // submitDone.Load (set by the submit_result handler on successful
- // retry); the executor surfaces "submit not called" via missing
- // structured Result, not via this error.
+		// retryErr is best-effort: the primary outcome is encoded in
+		// submitDone.Load (set by the submit_result handler on successful
+		// retry); the executor surfaces "submit not called" via missing
+		// structured Result, not via this error.
 		if retryErr != nil {
 			slog.Warn("submit_result retry failed (best-effort)", "err", retryErr, "run_id", r.runID, "step_id", r.stepID)
 		}
@@ -1479,10 +1479,10 @@ func (r *AgentRunner) drainMailboxIntoMessages(ctx context.Context, msgs *[]prov
 			consumed = i + 1
 			break
 		}
- // RouterMessageInfo, RouterMessageContextUpdate, and
- // RouterMessageResumeReply all flow to the
- // agent's conversation as a user turn. The Type is preserved
- // on the mailbox record for observers; drain is uniform.
+		// RouterMessageInfo, RouterMessageContextUpdate, and
+		// RouterMessageResumeReply all flow to the
+		// agent's conversation as a user turn. The Type is preserved
+		// on the mailbox record for observers; drain is uniform.
 		*msgs = append(*msgs, provider.Message{Role: provider.RoleUser, Content: []provider.Part{{Type: provider.PartText, Text: fmt.Sprintf("[%s]: %s", msg.From, msg.Content)}}})
 		r.emitInboxDrain(ctx, msg)
 		drainedAny = true

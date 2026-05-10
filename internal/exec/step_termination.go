@@ -116,10 +116,10 @@ func waitForStepTermination(
 	check := func() bool {
 		stepLock.RLock()
 		defer stepLock.RUnlock()
- // B1 defense-in-depth: if the workflow was cancelled, the
- // abort-flush path will drain mailboxes wholesale; do
- // not keep blocking the per-step wait on inbound senders that
- // will never deliver.
+		// B1 defense-in-depth: if the workflow was cancelled, the
+		// abort-flush path will drain mailboxes wholesale; do
+		// not keep blocking the per-step wait on inbound senders that
+		// will never deliver.
 		if router.WorkflowCancelled() {
 			return true
 		}
@@ -131,43 +131,43 @@ func waitForStepTermination(
 		}
 		if state != nil {
 			kind, _ := state.Observe()
- // Gate on terminal kinds (Done, Cancelled,
- // Error) rather than the wake-eligible StepIdle. StepIdle
- // alone is unsafe because the runner may flip back to
- // StepLLMInFlight via the wake loop after observing it. A
- // terminal state, in contrast, is sticky (CAS-guarded by
- // goai.AgentState.SetTerminal) and proves no further
- // transitions can occur.
- // StepIdle fallback: the check below ALSO accepts StepIdle
- // to support callers that drive AgentState manually without
- // invoking AgentRunner.Run's terminal-state defer. Callers
- // in this category are exclusively tests today:
- // - lifecycle_test.go drives st.set(StepIdle, ...) to
- // reproduce poller invariants without standing up a
- // real runner.
- // - round3_fixes_test.go uses the same pattern.
- // The standalone RunAgent path (zenflow.go RunAgent) does
- // NOT pass StateRef into AgentRunner; its state here is
- // therefore nil and this branch is skipped entirely.
- // Removing the fallback would require rewriting every
- // AgentState-driving test through a full goai.GenerateText
- // call - a significant refactor with no production benefit.
- // Keep the fallback explicit + documented; the production
- // invariant ("terminal states are sticky") is preserved
- // because the executor path always wires SetTerminal via
- // AgentRunner.Run's defer.
+			// Gate on terminal kinds (Done, Cancelled,
+			// Error) rather than the wake-eligible StepIdle. StepIdle
+			// alone is unsafe because the runner may flip back to
+			// StepLLMInFlight via the wake loop after observing it. A
+			// terminal state, in contrast, is sticky (CAS-guarded by
+			// goai.AgentState.SetTerminal) and proves no further
+			// transitions can occur.
+			// StepIdle fallback: the check below ALSO accepts StepIdle
+			// to support callers that drive AgentState manually without
+			// invoking AgentRunner.Run's terminal-state defer. Callers
+			// in this category are exclusively tests today:
+			// - lifecycle_test.go drives st.set(StepIdle, ...) to
+			// reproduce poller invariants without standing up a
+			// real runner.
+			// - round3_fixes_test.go uses the same pattern.
+			// The standalone RunAgent path (zenflow.go RunAgent) does
+			// NOT pass StateRef into AgentRunner; its state here is
+			// therefore nil and this branch is skipped entirely.
+			// Removing the fallback would require rewriting every
+			// AgentState-driving test through a full goai.GenerateText
+			// call - a significant refactor with no production benefit.
+			// Keep the fallback explicit + documented; the production
+			// invariant ("terminal states are sticky") is preserved
+			// because the executor path always wires SetTerminal via
+			// AgentRunner.Run's defer.
 			if !kind.IsTerminal() && kind != goai.StepIdle {
 				return false
 			}
- // Observability hook on the soft-gate fallback. If we
- // accepted a bare StepIdle (rather than a terminal kind),
- // record the hit so operators can detect a production caller
- // that forgot to wire SetTerminal via AgentRunner.Run's
- // defer. The first hit per process logs a one-shot warning;
- // subsequent hits only bump the counter (avoid log spam).
- // Tests that intentionally drive StepIdle without a terminal
- // CAS will inflate this counter; that is expected and
- // observable via stepIdleFallbackHitsCount.
+			// Observability hook on the soft-gate fallback. If we
+			// accepted a bare StepIdle (rather than a terminal kind),
+			// record the hit so operators can detect a production caller
+			// that forgot to wire SetTerminal via AgentRunner.Run's
+			// defer. The first hit per process logs a one-shot warning;
+			// subsequent hits only bump the counter (avoid log spam).
+			// Tests that intentionally drive StepIdle without a terminal
+			// CAS will inflate this counter; that is expected and
+			// observable via stepIdleFallbackHitsCount.
 			if kind == goai.StepIdle {
 				stepIdleFallbackHits.Add(1)
 				stepIdleFallbackMu.Lock()

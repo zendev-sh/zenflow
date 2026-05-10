@@ -107,9 +107,9 @@ func (s *StdoutSink) OnEvent(_ context.Context, event zenflow.Event) {
 		fmt.Fprintf(s.w, "%s %s\n", C(Success, "✓ ["+event.StepID+"] completed"), C(Dim, "("+event.Duration.String()+")"))
 
 	case zenflow.EventStepSkipped:
- // §9.A normalisation: skipped means "not run" not "warning" -
- // glyph `○` (U+25CB) with Muted color (grey) across both CLI
- // and TUI. Was `⊘` Warning yellow.
+		// §9.A normalisation: skipped means "not run" not "warning" -
+		// glyph `○` (U+25CB) with Muted color (grey) across both CLI
+		// and TUI. Was `⊘` Warning yellow.
 		fmt.Fprintf(s.w, "%s\n", C(Muted, "○ ["+event.StepID+"] skipped"))
 
 	case zenflow.EventError:
@@ -122,10 +122,10 @@ func (s *StdoutSink) OnEvent(_ context.Context, event zenflow.Event) {
 		fmt.Fprintf(s.w, "%s %s\n", C(Magenta, fmt.Sprintf("⇢ [%s]", event.StepID)), event.Message)
 
 	case zenflow.EventMessageSent:
- // Outbound side of message visibility - fires when send_message
- // (agent → coord) or forward_to_agent (coord → agent) successfully
- // queues. ⇠ points OUT of the sender's bracket per convention
- // (⇠ = sent, ⇢ = received). Truncate long content for readability.
+		// Outbound side of message visibility - fires when send_message
+		// (agent → coord) or forward_to_agent (coord → agent) successfully
+		// queues. ⇠ points OUT of the sender's bracket per convention
+		// (⇠ = sent, ⇢ = received). Truncate long content for readability.
 		to := dataGet[string](event.Data, "to")
 		if to == "" {
 			to = "?"
@@ -138,18 +138,18 @@ func (s *StdoutSink) OnEvent(_ context.Context, event zenflow.Event) {
 		if len(text) > maxSent {
 			text = text[:maxSent] + "..."
 		}
- // Color matches EventAgentInboxDrain (received) so the sent/received
- // pair reads as one symmetric flow.
+		// Color matches EventAgentInboxDrain (received) so the sent/received
+		// pair reads as one symmetric flow.
 		fmt.Fprintf(s.w, "%s %s %s\n",
 			C(Info, fmt.Sprintf("⇠ [%s]", event.StepID)),
 			C(Dim, "sent to "+to+":"),
 			text)
 
 	case zenflow.EventCoordinatorInboxMessage:
- // reverse reply drained from the coordinator
- // inbox (typically from a resumed step). Uses Info (#3b82f6)
- // to match the "message received" semantic across the TUI/CLI.
- // Truncate long content so the terminal line stays readable.
+		// reverse reply drained from the coordinator
+		// inbox (typically from a resumed step). Uses Info (#3b82f6)
+		// to match the "message received" semantic across the TUI/CLI.
+		// Truncate long content so the terminal line stays readable.
 		from := dataGet[string](event.Data, "from")
 		if from == "" {
 			from = "?"
@@ -164,9 +164,9 @@ func (s *StdoutSink) OnEvent(_ context.Context, event zenflow.Event) {
 			content)
 
 	case zenflow.EventAgentInboxDrain:
- // Agent received coordinator-routed message. Info (#3b82f6)
- // matches the "incoming message from user/coordinator"
- // semantic used in chat rendering.
+		// Agent received coordinator-routed message. Info (#3b82f6)
+		// matches the "incoming message from user/coordinator"
+		// semantic used in chat rendering.
 		from := dataGet[string](event.Data, "from")
 		if from == "" {
 			from = "?"
@@ -174,12 +174,12 @@ func (s *StdoutSink) OnEvent(_ context.Context, event zenflow.Event) {
 		fmt.Fprintf(s.w, "%s %s\n", C(Info, fmt.Sprintf("⇢ [%s]", event.StepID)), C(Dim, "received from "+from))
 
 	case zenflow.EventAgentIdle:
- // B6 /: agent finished a goai iteration with no unread
- // messages and is parked. Render as a low-key idle marker.
+		// B6 /: agent finished a goai iteration with no unread
+		// messages and is parked. Render as a low-key idle marker.
 		fmt.Fprintf(s.w, "%s\n", C(Dim, fmt.Sprintf("· [%s] idle", event.StepID)))
 
 	case zenflow.EventAgentWake:
- // B6 /: agent re-entered goai after draining N messages.
+		// B6 /: agent re-entered goai after draining N messages.
 		count := dataGet[int](event.Data, "message_count")
 		cycle := dataGet[int](event.Data, "cycle")
 		fmt.Fprintf(s.w, "%s %s\n",
@@ -187,8 +187,8 @@ func (s *StdoutSink) OnEvent(_ context.Context, event zenflow.Event) {
 			C(Dim, fmt.Sprintf("msgs=%d cycle=%d", count, cycle)))
 
 	case zenflow.EventMaxWakeCyclesWarning:
- // B6 / B3: emitted at 80% of MaxWakeCycles cap - operators get an
- // early heads-up before max-wake-cycles drops fire.
+		// B6 / B3: emitted at 80% of MaxWakeCycles cap - operators get an
+		// early heads-up before max-wake-cycles drops fire.
 		cur := dataGet[int](event.Data, "current_cycle")
 		maxC := dataGet[int](event.Data, "max_cycles")
 		unread := dataGet[int](event.Data, "unread_remaining")
@@ -197,7 +197,7 @@ func (s *StdoutSink) OnEvent(_ context.Context, event zenflow.Event) {
 			C(Dim, fmt.Sprintf("cycle=%d/%d unread=%d", cur, maxC, unread)))
 
 	case zenflow.EventResumeStarted:
- // resumed step lifecycle rendering.
+		// resumed step lifecycle rendering.
 		from := dataGet[string](event.Data, "from")
 		if from == "" {
 			from = "?"
@@ -207,12 +207,12 @@ func (s *StdoutSink) OnEvent(_ context.Context, event zenflow.Event) {
 			C(Dim, "(resume started)"))
 
 	case zenflow.EventResumeQueued:
- // F4 - a resume message was appended to an
- // in-flight resume's mailbox instead of spawning a new
- // goroutine. Render dim gray so operators see the event
- // without confusing it with a fresh resume start. VA-4b:
- // include activeResumeID so operators can correlate with the
- // running EventResumeStarted.
+		// F4 - a resume message was appended to an
+		// in-flight resume's mailbox instead of spawning a new
+		// goroutine. Render dim gray so operators see the event
+		// without confusing it with a fresh resume start. VA-4b:
+		// include activeResumeID so operators can correlate with the
+		// running EventResumeStarted.
 		from := dataGet[string](event.Data, "from")
 		if from == "" {
 			from = "?"
@@ -227,9 +227,9 @@ func (s *StdoutSink) OnEvent(_ context.Context, event zenflow.Event) {
 			C(Dim, tail))
 
 	case zenflow.EventTranscriptSealed:
- // G4 - transcript store hit its cap (or IO error) and
- // further appends will be silently suppressed. Render yellow
- // so operators notice mid-Run.
+		// G4 - transcript store hit its cap (or IO error) and
+		// further appends will be silently suppressed. Render yellow
+		// so operators notice mid-Run.
 		reason := dataGet[string](event.Data, "reason")
 		if reason == "" {
 			reason = "unknown"
@@ -254,10 +254,10 @@ func (s *StdoutSink) OnEvent(_ context.Context, event zenflow.Event) {
 			C(Dim, "reason="+reason))
 
 	case zenflow.EventMessageDropped:
- // surface every router-side or workflow-abort
- // drop so the "zero silent drops" contract is observable in the
- // CLI. Reason is the load-bearing field; from/step provide
- // localization context.
+		// surface every router-side or workflow-abort
+		// drop so the "zero silent drops" contract is observable in the
+		// CLI. Reason is the load-bearing field; from/step provide
+		// localization context.
 		from := dataGet[string](event.Data, "from")
 		if from == "" {
 			from = "?"
@@ -266,14 +266,14 @@ func (s *StdoutSink) OnEvent(_ context.Context, event zenflow.Event) {
 		if reason == "" {
 			reason = "unknown"
 		}
- // soften "workflow-cancelled" drops to INFO (○ Dim)
- // instead of WARN (⚠). These drops happen at workflow
- // shutdown when coord still has unprocessed mailbox messages
- // (more frequent on verbose models like MiniMax with longer
- // LLM cycles). Expected timing artifact, not an error. Other
- // drop reasons (coord-down, unknown-step, cap-exhaustion,
- // etc.) remain WARN since they indicate real routing/capacity
- // issues mid-flight.
+		// soften "workflow-cancelled" drops to INFO (○ Dim)
+		// instead of WARN (⚠). These drops happen at workflow
+		// shutdown when coord still has unprocessed mailbox messages
+		// (more frequent on verbose models like MiniMax with longer
+		// LLM cycles). Expected timing artifact, not an error. Other
+		// drop reasons (coord-down, unknown-step, cap-exhaustion,
+		// etc.) remain WARN since they indicate real routing/capacity
+		// issues mid-flight.
 		if reason == "workflow-cancelled" {
 			fmt.Fprintf(s.w, "%s %s\n",
 				C(Dim, fmt.Sprintf("○ msg-dropped [%s]", event.StepID)),
@@ -304,10 +304,10 @@ func (s *StdoutSink) OnEvent(_ context.Context, event zenflow.Event) {
 		if argPreview != "" {
 			header = fmt.Sprintf("%s [%s] %s %s", icon, event.StepID, name, C(Dim, argPreview))
 		}
- // Tool header format: the status glyph (✓/×) carries the
- // Success/Error color; the tool icon + stepID + name render in
- // default FG so only the status stands out. Elapsed + error
- // detail use Dim.
+		// Tool header format: the status glyph (✓/×) carries the
+		// Success/Error color; the tool icon + stepID + name render in
+		// default FG so only the status stands out. Elapsed + error
+		// detail use Dim.
 		if event.Error != nil {
 			fmt.Fprintf(s.w, "%s %s %s\n",
 				C(ErrorFG, "×"),
@@ -333,9 +333,9 @@ func (s *StdoutSink) OnEvent(_ context.Context, event zenflow.Event) {
 		if phase != "response" || event.Tokens == nil {
 			return
 		}
- // Per-turn token summary. Uses Σ glyph + Dim color across the
- // whole line so it reads as a quiet trailing stat - visually
- // distinct from the colored ◎ Thinking… header (B-N3).
+		// Per-turn token summary. Uses Σ glyph + Dim color across the
+		// whole line so it reads as a quiet trailing stat - visually
+		// distinct from the colored ◎ Thinking… header (B-N3).
 		fmt.Fprintf(s.w, "%s\n",
 			C(Dim, fmt.Sprintf("Σ [%s] turn (in=%d, out=%d)",
 				event.StepID, event.Tokens.InputTokens, event.Tokens.OutputTokens)))
@@ -373,20 +373,20 @@ func (s *StdoutSink) OnOutput(_ context.Context, output zenflow.Output) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if output.Reasoning {
- // If we left the cursor mid-line on a non-reasoning write, close
- // it before opening the reasoning header. (Don't add a newline if
- // we're already inside an open reasoning section - its header
- // terminated the previous line.)
+		// If we left the cursor mid-line on a non-reasoning write, close
+		// it before opening the reasoning header. (Don't add a newline if
+		// we're already inside an open reasoning section - its header
+		// terminated the previous line.)
 		if s.partialLine && !s.inReasoning {
 			fmt.Fprintln(s.w)
 			s.partialLine = false
 		}
 		if !s.inReasoning {
- // Thinking header uses the Thinking truecolor (#7c3aed).
- // Reasoning deltas below stay Dim so they don't visually
- // overpower the primary output stream. The header itself is
- // line-terminated, so partialLine stays false until a delta
- // arrives without \n.
+			// Thinking header uses the Thinking truecolor (#7c3aed).
+			// Reasoning deltas below stay Dim so they don't visually
+			// overpower the primary output stream. The header itself is
+			// line-terminated, so partialLine stays false until a delta
+			// arrives without \n.
 			fmt.Fprintf(s.w, "%s\n", C(Thinking, fmt.Sprintf("◎ [%s] Thinking...", output.StepID)))
 			s.inReasoning = true
 		}
@@ -407,12 +407,12 @@ func (s *StdoutSink) OnOutput(_ context.Context, output zenflow.Output) {
 		s.inReasoning = false
 	}
 	if output.Delta != "" {
- // Open or switch the agent-response block. Format mirrors
- // EventCoordinatorNarration so any LLM-authored prose addressed
- // to the user (narration, summary, agent response) renders with
- // the same `≋ [stepID]` prefix. On parallel runs, a stepID
- // switch closes the previous line and re-emits the prefix so
- // every chunk stays attributable.
+		// Open or switch the agent-response block. Format mirrors
+		// EventCoordinatorNarration so any LLM-authored prose addressed
+		// to the user (narration, summary, agent response) renders with
+		// the same `≋ [stepID]` prefix. On parallel runs, a stepID
+		// switch closes the previous line and re-emits the prefix so
+		// every chunk stays attributable.
 		if s.streamStepID != output.StepID {
 			if s.partialLine {
 				fmt.Fprintln(s.w)
@@ -487,7 +487,7 @@ func toolArgsPreview(toolName, raw string) string {
 		val = pick(key)
 	}
 	if val == "" {
- // Fallback: try common alternate keys before giving up.
+		// Fallback: try common alternate keys before giving up.
 		for _, k := range []string{"file_path", "path", "command", "pattern", "url", "query"} {
 			if v := pick(k); v != "" {
 				val = v

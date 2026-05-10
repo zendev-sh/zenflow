@@ -42,10 +42,14 @@ const coordDefaultMaxWakeCycles = 100
 // NewDefaultCoordRunner when the caller does not override it.
 // Exported so consumers can append integration-specific guidance
 // without losing the tested baseline:
+//
 //	zenflow.NewDefaultCoordRunner(llm,
+//
 // zenflow.WithCoordSystemPrompt(zenflow.DefaultCoordSystemPrompt + extras))
 // or via the convenience option:
+//
 //	zenflow.NewDefaultCoordRunner(llm,
+//
 // zenflow.WithCoordSystemPromptSuffix(extras))
 // The prompt names every default tool (forward_to_agent, narrate,
 // finalize) so a future rename will trip
@@ -264,8 +268,10 @@ func SynthesizeOnly() CoordOption {
 // defaults.
 // To replace the default tools entirely instead of appending, mutate
 // the runner returned by NewDefaultCoordRunner directly:
+//
 //	runner := NewDefaultCoordRunner(llm)
 //	runner.Tools = []goai.Tool{myReplacementSet...}
+//
 // - but doing so removes finalize, so the Run loop will not exit
 // without a manual replacement signal.
 func WithCoordTools(tools ...goai.Tool) CoordOption {

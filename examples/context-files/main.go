@@ -5,6 +5,7 @@
 // multimodal parts. Requires a vision-capable model (Gemini, Claude
 // Sonnet) - the gemini-2.0-flash default supports both.
 // Run from the zenflow/ directory:
+//
 //	export GEMINI_API_KEY=...
 //	go run -tags example ./examples/context-files/
 package main

@@ -50,7 +50,7 @@ func BenchmarkStorageSaveLoad(b *testing.B) {
 	b.Run("memory", func(b *testing.B) {
 		store := NewMemoryStorage()
 		run := benchRun()
- // Pre-seed so LoadRun on the very first iteration finds the row.
+		// Pre-seed so LoadRun on the very first iteration finds the row.
 		if err := store.SaveRun(ctx, run); err != nil {
 			b.Fatalf("pre-seed SaveRun: %v", err)
 		}
@@ -77,7 +77,7 @@ func BenchmarkStorageSaveLoad(b *testing.B) {
 
 		store := NewFileStorage(dir)
 		run := benchRun()
- // Pre-seed.
+		// Pre-seed.
 		if err := store.SaveRun(ctx, run); err != nil {
 			b.Fatalf("pre-seed SaveRun: %v", err)
 		}

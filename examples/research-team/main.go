@@ -5,6 +5,7 @@
 // forwards research findings to all three and cross-pollinates
 // discoveries between them as they complete.
 // Run from the zenflow/ directory:
+//
 //	export GEMINI_API_KEY=...
 //	go run -tags example ./examples/research-team/
 package main

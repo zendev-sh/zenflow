@@ -4,6 +4,7 @@
 // previous step's output. The first step lists microservices, then a
 // forEach loop deploys each one in parallel.
 // Run from the zenflow/ directory:
+//
 //	export GEMINI_API_KEY=...
 //	go run -tags example ./examples/loop-foreach/
 package main

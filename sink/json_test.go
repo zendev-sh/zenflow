@@ -454,7 +454,7 @@ func TestSpecSampleNDJSON_RoundTrip(t *testing.T) {
 		string(zenflow.EventResumeFailed):            {},
 		string(zenflow.EventResumeQueued):            {},
 		string(zenflow.EventTranscriptSealed):        {},
-		"output": {},
+		"output":                                     {},
 	}
 
 	// Documented data-key requirements per type (subset; only the keys
@@ -485,8 +485,8 @@ func TestSpecSampleNDJSON_RoundTrip(t *testing.T) {
 			t.Errorf("line %d: unknown type %q (not in spec.md § 14.2)", i+1, typ)
 		}
 
- // Streaming `output` events carry their own envelope shape; they
- // do not include `timestamp`. Every other event must.
+		// Streaming `output` events carry their own envelope shape; they
+		// do not include `timestamp`. Every other event must.
 		if typ != "output" {
 			if _, ok := obj["timestamp"].(string); !ok {
 				t.Errorf("line %d (type=%s): missing `timestamp`", i+1, typ)
