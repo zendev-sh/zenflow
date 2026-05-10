@@ -91,9 +91,9 @@ func TestZFB1_RunFlow_HungProvider_Reproduction(t *testing.T) {
 		if elapsed > grace {
 			t.Fatalf("BUG: RunFlow took %v after 1s timeout (want ≤%v)", elapsed, grace)
 		}
- // Executor convention: return (result, nil) even on cancellation; status
- // signals abort. Accept either a ctx-wrapped error OR a non-completed
- // status as evidence of a clean cancellation.
+		// Executor convention: return (result, nil) even on cancellation; status
+		// signals abort. Accept either a ctx-wrapped error OR a non-completed
+		// status as evidence of a clean cancellation.
 		if out.err != nil && !errors.Is(out.err, context.DeadlineExceeded) && !errors.Is(out.err, context.Canceled) {
 			t.Fatalf("RunFlow error = %v, want DeadlineExceeded or Canceled", out.err)
 		}

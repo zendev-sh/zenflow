@@ -111,7 +111,9 @@ func WithDefaultModel(model string) Option {
 // with the given model name during execution. Empty string disables the
 // override (equivalent to leaving the option off).
 // Precedence (high → low) for effective model resolution:
+//
 //	WithForceModel > Step.Model > AgentConfig.Model > WithDefaultModel
+//
 // Use WithForceModel for cross-provider CLI overrides (e.g. running every
 // step of a workflow through a single test provider regardless of YAML).
 // For ordinary defaults, prefer WithDefaultModel - it lets per-agent and
@@ -428,9 +430,9 @@ func WithMaxTranscriptBytes(b int64) Option {
 // Stable.
 func WithExternalInbox(ids ...string) Option {
 	return func(o *Orchestrator) {
- // Deduplicate: build a seen-set from existing entries so repeated
- // calls (or duplicate IDs within a single call) do not register
- // the same inbox more than once.
+		// Deduplicate: build a seen-set from existing entries so repeated
+		// calls (or duplicate IDs within a single call) do not register
+		// the same inbox more than once.
 		seen := make(map[string]bool, len(o.externalInboxes)+len(ids))
 		for _, id := range o.externalInboxes {
 			seen[id] = true

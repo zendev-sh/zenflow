@@ -79,20 +79,20 @@ func RunCoordinatorLoop(ctx context.Context, runner *AgentRunner, modelID string
 			}
 		}()
 		defer close(done)
- // AgentRunner.Run exits on natural-stop+empty-mailbox - that
- // exit is correct for STEP runners (the executor re-spawns Run
- // per step) but wrong for COORD, which lives across the whole
- // workflow. Re-spawn loop until ctx canceled.
+		// AgentRunner.Run exits on natural-stop+empty-mailbox - that
+		// exit is correct for STEP runners (the executor re-spawns Run
+		// per step) but wrong for COORD, which lives across the whole
+		// workflow. Re-spawn loop until ctx canceled.
 		coordCfg := AgentConfig{}
 		userMsg := DefaultCoordColdStartPrompt + BuildCoordStepMenu(runner)
 		for {
 			_, runErr := runner.Run(coordCtx, coordCfg, userMsg, modelID, runner.Tools())
- // Surface coord LLM errors so users see rate-limit / network
- // failures instead of silent absence-of-narration. The error
- // is non-fatal (the workflow DAG continues independently of
- // the coordinator) but operators need to know when the coord
- // goroutine is failing. Skip ctx-cancel errors - those are
- // the normal teardown path and don't indicate a problem.
+			// Surface coord LLM errors so users see rate-limit / network
+			// failures instead of silent absence-of-narration. The error
+			// is non-fatal (the workflow DAG continues independently of
+			// the coordinator) but operators need to know when the coord
+			// goroutine is failing. Skip ctx-cancel errors - those are
+			// the normal teardown path and don't indicate a problem.
 			if runErr != nil && coordCtx.Err() == nil {
 				slog.WarnContext(coordCtx, "coordinator runner failed; workflow DAG continues without coord narration",
 					"err", runErr,
@@ -112,9 +112,9 @@ func RunCoordinatorLoop(ctx context.Context, runner *AgentRunner, modelID string
 		select {
 		case <-done:
 		case <-timer.C: // coverage-note: coord LLM timeout branch; requires a slow LLM that outlives cleanupTimeout in a real process
- // Coord LLM didn't acknowledge cancellation - let it leak
- // rather than block CLI exit. The CLI process exit will
- // reap the goroutine.
+			// Coord LLM didn't acknowledge cancellation - let it leak
+			// rather than block CLI exit. The CLI process exit will
+			// reap the goroutine.
 		}
 	}
 }

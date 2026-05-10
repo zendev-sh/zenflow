@@ -101,10 +101,10 @@ func AssemblePromptWithForEach(agent AgentConfig, step Step, baseDir string, pri
 	// providers treat system + user prompts differently for instruction
 	// following + safety filters; agent role is identity, not task).
 	if step.Instructions != "" {
- // : agent.Prompt previously preceded "## Task" so a
- // leading "\n" separator was needed. With the prompt now in
- // the system slot, "## Task" is always the first section in
- // the user message - no separator required.
+		// : agent.Prompt previously preceded "## Task" so a
+		// leading "\n" separator was needed. With the prompt now in
+		// the system slot, "## Task" is always the first section in
+		// the user message - no separator required.
 		sb.WriteString("## Task\n")
 		sb.WriteString(step.Instructions)
 		sb.WriteString("\n")
@@ -144,8 +144,8 @@ func AssemblePromptWithForEach(agent AgentConfig, step Step, baseDir string, pri
 			}
 		}
 	} else if len(step.DependsOn) == 0 && len(priorResults) > 0 {
- // G3: Parent dep results from include step (spec §7 dependsOn rewriting).
- // Inner steps with no dependsOn receive parent context via ParentDepResults.
+		// G3: Parent dep results from include step (spec §7 dependsOn rewriting).
+		// Inner steps with no dependsOn receive parent context via ParentDepResults.
 		var hasResults bool
 		for depID, sr := range priorResults {
 			if sr == nil || sr.Status != spec.StepCompleted {
@@ -169,12 +169,12 @@ func AssemblePromptWithForEach(agent AgentConfig, step Step, baseDir string, pri
 		}
 		sb.WriteString("## Context Files\n")
 		for _, f := range step.ContextFiles {
- // Resolve relative paths against the workflow's base directory.
+			// Resolve relative paths against the workflow's base directory.
 			path := f
 			if baseDir != "" && !filepath.IsAbs(f) {
 				path = filepath.Join(baseDir, f)
 			}
- // Path traversal + symlink check: resolved path must stay within baseDir.
+			// Path traversal + symlink check: resolved path must stay within baseDir.
 			if baseDir != "" {
 				absResolved, err := filepathAbs(path)
 				if err != nil {
@@ -202,20 +202,20 @@ func AssemblePromptWithForEach(agent AgentConfig, step Step, baseDir string, pri
 					sb.WriteString("\n(error: path escapes workflow directory)\n")
 					continue
 				}
- // Use the resolved path to prevent TOCTOU race.
+				// Use the resolved path to prevent TOCTOU race.
 				path = absResolved
 			}
 
- // Detect file type by extension.
+			// Detect file type by extension.
 			ext := strings.ToLower(filepath.Ext(f))
 			mediaType := mediaTypeForExt(ext)
 
 			if mediaType != "" {
- // R7A-4: stat-before-read so a multi-GB hostile attachment
- // is rejected without first allocating the full payload.
- // On Stat failure, skip with an embedded error rather than
- // falling through to ReadFile (which would bypass the size
- // cap if Stat fails transiently but ReadFile then succeeds).
+				// R7A-4: stat-before-read so a multi-GB hostile attachment
+				// is rejected without first allocating the full payload.
+				// On Stat failure, skip with an embedded error rather than
+				// falling through to ReadFile (which would bypass the size
+				// cap if Stat fails transiently but ReadFile then succeeds).
 				info, statErr := os.Stat(path)
 				if statErr != nil {
 					sb.WriteString("### ")
@@ -231,7 +231,7 @@ func AssemblePromptWithForEach(agent AgentConfig, step Step, baseDir string, pri
 					fmt.Fprintf(&sb, "\n(error: file exceeds %d MiB attachment cap)\n", MaxAttachmentSizeBytes/1024/1024)
 					continue
 				}
- // Binary attachment (image or PDF) → multimodal part.
+				// Binary attachment (image or PDF) → multimodal part.
 				data, err := os.ReadFile(path)
 				if err != nil {
 					sb.WriteString("### ")
@@ -248,7 +248,7 @@ func AssemblePromptWithForEach(agent AgentConfig, step Step, baseDir string, pri
 						URL:  dataURI,
 					})
 				} else {
- // PDF/document → PartFile with data URI.
+					// PDF/document → PartFile with data URI.
 					attachments = append(attachments, provider.Part{
 						Type:      provider.PartFile,
 						URL:       dataURI,
@@ -260,13 +260,13 @@ func AssemblePromptWithForEach(agent AgentConfig, step Step, baseDir string, pri
 				sb.WriteString(f)
 				sb.WriteString("\n(attached as multimodal content)\n")
 			} else {
- // Text file → inline in prompt.
+				// Text file → inline in prompt.
 				sb.WriteString("### ")
 				sb.WriteString(f)
 				sb.WriteString("\n")
- // R7A-4: stat-before-read; on Stat failure embed the error and
- // skip rather than fall through to ReadFile (which would
- // bypass the size cap if Stat fails transiently).
+				// R7A-4: stat-before-read; on Stat failure embed the error and
+				// skip rather than fall through to ReadFile (which would
+				// bypass the size cap if Stat fails transiently).
 				info, statErr := os.Stat(path)
 				if statErr != nil {
 					sb.WriteString("(error reading file: ")

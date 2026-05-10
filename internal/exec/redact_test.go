@@ -10,7 +10,7 @@ func TestRedactSecrets(t *testing.T) {
 		want  string
 	}{
 		{
- // No trailing quote - \S+ stops at space.
+			// No trailing quote - \S+ stops at space.
 			name:  "authorization bearer token",
 			input: `curl -H Authorization: Bearer sk-abcdefghij1234567890XYZ --verbose`,
 			want:  `curl -H Authorization: Bearer [REDACTED] --verbose`,
@@ -51,25 +51,25 @@ func TestRedactSecrets(t *testing.T) {
 			want:  `api-key:"[REDACTED]"`,
 		},
 		{
- // Bare sk- token (20+ chars after prefix). Surrounded by word boundaries.
+			// Bare sk- token (20+ chars after prefix). Surrounded by word boundaries.
 			name:  "openai sk- prefix token",
 			input: `sk-abcdefghijklmnopqrstuvwxyz0123456789`,
 			want:  `[REDACTED]`,
 		},
 		{
- // Bare ghp_ token (20+ chars after prefix).
+			// Bare ghp_ token (20+ chars after prefix).
 			name:  "github ghp_ prefix token",
 			input: `ghp_ABCDEFGHIJKLMNOPQRSTuvwxyz0123456789`,
 			want:  `[REDACTED]`,
 		},
 		{
- // Bare xoxb- Slack token.
+			// Bare xoxb- Slack token.
 			name:  "slack xoxb- prefix token",
 			input: `xoxb-1234567890-abcdefghijklmno`,
 			want:  `[REDACTED]`,
 		},
 		{
- // Bare AKIA AWS access key (exactly 20 chars).
+			// Bare AKIA AWS access key (exactly 20 chars).
 			name:  "aws akia prefix token",
 			input: `AKIAIOSFODNN7EXAMPLE`,
 			want:  `[REDACTED]`,
@@ -85,13 +85,13 @@ func TestRedactSecrets(t *testing.T) {
 			want:  ``,
 		},
 		{
- // Multiple patterns in one string.
+			// Multiple patterns in one string.
 			name:  "multiple secrets in one string",
 			input: `Authorization: Bearer mytoken X-Api-Key: mykey`,
 			want:  `Authorization: Bearer [REDACTED] X-Api-Key: [REDACTED]`,
 		},
 		{
- // sk- token with only 19 chars after prefix - below the 20-char threshold, not redacted.
+			// sk- token with only 19 chars after prefix - below the 20-char threshold, not redacted.
 			name:  "sk- token too short - not redacted",
 			input: `sk-tooshortXXXXXXXXX`,
 			want:  `sk-tooshortXXXXXXXXX`,

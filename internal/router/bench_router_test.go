@@ -54,16 +54,16 @@ func BenchmarkRouterSend(b *testing.B) {
 			b.ResetTimer()
 			b.ReportAllocs()
 			b.RunParallel(func(pb *testing.PB) {
- // Each goroutine cycles through all step IDs so Send is
- // spread across the full step set, maximising mailbox lock
- // contention proportional to n.
+				// Each goroutine cycles through all step IDs so Send is
+				// spread across the full step set, maximising mailbox lock
+				// contention proportional to n.
 				i := 0
 				for pb.Next() {
 					msg := benchMsg
 					msg.To = stepIDs[i%n]
- // Ignore drop errors: benchmarks run without a coord
- // and the mailbox is open, so Send should always
- // succeed. A failure here indicates a test-setup bug.
+					// Ignore drop errors: benchmarks run without a coord
+					// and the mailbox is open, so Send should always
+					// succeed. A failure here indicates a test-setup bug.
 					_ = router.Send(stepIDs[i%n], msg)
 					i++
 				}

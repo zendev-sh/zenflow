@@ -151,16 +151,16 @@ func ForwardToAgentToolDef(runner RunnerHandle) goai.Tool {
 			if rt == nil {
 				return "dropped: no-router", nil
 			}
- // reject wrapper-step targets BEFORE Router.Send.
- // Wrappers (loop / include containers) ARE registered steps
- // so Router.Send would silently accept the message into the
- // wrapper's inbox where NO agent ever reads it. This is
- // worse than unknown-step drops (no fallback fires).
- // Coord LLM sometimes mirrors wrapper IDs from lifecycle
- // events (prompt rule "mirror From" applied to wrapper
- // start/end events). Hard reject at the tool
- // boundary turns the silent misroute into a visible error
- // + fallback narration so content is preserved.
+			// reject wrapper-step targets BEFORE Router.Send.
+			// Wrappers (loop / include containers) ARE registered steps
+			// so Router.Send would silently accept the message into the
+			// wrapper's inbox where NO agent ever reads it. This is
+			// worse than unknown-step drops (no fallback fires).
+			// Coord LLM sometimes mirrors wrapper IDs from lifecycle
+			// events (prompt rule "mirror From" applied to wrapper
+			// start/end events). Hard reject at the tool
+			// boundary turns the silent misroute into a visible error
+			// + fallback narration so content is preserved.
 			if rt.IsWrapperStep(args.TargetStepID) {
 				if p := runner.Progress(); p != nil {
 					p.OnEvent(ctx, types.Event{
@@ -175,11 +175,11 @@ func ForwardToAgentToolDef(runner RunnerHandle) goai.Tool {
 			}
 			id := fmt.Sprintf("msg-fwd-%d", runner.NextForwardSeq())
 			msgType := kindToRouterMessageType(args.Kind)
- // Fix B: emit EventMessageSent BEFORE Router.Send so users see
- // the outbound message immediately. Without this, live runs had
- // a silent gap between forward_to_agent's tool_call and the
- // recipient's eventual EventAgentInboxDrain (often turns later
- // after the recipient woke from its mailbox).
+			// Fix B: emit EventMessageSent BEFORE Router.Send so users see
+			// the outbound message immediately. Without this, live runs had
+			// a silent gap between forward_to_agent's tool_call and the
+			// recipient's eventual EventAgentInboxDrain (often turns later
+			// after the recipient woke from its mailbox).
 			emitMessageSent(ctx, runner, args.TargetStepID, args.Text, msgType)
 			if err := rt.Send(args.TargetStepID, router.Message{
 				From:      runner.StepID(),
@@ -188,20 +188,20 @@ func ForwardToAgentToolDef(runner RunnerHandle) goai.Tool {
 				Type:      msgType,
 				Timestamp: time.Now(),
 			}); err != nil {
- // Per: drops surface as the tool result string
- // (NOT as an Execute error). Router.Send already
- // formatted err as "dropped: <reason>" so we pass it
- // through verbatim.
- // preserve dropped forward content as a
- // coordinator narration so the user log retains the
- // information. Without this, coord-generated analysis
- // is "lost to agents" (no step receives it) AND
- // effectively lost to the user once the brief
- // `⇠ sent ...` line scrolls past. Emitting as
- // EventCoordinatorNarration also makes the content
- // addressable in JSON sink consumers (downstream
- // pipelines can capture the would-have-been-forwarded
- // content for diagnostics or fallback workflows).
+				// Per: drops surface as the tool result string
+				// (NOT as an Execute error). Router.Send already
+				// formatted err as "dropped: <reason>" so we pass it
+				// through verbatim.
+				// preserve dropped forward content as a
+				// coordinator narration so the user log retains the
+				// information. Without this, coord-generated analysis
+				// is "lost to agents" (no step receives it) AND
+				// effectively lost to the user once the brief
+				// `⇠ sent ...` line scrolls past. Emitting as
+				// EventCoordinatorNarration also makes the content
+				// addressable in JSON sink consumers (downstream
+				// pipelines can capture the would-have-been-forwarded
+				// content for diagnostics or fallback workflows).
 				if p := runner.Progress(); p != nil {
 					p.OnEvent(ctx, types.Event{
 						Type:      types.EventCoordinatorNarration,
@@ -211,15 +211,15 @@ func ForwardToAgentToolDef(runner RunnerHandle) goai.Tool {
 						Message:   "[forward to \"" + args.TargetStepID + "\" dropped - content preserved as narration]: " + args.Text,
 					})
 				}
- // for unknown-step drops specifically,
- // append a snapshot of currently registered step IDs
- // so the LLM can self-correct in the next turn.
- // Defends against hallucinated targets like
- // "negative" / "narrator" / "<workflow>[setup]"
- // observed across multiple weak-compliance models.
- // Other drop reasons (target-terminal, coord-down,
- // cap-exhaustion) keep the original concise message
- // since the LLM cannot correct those by re-targeting.
+				// for unknown-step drops specifically,
+				// append a snapshot of currently registered step IDs
+				// so the LLM can self-correct in the next turn.
+				// Defends against hallucinated targets like
+				// "negative" / "narrator" / "<workflow>[setup]"
+				// observed across multiple weak-compliance models.
+				// Other drop reasons (target-terminal, coord-down,
+				// cap-exhaustion) keep the original concise message
+				// since the LLM cannot correct those by re-targeting.
 				var de *router.DropError
 				if errors.As(err, &de) && de.Reason == router.DropReasonUnknownStep {
 					return err.Error() + BuildUnknownStepHint(rt, args.TargetStepID), nil

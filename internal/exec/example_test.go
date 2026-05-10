@@ -21,7 +21,6 @@ import (
 	"github.com/zendev-sh/goai"
 	"github.com/zendev-sh/goai/provider"
 	"github.com/zendev-sh/zenflow"
-
 )
 
 // ---- Shared fake LLM used by examples that need a provider ----
@@ -358,7 +357,7 @@ func ExampleWithModelResolver() {
 	model := &fakeModel{reply: "ok"}
 
 	resolver := zenflow.ModelResolver(func(modelID string) (provider.LanguageModel, error) {
- // In production, switch on modelID to construct the right provider.
+		// In production, switch on modelID to construct the right provider.
 		_ = modelID
 		return model, nil
 	})
@@ -382,8 +381,8 @@ steps:
 `
 	wf, err := zenflow.ParseWorkflow([]byte(yaml))
 	if err != nil {
- // ParseWorkflow may return a joined error for multi-violation YAML.
- // Unwrap with errors.As to inspect individual *zenflow.ValidationError.
+		// ParseWorkflow may return a joined error for multi-violation YAML.
+		// Unwrap with errors.As to inspect individual *zenflow.ValidationError.
 		var ve *zenflow.ValidationError
 		if errors.As(err, &ve) {
 			fmt.Println("validation error:", ve.Message)

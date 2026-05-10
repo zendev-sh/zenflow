@@ -70,7 +70,9 @@ var defaultStorageDir = zenflow.DefaultStorageDir
 // Overridden via -ldflags by goreleaser / the OSS Dockerfile. goreleaser
 // strips the leading `v` from `{{.Version}}`, so the binary reports e.g.
 // `0.1.0` for tag `v0.1.0`. To reproduce that locally:
+//
 //	go build -ldflags "-X main.version=$(git describe --tags --always | sed 's/^v//') \
+//
 // -X main.commit=$(git rev-parse --short HEAD) \
 // -X main.date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
 // ./cmd/zenflow
@@ -170,18 +172,18 @@ func main() {
 		usage(stdout)
 		return
 	case "--version", "-v", "version":
- // Format: "zenflow <version> (commit=<hash>, date=<iso8601>)"
- // - keeping the leading "zenflow" lets brew test grep for the
- // binary name and the parenthesised provenance is suppressed
- // for the default unset values so `--version` still prints
- // just "zenflow dev" in unbuilt local runs. Both commit AND
- // date must be set for the parenthesised form; goreleaser
- // always sets both, so a half-set state is a build
- // misconfiguration that falls back to the minimal form rather
- // than printing "date=unknown" or "commit=unknown".
- // When ldflags are at their defaults ("dev" / "unknown"), fall
- // back to runtime/debug.ReadBuildInfo for VCS provenance so
- // `go install`-built binaries still report useful version info.
+		// Format: "zenflow <version> (commit=<hash>, date=<iso8601>)"
+		// - keeping the leading "zenflow" lets brew test grep for the
+		// binary name and the parenthesised provenance is suppressed
+		// for the default unset values so `--version` still prints
+		// just "zenflow dev" in unbuilt local runs. Both commit AND
+		// date must be set for the parenthesised form; goreleaser
+		// always sets both, so a half-set state is a build
+		// misconfiguration that falls back to the minimal form rather
+		// than printing "date=unknown" or "commit=unknown".
+		// When ldflags are at their defaults ("dev" / "unknown"), fall
+		// back to runtime/debug.ReadBuildInfo for VCS provenance so
+		// `go install`-built binaries still report useful version info.
 		v, c, d := version, commit, date
 		if v == "dev" {
 			if info, ok := readBuildInfo(); ok {

@@ -18,20 +18,20 @@ func SubmitResultToolDef(schema map[string]any) goai.Tool {
 	}
 	params, err := json.Marshal(schema)
 	if err != nil {
- // Fallback to generic object schema.
+		// Fallback to generic object schema.
 		params = json.RawMessage(`{"type":"object"}`)
 	}
 	return goai.Tool{
 		Name: toolNameSubmitResult,
- // description emphasizes MANDATORY + FINAL + "only way to succeed"
- // because LLMs frequently finish text-only and skip this tool even with
- // strong prompt-level instructions. The retry path in AgentRunner.Run
- // is the reliable enforcement, but a clear description reduces the
- // retry rate.
+		// description emphasizes MANDATORY + FINAL + "only way to succeed"
+		// because LLMs frequently finish text-only and skip this tool even with
+		// strong prompt-level instructions. The retry path in AgentRunner.Run
+		// is the reliable enforcement, but a clear description reduces the
+		// retry rate.
 		Description: "REQUIRED FINAL ACTION. You MUST call this tool exactly once as your last action to complete the task - it is the ONLY way to return a successful result. Do NOT return plain text; you must call submit_result with a JSON object matching the schema below. Calling this tool ends the conversation.",
 		InputSchema: params,
 		Execute: func(_ context.Context, _ json.RawMessage) (string, error) {
- // No-op: submit_result is handled by SubmitResultHandler in AgentRunner.
+			// No-op: submit_result is handled by SubmitResultHandler in AgentRunner.
 			return "ok", nil
 		},
 	}
@@ -105,34 +105,34 @@ func validateResultSchema(result map[string]any, schema map[string]any) error {
 					return err
 				}
 			}
- // Recurse into nested object: validate its required + properties
- // against the nested map. checkType above already proved val is
- // map[string]any when expectedType=="object"; the type-assertion
- // here is defensive (e.g. when expectedType is missing but the
- // schema still nests "properties").
+			// Recurse into nested object: validate its required + properties
+			// against the nested map. checkType above already proved val is
+			// map[string]any when expectedType=="object"; the type-assertion
+			// here is defensive (e.g. when expectedType is missing but the
+			// schema still nests "properties").
 			if expectedType == "object" || hasObjectShape(propSchema) {
 				nested, ok := val.(map[string]any)
 				if !ok {
- // If the schema declared an object shape but val is not
- // an object, fall through - checkType already errored
- // above for explicit type=="object" mismatches; for
- // implicit shapes we do not synthesize a type error.
+					// If the schema declared an object shape but val is not
+					// an object, fall through - checkType already errored
+					// above for explicit type=="object" mismatches; for
+					// implicit shapes we do not synthesize a type error.
 					continue
 				}
 				if err := validateResultSchema(nested, propSchema); err != nil {
 					return err
 				}
 			}
- // Recurse into array items: each element must satisfy the
- // "items" schema. JSON Schema allows "items" to be either an
- // object (single schema applied to every element) or an array
- // (positional). We only support the single-schema form here -
- // matches the producer side (LLM tool calls almost always emit
- // homogeneous arrays).
- // Skip the val.([]any) double-check that earlier rounds had
- // here: when expectedType=="array" we have already passed
- // checkType above (which returns the same []any assertion),
- // so val IS []any by construction.
+			// Recurse into array items: each element must satisfy the
+			// "items" schema. JSON Schema allows "items" to be either an
+			// object (single schema applied to every element) or an array
+			// (positional). We only support the single-schema form here -
+			// matches the producer side (LLM tool calls almost always emit
+			// homogeneous arrays).
+			// Skip the val.([]any) double-check that earlier rounds had
+			// here: when expectedType=="array" we have already passed
+			// checkType above (which returns the same []any assertion),
+			// so val IS []any by construction.
 			if expectedType == "array" {
 				arr := val.([]any)
 				items, ok := propSchema["items"].(map[string]any)
@@ -169,13 +169,13 @@ func validateArrayItems(field string, arr []any, items map[string]any) error {
 	itemType, _ := items["type"].(string)
 	for i, el := range arr {
 		elField := fmt.Sprintf("%s[%d]", field, i)
- // Per-element type check first.
+		// Per-element type check first.
 		if itemType != "" {
 			if err := checkType(elField, el, itemType); err != nil {
 				return err
 			}
 		}
- // Recurse into nested object items.
+		// Recurse into nested object items.
 		if itemType == "object" || hasObjectShape(items) {
 			nested, ok := el.(map[string]any)
 			if !ok {
@@ -185,9 +185,9 @@ func validateArrayItems(field string, arr []any, items map[string]any) error {
 				return err
 			}
 		}
- // Recurse into nested arrays. When itemType=="array" the
- // per-element checkType above has already proven el is []any,
- // so the assertion is guaranteed to succeed.
+		// Recurse into nested arrays. When itemType=="array" the
+		// per-element checkType above has already proven el is []any,
+		// so the assertion is guaranteed to succeed.
 		if itemType == "array" {
 			subArr := el.([]any)
 			subItems, ok := items["items"].(map[string]any)
@@ -255,7 +255,7 @@ func checkType(field string, val any, expectedType string) error {
 		if v != math.Trunc(v) || math.IsNaN(v) || math.IsInf(v, 0) {
 			return fmt.Errorf("submit_result: field %q must be integer, got %v", field, v)
 		}
- // Reject values beyond float64 safe integer range (2^53).
+		// Reject values beyond float64 safe integer range (2^53).
 		const safeInt = 1 << 53
 		if v > safeInt || v < -safeInt {
 			return fmt.Errorf("submit_result: field %q integer value %v exceeds safe float64 precision range", field, v)

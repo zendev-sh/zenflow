@@ -195,15 +195,15 @@ func TestSpecConformance(t *testing.T) {
 						entry.Name(), err, tc.Description)
 				}
 
- // Check step_count.
- // step_count 0 means "not specified in test case" - skip check.
+				// Check step_count.
+				// step_count 0 means "not specified in test case" - skip check.
 				if tc.Expected.StepCount > 0 {
 					if len(wf.Steps) != tc.Expected.StepCount {
 						t.Errorf("step_count = %d, want %d", len(wf.Steps), tc.Expected.StepCount)
 					}
 				}
 
- // Check topo_order (exact)
+				// Check topo_order (exact)
 				if len(tc.Expected.TopoOrder) > 0 {
 					order, err := TopoSort(wf.Steps)
 					if err != nil {
@@ -220,7 +220,7 @@ func TestSpecConformance(t *testing.T) {
 					}
 				}
 
- // Check topo_constraints (partial ordering)
+				// Check topo_constraints (partial ordering)
 				if len(tc.Expected.TopoConstraints) > 0 {
 					order, err := TopoSort(wf.Steps)
 					if err != nil {
@@ -252,43 +252,43 @@ func TestSpecConformance(t *testing.T) {
 					}
 				}
 
- // Verify parsed fields for feature-specific test cases.
+				// Verify parsed fields for feature-specific test cases.
 				switch name {
 				case "loop-repeat-until":
- // step[1] = review-cycle has loop with maxIterations
+					// step[1] = review-cycle has loop with maxIterations
 					if wf.Steps[1].Loop == nil {
 						t.Error("step loop is nil")
 					} else if wf.Steps[1].Loop.MaxIterations == nil {
 						t.Error("Loop.MaxIterations is nil")
 					}
 				case "loop-untilagent":
- // step[0] = debate has loop with untilAgent
+					// step[0] = debate has loop with untilAgent
 					if wf.Steps[0].Loop == nil {
 						t.Error("step loop is nil")
 					} else if wf.Steps[0].Loop.UntilAgent == "" {
 						t.Error("Loop.UntilAgent is empty")
 					}
 				case "loop-foreach":
- // step[1] = deploy-each has loop with forEach (CEL expression string)
+					// step[1] = deploy-each has loop with forEach (CEL expression string)
 					if wf.Steps[1].Loop == nil {
 						t.Error("step loop is nil")
 					} else if wf.Steps[1].Loop.ForEach == nil {
 						t.Error("Loop.ForEach is nil")
 					}
 				case "loop-foreach-static":
- // step[0] = review-repos has loop with forEach (static array)
+					// step[0] = review-repos has loop with forEach (static array)
 					if wf.Steps[0].Loop == nil {
 						t.Error("step loop is nil")
 					} else if wf.Steps[0].Loop.ForEach == nil {
 						t.Error("Loop.ForEach is nil")
 					}
 				case "condition":
- // step[1] = deploy has condition
+					// step[1] = deploy has condition
 					if wf.Steps[1].Condition == nil {
 						t.Error("Step.Condition is empty")
 					}
 				case "condition-with-loop":
- // step[1] = fix-loop has both condition and loop
+					// step[1] = fix-loop has both condition and loop
 					if wf.Steps[1].Condition == nil {
 						t.Error("Step.Condition is empty")
 					}
@@ -296,7 +296,7 @@ func TestSpecConformance(t *testing.T) {
 						t.Error("Step.Loop is nil")
 					}
 				case "include-named":
- // step[0]=setup-auth has include, workflow has includes map
+					// step[0]=setup-auth has include, workflow has includes map
 					if wf.Steps[0].Include == "" {
 						t.Error("Step.Include is empty")
 					}
@@ -304,19 +304,19 @@ func TestSpecConformance(t *testing.T) {
 						t.Error("Workflow.Includes is empty")
 					}
 				case "include-inline-path":
- // step[1] = run-auth has include (inline path)
+					// step[1] = run-auth has include (inline path)
 					if wf.Steps[1].Include == "" {
 						t.Error("Step.Include is empty")
 					}
 				case "full-featured":
- // Check multiple features
+					// Check multiple features
 					if len(wf.Includes) == 0 {
 						t.Error("Workflow.Includes is empty")
 					}
 					if wf.Options.Scheduler == "" {
 						t.Error("Options.Scheduler is empty")
 					}
- // Check agent ResultSchema
+					// Check agent ResultSchema
 					if judge, ok := wf.Agents["judge"]; ok {
 						if judge.ResultSchema == nil {
 							t.Error("judge.ResultSchema is nil")
@@ -370,7 +370,7 @@ func TestSpecConformance(t *testing.T) {
 						entry.Name(), tc.Description)
 				}
 
- // Check error category matches expected Go error type.
+				// Check error category matches expected Go error type.
 				checker, ok := errorCategoryToType[tc.Expected.Error]
 				if !ok {
 					t.Fatalf("unknown error category %q - add it to errorCategoryToType", tc.Expected.Error)
@@ -892,7 +892,7 @@ steps:
 	workerCalls := 0
 	mockLLM := &mockLLMForUntilAgent{
 		onCall: func(req provider.GenerateParams) (*provider.GenerateResult, error) {
- // Determine if this is a judge call by checking for submit_result tool.
+			// Determine if this is a judge call by checking for submit_result tool.
 			hasSubmitResult := false
 			for _, tool := range req.Tools {
 				if tool.Name == "submit_result" {
@@ -902,7 +902,7 @@ steps:
 			}
 
 			if hasSubmitResult {
- // Judge call
+				// Judge call
 				iteration++
 				done := iteration >= 2
 				args := map[string]any{
@@ -923,7 +923,7 @@ steps:
 				}, nil
 			}
 
- // Worker call
+			// Worker call
 			workerCalls++
 			return &provider.GenerateResult{
 				Text:  "working...",

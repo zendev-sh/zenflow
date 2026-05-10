@@ -266,9 +266,9 @@ func TestRunAgent_MaxDepthCapEnforced(t *testing.T) {
 			}
 			switch {
 			case strings.Contains(lastUserText, "depth3-task"):
- // F9: track depth-3 model invocations. The cap MUST prevent
- // any depth-3 runner from being constructed, so this branch
- // must never be entered.
+				// F9: track depth-3 model invocations. The cap MUST prevent
+				// any depth-3 runner from being constructed, so this branch
+				// must never be entered.
 				depth3Calls.Add(1)
 				return textResult("ggc-done", 1, 1), nil
 			case strings.Contains(lastUserText, "depth2-task"):
@@ -280,8 +280,8 @@ func TestRunAgent_MaxDepthCapEnforced(t *testing.T) {
 					})
 					return toolCallResult("", 1, 1, tc("tc-depth3", "agent", args)), nil
 				}
- // Second turn: the spawner returned the cap message (which
- // the LLM sees as a tool result) and we wrap up.
+				// Second turn: the spawner returned the cap message (which
+				// the LLM sees as a tool result) and we wrap up.
 				return textResult("depth2-done", 1, 1), nil
 			case strings.Contains(lastUserText, "depth1-task"):
 				n := childCalls.Add(1)
@@ -397,7 +397,7 @@ func TestSpawnChild_EmitsParentCallID(t *testing.T) {
 				}
 				return textResult("grandchild-done", 1, 1), nil
 			case strings.Contains(lastUserText, "child-task"):
- // We're inside the child's turn loop.
+				// We're inside the child's turn loop.
 				n := childCalls.Add(1)
 				if n == 1 {
 					args, _ := json.Marshal(agentToolParams{

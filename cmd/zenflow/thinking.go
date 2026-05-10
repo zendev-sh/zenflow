@@ -31,27 +31,27 @@ func thinkingProviderOptions(level string) map[string]any {
 		return nil
 	}
 	return map[string]any{
- // Bedrock: anthropic models read {type, budgetTokens}; non-anthropic
- // (DeepSeek r1) read {maxReasoningEffort}.
+		// Bedrock: anthropic models read {type, budgetTokens}; non-anthropic
+		// (DeepSeek r1) read {maxReasoningEffort}.
 		"reasoningConfig": map[string]any{
 			"type":               "enabled",
 			"budgetTokens":       budget,
 			"maxReasoningEffort": level,
 		},
- // Anthropic direct: ProviderOptions["thinking"] = {type, budgetTokens}.
+		// Anthropic direct: ProviderOptions["thinking"] = {type, budgetTokens}.
 		"thinking": map[string]any{
 			"type":         "enabled",
 			"budgetTokens": budget,
 		},
- // Google Gemini: ProviderOptions["thinkingConfig"] with includeThoughts
- // + thinkingLevel (gemini-3) or thinkingBudget (gemini-2.5).
+		// Google Gemini: ProviderOptions["thinkingConfig"] with includeThoughts
+		// + thinkingLevel (gemini-3) or thinkingBudget (gemini-2.5).
 		"thinkingConfig": map[string]any{
 			"includeThoughts": true,
 			"thinkingLevel":   level,
 			"thinkingBudget":  budget,
 		},
- // OpenAI Responses (used by Azure GPT-5/codex too): reasoning_effort
- // is a top-level option, reasoning_summary requests visible summaries.
+		// OpenAI Responses (used by Azure GPT-5/codex too): reasoning_effort
+		// is a top-level option, reasoning_summary requests visible summaries.
 		"reasoning_effort":  level,
 		"reasoning_summary": "auto",
 	}

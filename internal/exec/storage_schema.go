@@ -107,7 +107,7 @@ func (e *errorSchema) UnmarshalJSON(data []byte) error {
 		case ' ', '\t', '\n', '\r':
 			continue
 		case '"':
- // Legacy form: plain JSON string.
+			// Legacy form: plain JSON string.
 			var msg string
 			if err := json.Unmarshal(data, &msg); err != nil {
 				return err
@@ -118,7 +118,7 @@ func (e *errorSchema) UnmarshalJSON(data []byte) error {
 			e.Joined = false
 			return nil
 		default:
- // New form: object.
+			// New form: object.
 			type alias errorSchema
 			var obj alias
 			if err := json.Unmarshal(data, &obj); err != nil {

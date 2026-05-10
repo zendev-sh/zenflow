@@ -65,8 +65,8 @@ func BenchmarkMailbox(b *testing.B) {
 		b.ResetTimer()
 		b.ReportAllocs()
 		b.RunParallel(func(pb *testing.PB) {
- // Each goroutine gets its own step ID derived from its
- // goroutine-local counter to avoid cross-goroutine queue sharing.
+			// Each goroutine gets its own step ID derived from its
+			// goroutine-local counter to avoid cross-goroutine queue sharing.
 			stepID := fmt.Sprintf("step-%p", pb) // unique per goroutine
 			for i := 0; pb.Next(); i++ {
 				_, _ = store.Append(stepID, benchMessage(i))
@@ -81,7 +81,7 @@ func BenchmarkMailbox(b *testing.B) {
 	// the loop intentionally so the store stays non-empty across iterations.
 	b.Run("unread-markread-refill", func(b *testing.B) {
 		store := NewInMemoryMailboxStore()
- // Pre-fill.
+		// Pre-fill.
 		for i := range benchMailboxMsgsPerIter {
 			_, _ = store.Append(benchMailboxStepID, benchMessage(i))
 		}
@@ -94,9 +94,9 @@ func BenchmarkMailbox(b *testing.B) {
 				ids[j] = m.MessageID
 			}
 			_ = store.MarkRead(benchMailboxStepID, ids)
- // Re-fill for the next iteration (outside the measured path? No
- // - b.Loop measures wall-clock between Next calls). Refill is
- // intentionally inside the loop so the store stays non-empty.
+			// Re-fill for the next iteration (outside the measured path? No
+			// - b.Loop measures wall-clock between Next calls). Refill is
+			// intentionally inside the loop so the store stays non-empty.
 			_, _ = store.Append(benchMailboxStepID, benchMessage(i))
 		}
 	})

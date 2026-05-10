@@ -221,19 +221,27 @@ type Duration time.Duration
 // StepResult is documented Stable. Fields will not be removed or have
 // their types changed within the v0.x line.
 // Per-Status field population:
+//
 //	StepCompleted : ID, Status, Content (agent final text), Result
+//
 // (structured output from submit_result, may be nil),
 // Tokens (accumulated across retries), Duration.
 // Error is nil. PreserveContent may be true for loop
 // steps in outputMode=cumulative.
+//
 //	StepFailed : ID, Status, Error. Tokens reflects attempts made
+//
 // before failure. Duration is set when the step ran
 // at least one agent iteration before failing.
 // Content and Result are zero.
+//
 //	StepSkipped : ID, Status. All other fields are zero.
+//
 // Populated by the DAG planner for steps whose
 // prerequisites failed with onStepFailure=skip-dependents.
+//
 //	StepCancelled : ID, Status. All other fields are zero.
+//
 // Populated by the DAG planner for steps cancelled by
 // the cascade or abort failure strategies.
 // Stable.
@@ -260,19 +268,29 @@ type StepResult struct {
 // WorkflowResult is documented Stable. Fields will not be removed or
 // have their types changed within the v0.x line.
 // All fields are always populated on a non-nil return:
+//
 //	RunID : unique identifier for the execution; matches RunID in all
+//
 // Event values emitted during the run.
+//
 //	Status : terminal workflow status (StatusCompleted, StatusFailed,
+//
 // StatusPartial). StatusRunning is never returned.
+//
 //	Steps : map of stepID to *StepResult for every step that was
+//
 // dispatched. Steps that were never dispatched (e.g.
 // skipped because a prerequisite failed before scheduling)
 // are absent from the map. Do not mutate the pointed-to
 // StepResult values; the behavior is undefined.
+//
 //	Duration : wall-clock time from Run entry to Run exit.
 //	Tokens : aggregate token usage summed across all step agents.
+//
 // Individual step token counts are in Steps[id].Tokens.
+//
 //	Summary : human-readable synthesis from the coordinator's finalize
+//
 // tool. Empty when no coordinator is configured or the
 // coordinator did not call finalize.
 // Steps is exposed for backward compatibility; consumers should prefer

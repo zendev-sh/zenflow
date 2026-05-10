@@ -21,9 +21,9 @@ func TestZFB3_AgentRunner_RetriesSubmitResultOnMiss(t *testing.T) {
 		fn: func(_ context.Context, params provider.GenerateParams) (*provider.GenerateResult, error) {
 			n := atomic.AddInt32(&callCount, 1)
 			if n == 1 {
- // Primary call: LLM finishes text-only (the bug we're fixing).
- // Verify tools include the distractor "read" so we know this
- // is the primary (pre-retry) call.
+				// Primary call: LLM finishes text-only (the bug we're fixing).
+				// Verify tools include the distractor "read" so we know this
+				// is the primary (pre-retry) call.
 				if !hasToolDefinition(params.Tools, "read") {
 					t.Errorf("primary call missing distractor 'read' tool")
 				}
@@ -38,7 +38,7 @@ func TestZFB3_AgentRunner_RetriesSubmitResultOnMiss(t *testing.T) {
 					FinishReason: provider.FinishStop,
 				}, nil
 			}
- // Retry call: must have ONLY submit_result tool and ToolChoice=required.
+			// Retry call: must have ONLY submit_result tool and ToolChoice=required.
 			if hasToolDefinition(params.Tools, "read") {
 				t.Errorf("retry call must NOT include distractor 'read' tool")
 			}
@@ -48,7 +48,7 @@ func TestZFB3_AgentRunner_RetriesSubmitResultOnMiss(t *testing.T) {
 			if params.ToolChoice != "required" {
 				t.Errorf("retry call ToolChoice = %q, want 'required'", params.ToolChoice)
 			}
- // The retry reminder should appear as the last user message.
+			// The retry reminder should appear as the last user message.
 			if len(params.Messages) == 0 {
 				t.Fatal("retry call has no messages")
 			}
@@ -65,7 +65,7 @@ func TestZFB3_AgentRunner_RetriesSubmitResultOnMiss(t *testing.T) {
 			if !strings.Contains(lastText, "submit_result") {
 				t.Errorf("retry reminder missing 'submit_result' mention: %q", lastText)
 			}
- // On the retry, the model calls submit_result correctly.
+			// On the retry, the model calls submit_result correctly.
 			return &provider.GenerateResult{
 				ToolCalls: []provider.ToolCall{
 					{ID: "c1", Name: "submit_result", Input: json.RawMessage(`{"done":true,"answer":"42"}`)},
@@ -160,7 +160,7 @@ func TestZFB3_AgentRunner_RetryAlsoFails_IncludesLastAssistantText(t *testing.T)
 	model := &sequentialMockModel{
 		fn: func(_ context.Context, _ provider.GenerateParams) (*provider.GenerateResult, error) {
 			atomic.AddInt32(&callCount, 1)
- // Both primary and retry: return text, no tool calls.
+			// Both primary and retry: return text, no tool calls.
 			return &provider.GenerateResult{
 				Text:         lastMsg,
 				FinishReason: provider.FinishStop,

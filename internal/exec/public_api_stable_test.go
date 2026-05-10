@@ -85,7 +85,7 @@ func TestPublicAPI_AllStableOptionsHaveMarker(t *testing.T) {
 	// surface-level package names so the heavier dependency is not
 	// justified; pin the deprecated path with a targeted nolint.
 	pkgs, err := parser.ParseDir(fset, wd, func(fi os.FileInfo) bool { //nolint:staticcheck // SA1019: deliberate; see comment above
- // Skip _test.go files - only audit production source.
+		// Skip _test.go files - only audit production source.
 		return !strings.HasSuffix(fi.Name(), "_test.go")
 	}, parser.ParseComments)
 	if err != nil {
@@ -146,8 +146,8 @@ func hasStableMarker(doc *ast.CommentGroup) bool {
 		return false
 	}
 	for _, c := range doc.List {
- // c.Text always starts with "//" or "/*". Strip the leading
- // "// " or "//" to get the bare line.
+		// c.Text always starts with "//" or "/*". Strip the leading
+		// "// " or "//" to get the bare line.
 		line := strings.TrimSpace(strings.TrimPrefix(strings.TrimPrefix(c.Text, "//"), " "))
 		if line == "Stable." {
 			return true

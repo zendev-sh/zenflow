@@ -110,6 +110,7 @@ type Message struct {
 }
 
 // MessageType classifies router messages. Stable.
+//
 //go:generate stringer -type=MessageType -linecomment -output=messagetype_string.go
 type MessageType int
 
@@ -759,11 +760,11 @@ func (r *Router) Send(stepID string, msg Message) error {
 		if onDrop != nil {
 			onDrop(DropEvent{StepID: stepID, Msg: msg, Reason: reason})
 		}
- // Typed *DropError so callers can extract the reason via
- // errors.As instead of parsing the message string. Error
- // returns the same canonical "dropped: <reason>" text used
- // by tools that pass err.Error through verbatim - no
- // observable behaviour change for substring-matching callers.
+		// Typed *DropError so callers can extract the reason via
+		// errors.As instead of parsing the message string. Error
+		// returns the same canonical "dropped: <reason>" text used
+		// by tools that pass err.Error through verbatim - no
+		// observable behaviour change for substring-matching callers.
 		return &DropError{Reason: reason}
 	}
 
@@ -776,18 +777,18 @@ func (r *Router) Send(stepID string, msg Message) error {
 		return emit(DropReasonUnknownStep)
 	}
 	if closed {
- // resume hook. If a resumer is installed and
- // reports it can resume this stepID, hand the message off to
- // ResumeStep instead of dropping. Error mapping:
- // - ErrNoTranscript → DropReasonNoTranscript
- // - ErrTranscriptTooLarge → DropReasonTranscriptTooLarge
- // - ErrResumeShutdown → DropReasonResumeShutdown
- // - other → DropReasonTargetTerminal
- // (so the contract never regresses into silent loss when
- // the resume path returns a novel error)
- // F7: if this Send is a resume-reply bouncing off a sealed
- // sender, do NOT cascade-resume. Attribute as target-terminal
- // drop and stop.
+		// resume hook. If a resumer is installed and
+		// reports it can resume this stepID, hand the message off to
+		// ResumeStep instead of dropping. Error mapping:
+		// - ErrNoTranscript → DropReasonNoTranscript
+		// - ErrTranscriptTooLarge → DropReasonTranscriptTooLarge
+		// - ErrResumeShutdown → DropReasonResumeShutdown
+		// - other → DropReasonTargetTerminal
+		// (so the contract never regresses into silent loss when
+		// the resume path returns a novel error)
+		// F7: if this Send is a resume-reply bouncing off a sealed
+		// sender, do NOT cascade-resume. Attribute as target-terminal
+		// drop and stop.
 		isResumeReverse := false
 		if msg.Metadata != nil {
 			if _, ok := msg.Metadata[MetadataKeyResumeReverse]; ok {
@@ -798,19 +799,19 @@ func (r *Router) Send(stepID string, msg Message) error {
 			return emit(DropReasonTargetTerminal)
 		}
 		if resumer != nil && resumer.CanResume(stepID) {
- // Use the Executor's run-lifetime context so that if the
- // workflow is cancelled, ResumeStep observes ctx.Done.
- // Fall back to context.Background only when the provider
- // is not set (e.g. in unit tests that use a bare router).
+			// Use the Executor's run-lifetime context so that if the
+			// workflow is cancelled, ResumeStep observes ctx.Done.
+			// Fall back to context.Background only when the provider
+			// is not set (e.g. in unit tests that use a bare router).
 			resumeCtx := context.Background()
 			if runCtxProvider != nil {
 				resumeCtx = runCtxProvider()
 			}
 			_, err := resumer.ResumeStep(resumeCtx, stepID, msg.Content, msg.From)
 			if err == nil {
- // Successful handoff - no drop emitted. Events
- // (EventResumeStarted / Completed / Failed) are
- // emitted by the Executor inside ResumeStep.
+				// Successful handoff - no drop emitted. Events
+				// (EventResumeStarted / Completed / Failed) are
+				// emitted by the Executor inside ResumeStep.
 				return nil
 			}
 			switch {
@@ -823,8 +824,8 @@ func (r *Router) Send(stepID string, msg Message) error {
 			case errors.Is(err, ErrMailboxFullOnResume):
 				return emit(DropReasonMailboxFull)
 			case errors.Is(err, ErrModelResolverError):
- // distinguish infrastructure resolver failure
- // from generic terminal/unknown drops.
+				// distinguish infrastructure resolver failure
+				// from generic terminal/unknown drops.
 				return emit(DropReasonResolverError)
 			default:
 				return emit(DropReasonTargetTerminal)
@@ -833,21 +834,21 @@ func (r *Router) Send(stepID string, msg Message) error {
 		return emit(DropReasonTargetTerminal)
 	}
 	if !open && r.PendingSenders(stepID) == 0 {
- // G7 : with the F7 DAG-aware sender matrix,
- // runStep no longer pre-opens N×N sibling slots - it opens
- // only the per-step coordinator slot. A *future* sender
- // path (sibling-direct Send) could target a workflow step
- // whose slot was never opened. Without intervention the
- // message would silently drop as DropReasonUnknownStep -
- // regressing the F7 perf win into a correctness loss.
- // Mitigation: if the target stepID is known to the workflow
- // (RegisterStep was called at Run start), auto-open a
- // sender slot just for the duration of this Append. The
- // message lands in the mailbox like any other Send, and
- // the per-step termination invariant is preserved because
- // CloseSender fires immediately on return. Truly unknown
- // step IDs (typo, removed step, send-to-coordinator from
- // outside the run) still emit DropReasonUnknownStep.
+		// G7 : with the F7 DAG-aware sender matrix,
+		// runStep no longer pre-opens N×N sibling slots - it opens
+		// only the per-step coordinator slot. A *future* sender
+		// path (sibling-direct Send) could target a workflow step
+		// whose slot was never opened. Without intervention the
+		// message would silently drop as DropReasonUnknownStep -
+		// regressing the F7 perf win into a correctness loss.
+		// Mitigation: if the target stepID is known to the workflow
+		// (RegisterStep was called at Run start), auto-open a
+		// sender slot just for the duration of this Append. The
+		// message lands in the mailbox like any other Send, and
+		// the per-step termination invariant is preserved because
+		// CloseSender fires immediately on return. Truly unknown
+		// step IDs (typo, removed step, send-to-coordinator from
+		// outside the run) still emit DropReasonUnknownStep.
 		r.knownMu.Lock()
 		isKnown := r.known[stepID]
 		r.knownMu.Unlock()
@@ -868,14 +869,14 @@ func (r *Router) Send(stepID string, msg Message) error {
 		return emit(DropReasonMailboxFull)
 	}
 	if appendErr != nil {
- // Custom MailboxStore implementations (file/sqlite/redis backends)
- // may return errors for serialization failures, backend timeouts,
- // or quota exceeded. We don't have a typed reason for each, so
- // surface them through the generic ResolverError reason which
- // already documents "store-side problem, not a routing decision."
- // Without this branch the message would be silently treated as
- // delivered, breaking the zero-silent-drops contract for
- // non-reference stores.
+		// Custom MailboxStore implementations (file/sqlite/redis backends)
+		// may return errors for serialization failures, backend timeouts,
+		// or quota exceeded. We don't have a typed reason for each, so
+		// surface them through the generic ResolverError reason which
+		// already documents "store-side problem, not a routing decision."
+		// Without this branch the message would be silently treated as
+		// delivered, breaking the zero-silent-drops contract for
+		// non-reference stores.
 		return emit(DropReasonResolverError)
 	}
 	// populate the just-assigned MessageID on the local copy so
@@ -885,12 +886,12 @@ func (r *Router) Send(stepID string, msg Message) error {
 	// re-emit the bridged message as a duplicate (resumed) event.
 	msg.MessageID = assignedID
 	if mc, ok := mailbox.(interface{ Closed(string) bool }); ok && mc.Closed(stepID) {
- // Best-effort: re-check closed after Append. If the close beat
- // our append we cannot tell whether the message landed or was
- // dropped, so emit the dedicated race reason. False positives
- // (Close happened after Append landed) are acceptable - they
- // over-report rather than under-report, satisfying "zero silent
- // drops" without risking missed events.
+		// Best-effort: re-check closed after Append. If the close beat
+		// our append we cannot tell whether the message landed or was
+		// dropped, so emit the dedicated race reason. False positives
+		// (Close happened after Append landed) are acceptable - they
+		// over-report rather than under-report, satisfying "zero silent
+		// drops" without risking missed events.
 		return emit(DropReasonMailboxClosedByFinalize)
 	}
 	// signal recipient wake immediately. Critical for step→coord
@@ -965,9 +966,9 @@ func (r *Router) Close(stepID string) {
 	// so the order matters.
 	if onDrop != nil {
 		reason := DropReasonTargetTerminal
- // S4: if workflow was cancelled, attribute drops to that cause
- // instead of the generic terminal reason - operators need to
- // distinguish abort drops from natural end-of-step drops.
+		// S4: if workflow was cancelled, attribute drops to that cause
+		// instead of the generic terminal reason - operators need to
+		// distinguish abort drops from natural end-of-step drops.
 		if r.workflowCancelled.Load() {
 			reason = DropReasonWorkflowCancelled
 		}

@@ -368,10 +368,10 @@ func TestAgentRunner_WakeDrainsAndResumesLoop(t *testing.T) {
 			textResult("primary text", 5, 5),
 			textResult("post-drain text", 5, 5),
 		},
- // afterCall(0) simulates a coordinator delivering a message
- // AFTER the agent's primary turn completes - the post-call
- // hasPending check should observe it and trigger a
- // continuation call.
+		// afterCall(0) simulates a coordinator delivering a message
+		// AFTER the agent's primary turn completes - the post-call
+		// hasPending check should observe it and trigger a
+		// continuation call.
 		afterCall: func(idx int) {
 			if idx == 0 {
 				_, _ = mailbox.Append(stepID, RouterMessage{From: "coord", Content: "injected ctx"})

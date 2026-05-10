@@ -181,7 +181,7 @@ func TestValidate_MultipleAgentErrors(t *testing.T) {
 			{ID: "s1", Instructions: "do something"},
 		},
 		Agents: map[string]AgentConfig{
- // Each agent has an independent violation.
+			// Each agent has an independent violation.
 			"a": {Description: "", Temperature: nil, TopP: nil}, // missing description
 			"b": {Description: "ok", Temperature: &badTemp},     // bad temperature
 			"c": {Description: "ok", TopP: &badTopP},            // bad topP

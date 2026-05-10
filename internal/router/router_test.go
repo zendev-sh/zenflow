@@ -132,7 +132,7 @@ func TestRouter_Send_RaceWithClose(t *testing.T) {
 	// Closer fires after a small number of sends have likely landed.
 	go func() {
 		defer wg.Done()
- // Allow some sends to land before the close.
+		// Allow some sends to land before the close.
 		for i := 0; i < 50; i++ {
 			_ = r.Send("racy", Message{Content: "warmup"})
 		}

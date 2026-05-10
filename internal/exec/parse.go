@@ -182,15 +182,15 @@ func SanitizeWorkflowUnicode(wf *Workflow) error {
 	}
 
 	if wf.Agents != nil {
- // F13: enforce strict key pattern BEFORE rewriting the map so a
- // rejection error reports the offending key verbatim.
+		// F13: enforce strict key pattern BEFORE rewriting the map so a
+		// rejection error reports the offending key verbatim.
 		for key := range wf.Agents {
 			if !strictStepIDPattern.MatchString(key) {
 				return &ValidationError{Message: fmt.Sprintf("agent name %q must match %s", key, strictStepIDPattern.String())}
 			}
 		}
- // F14: sanitise prompts. Agent keys already passed strict
- // validation so they need no Unicode pass.
+		// F14: sanitise prompts. Agent keys already passed strict
+		// validation so they need no Unicode pass.
 		for name, agent := range wf.Agents {
 			clean, err = SanitizeUnicode(agent.Prompt)
 			if err != nil {
@@ -320,17 +320,17 @@ func ValidateWorkflow(wf *Workflow) ([]string, error) {
 		}
 		l := s.Loop
 
- // Loop maxConcurrency must be non-negative. 0 is treated as "unset"
- // (forEach: all-parallel; workflow-level: falls through to
- // WithMaxConcurrency > defaultMaxConcurrency=5). Negative values are
- // rejected. Schema enforces minimum:0; this rejects negatives that
- // JSON-Schema validators would otherwise pass through with type
- // coercion.
+		// Loop maxConcurrency must be non-negative. 0 is treated as "unset"
+		// (forEach: all-parallel; workflow-level: falls through to
+		// WithMaxConcurrency > defaultMaxConcurrency=5). Negative values are
+		// rejected. Schema enforces minimum:0; this rejects negatives that
+		// JSON-Schema validators would otherwise pass through with type
+		// coercion.
 		if l.MaxConcurrency < 0 {
 			return nil, &ValidationError{Message: fmt.Sprintf("step %q: loop maxConcurrency must be non-negative", s.ID)}
 		}
 
- // loop.steps minItems:1 - if steps array is explicitly present but empty, reject.
+		// loop.steps minItems:1 - if steps array is explicitly present but empty, reject.
 		if l.Steps != nil && len(l.Steps) == 0 {
 			return nil, &LoopValidationError{Message: fmt.Sprintf("step %q: loop.steps must have at least one step if present", s.ID), StepID: s.ID}
 		}
@@ -338,15 +338,15 @@ func ValidateWorkflow(wf *Workflow) ([]string, error) {
 		hasForEach := l.ForEach != nil
 
 		if hasForEach {
- // forEach must be string (CEL expression) or []any (static array).
+			// forEach must be string (CEL expression) or []any (static array).
 			switch l.ForEach.(type) {
 			case string, []any:
- // valid types
+				// valid types
 			default:
 				return nil, &LoopValidationError{Message: fmt.Sprintf("step %q: forEach must be string or array, got %T", s.ID, l.ForEach), StepID: s.ID}
 			}
 
- // forEach mode - mutually exclusive with repeat-until fields.
+			// forEach mode - mutually exclusive with repeat-until fields.
 			if l.MaxIterations != nil {
 				return nil, &LoopValidationError{Message: fmt.Sprintf("step %q: forEach is mutually exclusive with maxIterations", s.ID), StepID: s.ID}
 			}
@@ -359,38 +359,38 @@ func ValidateWorkflow(wf *Workflow) ([]string, error) {
 			if l.Delay.D() > 0 {
 				return nil, &LoopValidationError{Message: fmt.Sprintf("step %q: forEach is mutually exclusive with delay", s.ID), StepID: s.ID}
 			}
- // forEach empty array check.
+			// forEach empty array check.
 			if arr, ok := l.ForEach.([]any); ok && len(arr) == 0 {
 				return nil, &LoopValidationError{Message: fmt.Sprintf("step %q: forEach array is empty", s.ID), StepID: s.ID}
 			}
 		} else {
- // until and untilAgent may both be present (spec §6: until is evaluated first,
- // then untilAgent if until is false). No mutual exclusion.
+			// until and untilAgent may both be present (spec §6: until is evaluated first,
+			// then untilAgent if until is false). No mutual exclusion.
 
- // repeat-until mode - maxIterations required (nil means not set).
+			// repeat-until mode - maxIterations required (nil means not set).
 			if l.MaxIterations == nil {
 				return nil, &LoopValidationError{Message: fmt.Sprintf("step %q: repeat-until loop requires maxIterations > 0", s.ID), StepID: s.ID}
 			}
- // Negative/zero maxIterations - explicit values <=0 are invalid.
+			// Negative/zero maxIterations - explicit values <=0 are invalid.
 			if *l.MaxIterations <= 0 {
 				return nil, &ValidationError{Message: fmt.Sprintf("step %q: maxIterations must be positive", s.ID)}
 			}
 		}
 
- // Validate inner steps: nested loop prohibition, step IDs, agent refs, dep refs, include conflicts.
+		// Validate inner steps: nested loop prohibition, step IDs, agent refs, dep refs, include conflicts.
 		if err := validateInnerSteps(wf, s.ID, l.Steps); err != nil {
 			return nil, err
 		}
 
- // outputMode validation: empty (= "last") or one of the named constants.
+		// outputMode validation: empty (= "last") or one of the named constants.
 		switch l.OutputMode {
 		case "", spec.LoopOutputModeLast, spec.LoopOutputModeCumulative:
- // valid
+			// valid
 		default:
 			return nil, &LoopValidationError{Message: fmt.Sprintf("step %q: invalid loop.outputMode %q (must be %q or %q)", s.ID, l.OutputMode, spec.LoopOutputModeLast, spec.LoopOutputModeCumulative), StepID: s.ID}
 		}
 
- // untilAgent reference validation.
+		// untilAgent reference validation.
 		if l.UntilAgent != "" {
 			if wf.Agents == nil {
 				return nil, &ValidationError{Message: fmt.Sprintf("step %q: untilAgent references unknown agent %q (no agents defined)", s.ID, l.UntilAgent)}
@@ -399,7 +399,7 @@ func ValidateWorkflow(wf *Workflow) ([]string, error) {
 			if !ok {
 				return nil, &ValidationError{Message: fmt.Sprintf("step %q: untilAgent references unknown agent %q", s.ID, l.UntilAgent)}
 			}
- // Spec requires untilAgent agent to have resultSchema with done boolean in required.
+			// Spec requires untilAgent agent to have resultSchema with done boolean in required.
 			if agent.ResultSchema == nil {
 				return nil, &ValidationError{Message: fmt.Sprintf("step %q: untilAgent %q must have resultSchema", s.ID, l.UntilAgent)}
 			}
@@ -456,7 +456,7 @@ func ValidateWorkflow(wf *Workflow) ([]string, error) {
 	if s := wf.Options.OnStepFailure; s != "" {
 		switch s {
 		case spec.FailureCascade, spec.FailureSkipDependents, spec.FailureAbort:
- // valid
+			// valid
 		default:
 			return nil, &ValidationError{Message: fmt.Sprintf("invalid onStepFailure %q (must be cascade, skip-dependents, or abort)", s)}
 		}
@@ -466,7 +466,7 @@ func ValidateWorkflow(wf *Workflow) ([]string, error) {
 	if s := wf.Options.Scheduler; s != "" {
 		switch s {
 		case spec.SchedulerDependencyFirst, spec.SchedulerRoundRobin, spec.SchedulerLeastBusy:
- // valid
+			// valid
 		default:
 			return nil, &ValidationError{Message: fmt.Sprintf("invalid scheduling %q (must be dependency-first, round-robin, or least-busy)", s)}
 		}
@@ -541,11 +541,11 @@ func resolveChainedRef(baseDir, relPath string, depth int, visited map[string]bo
 	}
 	trimmed := strings.TrimSpace(content)
 	if strings.HasPrefix(trimmed, "@") {
- // The inclusion target is itself another @-ref. Recurse so we
- // land on the terminal text content, with depth tracking.
+		// The inclusion target is itself another @-ref. Recurse so we
+		// land on the terminal text content, with depth tracking.
 		next := strings.TrimSpace(trimmed[1:])
- // Reject empty refs (`@` followed by whitespace) as malformed
- // rather than silently infinite-looping on `readRef`.
+		// Reject empty refs (`@` followed by whitespace) as malformed
+		// rather than silently infinite-looping on `readRef`.
 		if next == "" {
 			return "", fmt.Errorf("empty chained reference at depth %d", depth)
 		}
@@ -614,7 +614,7 @@ func validateInnerSteps(wf *Workflow, parentID string, steps []Step) error {
 			return &DuplicateStepError{Message: fmt.Sprintf("step %q: duplicate inner step ID %q", parentID, inner.ID), StepID: inner.ID}
 		}
 		innerSeen[inner.ID] = true
- // Agent reference check.
+		// Agent reference check.
 		if inner.Agent != "" {
 			if wf.Agents == nil {
 				return &MissingAgentError{Message: inner.Agent + " (referenced by inner step " + inner.ID + " in " + parentID + ", no agents defined)", Agent: inner.Agent, StepID: inner.ID}
@@ -623,7 +623,7 @@ func validateInnerSteps(wf *Workflow, parentID string, steps []Step) error {
 				return &MissingAgentError{Message: inner.Agent + " (referenced by inner step " + inner.ID + " in " + parentID + ")", Agent: inner.Agent, StepID: inner.ID}
 			}
 		}
- // Include mutual exclusion.
+		// Include mutual exclusion.
 		if inner.Include != "" {
 			if inner.Agent != "" {
 				return &IncludeConflictError{Message: fmt.Sprintf("inner step %q in %q has include and agent", inner.ID, parentID), StepID: inner.ID, Field: "agent"}

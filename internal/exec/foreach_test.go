@@ -361,7 +361,7 @@ func TestExecutor_ForEach_CELExpression(t *testing.T) {
 		n := callCount.Add(1)
 		switch n {
 		case 1:
- // "list" step: return submit_result with items.
+			// "list" step: return submit_result with items.
 			return &provider.GenerateResult{
 				Text: "listed",
 				ToolCalls: []provider.ToolCall{
@@ -370,7 +370,7 @@ func TestExecutor_ForEach_CELExpression(t *testing.T) {
 				Usage: provider.Usage{InputTokens: 10, OutputTokens: 5},
 			}
 		default:
- // forEach iterations.
+			// forEach iterations.
 			return &provider.GenerateResult{
 				Text:  "processed",
 				Usage: provider.Usage{InputTokens: 5, OutputTokens: 3},
@@ -431,10 +431,10 @@ func TestExecutor_ForEach_InnerDAG_ItemInjection(t *testing.T) {
 	// Verify that inner DAG steps receive forEach item context in their prompts.
 	llm := &mockModel{
 		responses: []*provider.GenerateResult{
- // item "alpha": step-a, step-b
+			// item "alpha": step-a, step-b
 			{Text: "alpha-a", Usage: provider.Usage{InputTokens: 5, OutputTokens: 3}},
 			{Text: "alpha-b", Usage: provider.Usage{InputTokens: 5, OutputTokens: 3}},
- // item "beta": step-a, step-b
+			// item "beta": step-a, step-b
 			{Text: "beta-a", Usage: provider.Usage{InputTokens: 5, OutputTokens: 3}},
 			{Text: "beta-b", Usage: provider.Usage{InputTokens: 5, OutputTokens: 3}},
 		},
@@ -521,7 +521,7 @@ func TestExecutor_ForEach_DefaultParallel(t *testing.T) {
 				Instructions: "Process item",
 				Loop: &Loop{
 					ForEach: []any{"a", "b", "c", "d"},
- // No MaxConcurrency set - default should be all-parallel.
+					// No MaxConcurrency set - default should be all-parallel.
 				},
 			},
 		},
@@ -890,7 +890,7 @@ func TestExecutor_ForEach_AllCancelledNoFirstErr(t *testing.T) {
 	// Override context by running with cancelled context.
 	result, err := exec.Run(ctx)
 	if err != nil {
- // Cancelled context may cause run to error - that's fine.
+		// Cancelled context may cause run to error - that's fine.
 		t.Logf("Run error (expected): %v", err)
 		return
 	}

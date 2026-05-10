@@ -39,7 +39,7 @@ func TopoSort(steps []Step) ([]string, error) {
 	}
 
 	if len(order) != len(steps) {
- // Collect nodes involved in the cycle.
+		// Collect nodes involved in the cycle.
 		sorted := make(map[string]bool, len(order))
 		for _, id := range order {
 			sorted[id] = true

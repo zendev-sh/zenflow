@@ -36,7 +36,7 @@ func TestRenderDAG_AllExamples(t *testing.T) {
 				t.Error("Render returned empty string")
 				return
 			}
- // Print for visual inspection.
+			// Print for visual inspection.
 			fmt.Fprintf(os.Stderr, "\n=== %s ===\n%s\n", name, result)
 		})
 	}

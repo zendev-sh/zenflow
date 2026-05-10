@@ -172,14 +172,14 @@ func runBenchOnce(b *testing.B, coord *AgentRunner) {
 	}
 
 	if coord != nil {
- // Drain coord goroutine before the next iteration so we don't
- // leak goroutines across b.N. The coord's stub LM returns
- // finalize on every call → Run loop exits as soon as the LLM
- // is invoked.
+		// Drain coord goroutine before the next iteration so we don't
+		// leak goroutines across b.N. The coord's stub LM returns
+		// finalize on every call → Run loop exits as soon as the LLM
+		// is invoked.
 		select {
 		case <-coordDone:
 		case <-time.After(2 * time.Second):
- // Force exit - bench iteration shouldn't hang on coord.
+			// Force exit - bench iteration shouldn't hang on coord.
 		}
 	}
 }
@@ -212,7 +212,9 @@ func BenchmarkCoordOverhead(b *testing.B) {
 // on both reviewers. Each step has the same agent contract as the
 // single-step bench: call bench_sleep once, return done.
 // Topology:
+//
 //	setup → review-a ┐
+//
 // └ review-b ┴ → fan-in
 // Per-call so b.Loop iterations don't share state.
 func benchMultiStepWorkflow() *Workflow {
@@ -304,8 +306,8 @@ func runMultiStepBenchOnce(b *testing.B, coord *AgentRunner) {
 		WithModel(stepLM),
 		WithDefaultModel(stepLM.ModelID()),
 		WithTools(benchSleepTool()),
- // Allow the two review steps to run in parallel so the bench
- // reflects the realistic fan-out cost of coord routing.
+		// Allow the two review steps to run in parallel so the bench
+		// reflects the realistic fan-out cost of coord routing.
 		WithMaxConcurrency(4),
 	}
 	if coord != nil {
@@ -338,7 +340,7 @@ func runMultiStepBenchOnce(b *testing.B, coord *AgentRunner) {
 		select {
 		case <-coordDone:
 		case <-time.After(2 * time.Second):
- // Force exit - bench iteration shouldn't hang on coord.
+			// Force exit - bench iteration shouldn't hang on coord.
 		}
 	}
 }

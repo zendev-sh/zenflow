@@ -120,8 +120,8 @@ func TestCheckType(t *testing.T) {
 		{"array_invalid", "a", "not-array", "array", true},
 		{"null_valid", "n", nil, "null", false},
 		{"null_invalid", "n", "not-null", "null", true},
- // Unknown type names should be accepted without validation,
- // not crash. Permissive-by-default lets schemas evolve.
+		// Unknown type names should be accepted without validation,
+		// not crash. Permissive-by-default lets schemas evolve.
 		{"unknown_no_error", "x", "anything", "unknown-type", false},
 	}
 	for _, tc := range cases {
@@ -522,7 +522,7 @@ func TestValidateResultSchema_ObjectImplicit_ValNotMap(t *testing.T) {
 	schema := map[string]any{
 		"properties": map[string]any{
 			"foo": map[string]any{
- // implicit object: properties present, type missing
+				// implicit object: properties present, type missing
 				"properties": map[string]any{
 					"bar": map[string]any{"type": "string"},
 				},
@@ -562,7 +562,7 @@ func TestValidateArrayItems_ObjectItemNotMap(t *testing.T) {
 func TestValidateArrayItems_NestedArrayMissingItems(t *testing.T) {
 	items := map[string]any{
 		"type": "array",
- // note: no inner "items" key
+		// note: no inner "items" key
 	}
 	arr := []any{[]any{float64(1), float64(2)}}
 	if err := validateArrayItems("matrix", arr, items); err != nil {

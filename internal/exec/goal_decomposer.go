@@ -219,12 +219,12 @@ func ParseCoordinatorResponse(response string) (*Workflow, error) {
 	// Strip markdown code fences if present.
 	response = strings.TrimSpace(response)
 	if strings.HasPrefix(response, "```") {
- // Remove opening fence (possibly with language tag).
+		// Remove opening fence (possibly with language tag).
 		idx := strings.Index(response, "\n")
 		if idx >= 0 {
 			response = response[idx+1:]
 		}
- // Remove closing fence.
+		// Remove closing fence.
 		response = strings.TrimSuffix(response, "```")
 		response = strings.TrimSpace(response)
 	}

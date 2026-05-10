@@ -279,7 +279,7 @@ func TestAgentRunner_PermissionError(t *testing.T) {
 	}
 	result, err := runner.Run(t.Context(), AgentConfig{}, "do", "gpt-4o", tools)
 	if err != nil {
- // If goai propagates permission errors as fatal, that's also acceptable.
+		// If goai propagates permission errors as fatal, that's also acceptable.
 		if !strings.Contains(err.Error(), "permission system broken") {
 			t.Errorf("error = %v, want 'permission system broken'", err)
 		}
@@ -311,7 +311,7 @@ func TestAgentRunner_NoMailbox_RunsWithoutMessaging(t *testing.T) {
 	runner := &AgentRunner{
 		model: model,
 		tools: tools,
- // Mailbox + Wake intentionally nil → mailbox mode disabled.
+		// Mailbox + Wake intentionally nil → mailbox mode disabled.
 	}
 
 	result, err := runner.Run(t.Context(), AgentConfig{}, "do", "gpt-4o", tools)
@@ -454,7 +454,7 @@ func TestAgentRunner_AssistantMessageIncludesToolCalls(t *testing.T) {
 	foundAssistantWithTools := false
 	for _, m := range calls[1].Messages {
 		if m.Role == provider.RoleAssistant {
- // Check if the message has tool-call parts
+			// Check if the message has tool-call parts
 			for _, p := range m.Content {
 				if p.Type == provider.PartToolCall {
 					foundAssistantWithTools = true
@@ -1021,7 +1021,7 @@ func TestAgentRunner_WakeDrain_ContinuesOnNewMessages(t *testing.T) {
 			textResult("processed late msg", 10, 5),
 		},
 		afterFirst: func() {
- // Simulate the delivery engine: append + wake.
+			// Simulate the delivery engine: append + wake.
 			_, _ = mb.Append(stepID, RouterMessage{From: "coordinator", Content: "late context"})
 			select {
 			case wake <- struct{}{}:
@@ -1114,9 +1114,9 @@ func TestAgentRunner_WakeLoopDrainCancel_EmitsResidualDrops(t *testing.T) {
 			textResult("should not be reached", 10, 5),
 		},
 		afterFirst: func() {
- // Order matters: msg1 (consumed), then cancel (triggers
- // cancelled=true, MarkReads pending[:cancelIdx+1]), then
- // msg2 + msg3 which remain Unread and must surface as drops.
+			// Order matters: msg1 (consumed), then cancel (triggers
+			// cancelled=true, MarkReads pending[:cancelIdx+1]), then
+			// msg2 + msg3 which remain Unread and must surface as drops.
 			_, _ = mb.Append(stepID, RouterMessage{From: "coordinator", Content: "msg-1"})
 			_, _ = mb.Append(stepID, RouterMessage{Type: router.MessageCancel, From: "parent"})
 			_, _ = mb.Append(stepID, RouterMessage{From: "coordinator", Content: "after-cancel-1"})
@@ -1651,10 +1651,10 @@ func TestAgentRunner_CtxCancelDrop_UsesWorkflowCancelledReason(t *testing.T) {
 	// ready signal somehow doesn't arrive (e.g. future refactor breaks
 	// the call-2 path) so the test fails fast instead of hanging.
 	go func() {
- // Wait for the model's call-2 to finish appending its message
- // AND to be parked on ctx.Done. Then cancel - this guarantees
- // the post-loop drain will see the call-2 message and emit a
- // workflow-cancelled drop.
+		// Wait for the model's call-2 to finish appending its message
+		// AND to be parked on ctx.Done. Then cancel - this guarantees
+		// the post-loop drain will see the call-2 message and emit a
+		// workflow-cancelled drop.
 		select {
 		case <-ready:
 			cancel()
@@ -1951,7 +1951,7 @@ func TestRunAgent_SendMessageToolInjected(t *testing.T) {
 		runner := &AgentRunner{
 			model:  model,
 			stepID: "agent-A",
- // Router intentionally nil.
+			// Router intentionally nil.
 		}
 		_, err := runner.Run(t.Context(), AgentConfig{}, "hi", "mock", nil)
 		if err != nil {
@@ -1967,10 +1967,10 @@ func TestRunAgent_SendMessageToolInjected(t *testing.T) {
 	})
 
 	t.Run("caller_provided_send_message_wins", func(t *testing.T) {
- // A caller-supplied send_message must NOT be replaced. We
- // detect this by giving the caller's send_message a unique
- // Description and asserting the tool the model sees still
- // carries that description (not the auto-injected default).
+		// A caller-supplied send_message must NOT be replaced. We
+		// detect this by giving the caller's send_message a unique
+		// Description and asserting the tool the model sees still
+		// carries that description (not the auto-injected default).
 		const sentinel = "CALLER-OVERRIDE-MARKER"
 		callerTool := goai.Tool{
 			Name:        "send_message",
@@ -2000,8 +2000,8 @@ func TestRunAgent_SendMessageToolInjected(t *testing.T) {
 		if len(calls) == 0 {
 			t.Fatalf("model not called")
 		}
- // Count how many send_message tools appear; assert exactly one
- // AND that it's the caller's (sentinel description).
+		// Count how many send_message tools appear; assert exactly one
+		// AND that it's the caller's (sentinel description).
 		var sendMessageCount int
 		var sawSentinel bool
 		for _, td := range calls[0].Tools {

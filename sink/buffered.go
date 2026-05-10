@@ -82,9 +82,9 @@ func Buffered(wrapped zenflow.ProgressSink, window time.Duration) ClosableProgre
 	b := &BufferedSink{
 		wrapped: wrapped,
 		window:  window,
- // Large enough to absorb bursts without blocking callers. If
- // overflowed, OnEvent/OnOutput block - safer than drop (drops
- // are explicit at the router layer, not here).
+		// Large enough to absorb bursts without blocking callers. If
+		// overflowed, OnEvent/OnOutput block - safer than drop (drops
+		// are explicit at the router layer, not here).
 		in:   make(chan bufItem, defaultBufSinkBuffer),
 		done: make(chan struct{}),
 	}
@@ -97,7 +97,7 @@ func Buffered(wrapped zenflow.ProgressSink, window time.Duration) ClosableProgre
 func (b *BufferedSink) OnEvent(ctx context.Context, e zenflow.Event) {
 	select {
 	case <-b.done:
- // Post-close: forward synchronously so nothing is silently dropped.
+		// Post-close: forward synchronously so nothing is silently dropped.
 		b.wrapped.OnEvent(ctx, e)
 	case b.in <- bufItem{ctx: ctx, ev: e}:
 	}
@@ -121,8 +121,8 @@ func (b *BufferedSink) OnOutput(ctx context.Context, o zenflow.Output) {
 // behind the flush sentinel and silently dropped when the loop returns).
 func (b *BufferedSink) Close() error {
 	b.closeOnce.Do(func() {
- // Signal closed first: new OnEvent/OnOutput calls bias toward the
- // b.done branch and forward synchronously to the wrapped sink.
+		// Signal closed first: new OnEvent/OnOutput calls bias toward the
+		// b.done branch and forward synchronously to the wrapped sink.
 		close(b.done)
 		ack := make(chan struct{})
 		b.in <- bufItem{isFlush: true, ack: ack}
@@ -147,7 +147,7 @@ func (b *BufferedSink) loop() {
 	}
 	stopTimer := func() {
 		if timer != nil {
- // Go 1.23+ no longer requires draining timer.C after Stop.
+			// Go 1.23+ no longer requires draining timer.C after Stop.
 			timer.Stop()
 			timer = nil
 			timerC = nil
@@ -171,17 +171,17 @@ func (b *BufferedSink) loop() {
 		case it := <-b.in:
 			if it.isFlush {
 				flush()
- // Drain any items that snuck into b.in behind the flush
- // sentinel (Close closed b.done first, but OnEvent's select
- // is non-deterministic and may still pick the b.in branch).
- // Forward them synchronously to avoid silent drops.
+				// Drain any items that snuck into b.in behind the flush
+				// sentinel (Close closed b.done first, but OnEvent's select
+				// is non-deterministic and may still pick the b.in branch).
+				// Forward them synchronously to avoid silent drops.
 			drain:
 				for {
 					select {
 					case extra := <-b.in:
 						if extra.isFlush {
- // Defensive: a second Close cannot happen
- // (closeOnce), but tolerate stray sentinels.
+							// Defensive: a second Close cannot happen
+							// (closeOnce), but tolerate stray sentinels.
 							if extra.ack != nil {
 								close(extra.ack)
 							}
@@ -204,9 +204,9 @@ func (b *BufferedSink) loop() {
 				startTimer()
 				continue
 			}
- // Event.
+			// Event.
 			if IsLifecycleEvent(it.ev) {
- // Flush pending batch, then emit lifecycle event.
+				// Flush pending batch, then emit lifecycle event.
 				flush()
 				b.wrapped.OnEvent(it.ctx, it.ev)
 				continue

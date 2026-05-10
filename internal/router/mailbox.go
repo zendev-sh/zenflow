@@ -190,8 +190,8 @@ func (s *InMemoryMailboxStore) MarkRead(stepID string, ids []string) []string {
 	}
 	q := s.queues[stepID]
 	if len(q) == 0 {
- // Nothing in queue - record fresh ids as read so a second
- // MarkRead still surfaces them as already-read (CAS contract).
+		// Nothing in queue - record fresh ids as read so a second
+		// MarkRead still surfaces them as already-read (CAS contract).
 		maps.Copy(read, want)
 		return alreadyRead
 	}

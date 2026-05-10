@@ -27,21 +27,21 @@ func writeToolIn(workdir string) goai.Tool {
 				return "", err
 			}
 
- // Reject path traversal: check raw path for ".." components before cleaning.
+			// Reject path traversal: check raw path for ".." components before cleaning.
 			for part := range strings.SplitSeq(filepath.ToSlash(p.Path), "/") {
 				if part == ".." {
 					return "", fmt.Errorf("path %q contains '..' traversal", p.Path)
 				}
 			}
- // normalize separators so Windows callers using
- // forward slashes (LLMs love `/`) end up at the same path
- // as callers using `\`.
+			// normalize separators so Windows callers using
+			// forward slashes (LLMs love `/`) end up at the same path
+			// as callers using `\`.
 			cleaned, err := resolveUnderWorkdir(normalizePath(p.Path), workdir)
 			if err != nil {
 				return "", err
 			}
 
- // Create parent directories.
+			// Create parent directories.
 			dir := filepath.Dir(cleaned)
 			if err := os.MkdirAll(dir, 0700); err != nil {
 				return "", err

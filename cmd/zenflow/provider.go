@@ -68,43 +68,43 @@ func resolveModel(providerName, modelID string) provider.LanguageModel {
 	case "bedrock":
 		return bedrock.Chat(modelID)
 	case "azure":
- // Use goai's default routing - newer v1 GA URL path
- // (`/openai/v1{path}`) which is Microsoft's recommended
- // forward direction. goai v0.7.4+ correctly omits the
- // `?api-version=` query parameter on this path per Azure's
- // v1 GA spec, so spec-strict resources accept it.
- // Internal goai routing still handles the per-model-family
- // distinctions (Claude → Anthropic protocol; non-OpenAI →
- // AI Services endpoint; OpenAI → v1 GA path; codex/pro →
- // cognitiveservices Responses API when WithDeploymentBasedURLs
- // is set, opt in explicitly via the azure-deployment/ prefix).
- // See https://learn.microsoft.com/en-us/azure/foundry/openai/api-version-lifecycle
+		// Use goai's default routing - newer v1 GA URL path
+		// (`/openai/v1{path}`) which is Microsoft's recommended
+		// forward direction. goai v0.7.4+ correctly omits the
+		// `?api-version=` query parameter on this path per Azure's
+		// v1 GA spec, so spec-strict resources accept it.
+		// Internal goai routing still handles the per-model-family
+		// distinctions (Claude → Anthropic protocol; non-OpenAI →
+		// AI Services endpoint; OpenAI → v1 GA path; codex/pro →
+		// cognitiveservices Responses API when WithDeploymentBasedURLs
+		// is set, opt in explicitly via the azure-deployment/ prefix).
+		// See https://learn.microsoft.com/en-us/azure/foundry/openai/api-version-lifecycle
 		return azure.Chat(modelID)
 	case "azure-deployment":
- // Explicit opt-in to the legacy deployment-based URL pattern
- // (`/openai/deployments/{model}/...?api-version=...`). Use this
- // when (a) your Azure resource doesn't yet expose v1 GA, (b) you
- // need a specific dated api-version, or (c) you're talking to a
- // model variant that requires the cognitiveservices Responses
- // API (codex/pro family). goai routes codex/pro via the
- // Responses API automatically when this flag is set.
+		// Explicit opt-in to the legacy deployment-based URL pattern
+		// (`/openai/deployments/{model}/...?api-version=...`). Use this
+		// when (a) your Azure resource doesn't yet expose v1 GA, (b) you
+		// need a specific dated api-version, or (c) you're talking to a
+		// model variant that requires the cognitiveservices Responses
+		// API (codex/pro family). goai routes codex/pro via the
+		// Responses API automatically when this flag is set.
 		return azure.Chat(modelID, azure.WithDeploymentBasedURLs(true))
 	case "vertex":
- // Explicit Google Vertex AI prefix. Without this case vertex/<model>
- // fell through to autoModelFromModelName which silently routed
- // Gemini-named models to the Google Gemini API when GEMINI_API_KEY
- // was set, overriding user intent. Vertex requires Application Default
- // Credentials (gcloud auth login && gcloud auth application-default
- // login); see the goai vertex package docs for region / project
- // configuration.
+		// Explicit Google Vertex AI prefix. Without this case vertex/<model>
+		// fell through to autoModelFromModelName which silently routed
+		// Gemini-named models to the Google Gemini API when GEMINI_API_KEY
+		// was set, overriding user intent. Vertex requires Application Default
+		// Credentials (gcloud auth login && gcloud auth application-default
+		// login); see the goai vertex package docs for region / project
+		// configuration.
 		return vertex.Chat(modelID)
 	case "vertex-anthropic":
- // Vertex's Anthropic offering uses a different protocol and endpoint
- // shape; explicit prefix so callers don't have to guess. Same ADC
- // requirement as vertex/.
+		// Vertex's Anthropic offering uses a different protocol and endpoint
+		// shape; explicit prefix so callers don't have to guess. Same ADC
+		// requirement as vertex/.
 		return vertex.AnthropicChat(modelID)
 	default:
- // No provider prefix - auto-detect from model name and env vars.
+		// No provider prefix - auto-detect from model name and env vars.
 		return autoModelFromModelName(modelID)
 	}
 }
@@ -165,12 +165,12 @@ func autoModelFromModelName(modelName string) provider.LanguageModel {
 			return google.Chat(modelName)
 		}
 	case isBedrockCrossRegionPattern(modelName):
- // Bedrock cross-region: "anthropic.claude-*", "minimax.*",
- // "amazon.nova-*", etc. Vendor prefix BEFORE the dot, model
- // name AFTER. - narrowed from `strings.Contains(".")`
- // because that caught Azure model IDs with version dots
- // (e.g. "DeepSeek-V3.2", "Llama-3.1-70B") and routed them
- // to Bedrock by mistake → "model identifier is invalid".
+		// Bedrock cross-region: "anthropic.claude-*", "minimax.*",
+		// "amazon.nova-*", etc. Vendor prefix BEFORE the dot, model
+		// name AFTER. - narrowed from `strings.Contains(".")`
+		// because that caught Azure model IDs with version dots
+		// (e.g. "DeepSeek-V3.2", "Llama-3.1-70B") and routed them
+		// to Bedrock by mistake → "model identifier is invalid".
 		if hasBedrock {
 			return bedrock.Chat(modelName)
 		}

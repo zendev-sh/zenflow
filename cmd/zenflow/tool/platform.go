@@ -73,11 +73,11 @@ func wrapCommand(cmd string) string {
 // exec.Command without further translation.
 func normalizePath(p string) string {
 	if goos == "windows" {
- // filepath.FromSlash converts `/` → `\` on Windows; on Unix it
- // is a no-op. We call it explicitly so the macOS-side test that
- // flips goos="windows" doesn't depend on filepath using the host
- // separator - we want the *intent* of "normalize for Windows"
- // to be visible.
+		// filepath.FromSlash converts `/` → `\` on Windows; on Unix it
+		// is a no-op. We call it explicitly so the macOS-side test that
+		// flips goos="windows" doesn't depend on filepath using the host
+		// separator - we want the *intent* of "normalize for Windows"
+		// to be visible.
 		return filepath.Clean(filepath.FromSlash(p))
 	}
 	return filepath.Clean(p)

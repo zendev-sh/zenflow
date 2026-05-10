@@ -27,27 +27,27 @@ func TestMain(m *testing.M) {
 	// fixture artifacts (hungModel/blockingModel test stubs) or generic
 	// runtime frames that also appear in unit-only runs.
 	opts := []goleak.Option{
- // time.Tick (used by tickerClock + production engine) can park
- // goroutines even after stop on macOS; ignore the runtime
- // timer goroutine specifically.
+		// time.Tick (used by tickerClock + production engine) can park
+		// goroutines even after stop on macOS; ignore the runtime
+		// timer goroutine specifically.
 		goleak.IgnoreTopFunction("time.Sleep"),
- // timeout tests use a deliberately-hung model (`select {}`)
- // to reproduce a provider that ignores ctx cancellation. The
- // goroutines blocked in DoGenerate/DoStream cannot be reaped
- // because the test contract is "the higher layer (executor /
- // runStep / waitOrAbort) MUST surface ctx.Err despite the
- // blocked downstream call". Ignoring these specific blocked
- // stacks lets the rest of the suite still benefit from goleak.
+		// timeout tests use a deliberately-hung model (`select {}`)
+		// to reproduce a provider that ignores ctx cancellation. The
+		// goroutines blocked in DoGenerate/DoStream cannot be reaped
+		// because the test contract is "the higher layer (executor /
+		// runStep / waitOrAbort) MUST surface ctx.Err despite the
+		// blocked downstream call". Ignoring these specific blocked
+		// stacks lets the rest of the suite still benefit from goleak.
 		goleak.IgnoreTopFunction("github.com/zendev-sh/zenflow.(*hungModel).DoGenerate"),
 		goleak.IgnoreTopFunction("github.com/zendev-sh/zenflow.(*hungModel).DoStream"),
- // waitOrAbort spawns a WaitGroup-Wait goroutine that only exits
- // when every step goroutine returns; with hungModel above this
- // also leaks by design. Top-of-stack here is the runtime
- // semaphore acquire; match by AnyFunction so we cover both the
- // runtime frame and the waitOrAbort.func1 caller frame.
+		// waitOrAbort spawns a WaitGroup-Wait goroutine that only exits
+		// when every step goroutine returns; with hungModel above this
+		// also leaks by design. Top-of-stack here is the runtime
+		// semaphore acquire; match by AnyFunction so we cover both the
+		// runtime frame and the waitOrAbort.func1 caller frame.
 		goleak.IgnoreAnyFunction("github.com/zendev-sh/zenflow/internal/exec.waitOrAbort.func1"),
- // blockingModel and similar test stubs may sit in chan receive
- // for the same reason.
+		// blockingModel and similar test stubs may sit in chan receive
+		// for the same reason.
 		goleak.IgnoreAnyFunction("github.com/zendev-sh/zenflow/internal/exec.(*blockingModel).DoGenerate"),
 		goleak.IgnoreAnyFunction("github.com/zendev-sh/zenflow/internal/exec.(*blockingModel).DoStream"),
 		goleak.IgnoreAnyFunction("github.com/zendev-sh/zenflow/internal/exec.(*hungModel).DoGenerate"),
@@ -62,16 +62,16 @@ func TestMain(m *testing.M) {
 	// e2e_enabled_default.go (//go:build !e2e).
 	if e2eEnabled {
 		opts = append(opts,
- // H1 : real-provider HTTP/2 client connections (used
- // by E2E tests against Bedrock / Azure / Gemini) keep their
- // readLoop / writeLoop goroutines parked on idle keep-alive
- // connections. These are owned by net/http's connection pool
- // and only exit when the pool's MaxIdleConnsPerHost timer
- // fires (default 90s). Calling http.Client.CloseIdleConnections
- // during shutdown is not reliable across all transports we
- // embed (vendored providers reuse a global pool). Ignoring
- // these specific top-of-stack frames keeps goleak useful for
- // detecting REAL leaks while letting E2E tests exit 0.
+			// H1 : real-provider HTTP/2 client connections (used
+			// by E2E tests against Bedrock / Azure / Gemini) keep their
+			// readLoop / writeLoop goroutines parked on idle keep-alive
+			// connections. These are owned by net/http's connection pool
+			// and only exit when the pool's MaxIdleConnsPerHost timer
+			// fires (default 90s). Calling http.Client.CloseIdleConnections
+			// during shutdown is not reliable across all transports we
+			// embed (vendored providers reuse a global pool). Ignoring
+			// these specific top-of-stack frames keeps goleak useful for
+			// detecting REAL leaks while letting E2E tests exit 0.
 			goleak.IgnoreAnyFunction("net/http.(*http2ClientConn).readLoop"),
 			goleak.IgnoreAnyFunction("net/http.(*http2clientConnReadLoop).run"),
 			goleak.IgnoreAnyFunction("net/http.(*persistConn).readLoop"),

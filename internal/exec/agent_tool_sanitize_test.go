@@ -33,8 +33,8 @@ func TestSanitizeAgentName(t *testing.T) {
 			if got != c.want {
 				t.Errorf("sanitizeAgentName(%q) = %q, want %q", c.in, got, c.want)
 			}
- // Defence-in-depth: every non-empty result must satisfy the
- // Bedrock regex itself, not just our enumerated cases.
+			// Defence-in-depth: every non-empty result must satisfy the
+			// Bedrock regex itself, not just our enumerated cases.
 			if got != "" {
 				for _, r := range got {
 					ok := (r >= 'a' && r <= 'z') ||
@@ -97,10 +97,10 @@ func TestIsLikelyHallucinatedModel(t *testing.T) {
 // emit the warning so operators can observe deliberate divergence.
 func TestSpawnChild_HallucinatedModelFallsBackSilently(t *testing.T) {
 	t.Run("model='default' silent fallback no warning", func(t *testing.T) {
- // Manual classification check (Spawn-level wiring is exercised
- // indirectly via existing TestZFB11_SpawnChild_* tests; here we
- // cover the new switch branch in isolation to guard the silent
- // behaviour).
+		// Manual classification check (Spawn-level wiring is exercised
+		// indirectly via existing TestZFB11_SpawnChild_* tests; here we
+		// cover the new switch branch in isolation to guard the silent
+		// behaviour).
 		if !isLikelyHallucinatedModel("default") {
 			t.Fatal("'default' must be classified hallucinated for silent fallback")
 		}
@@ -113,9 +113,9 @@ func TestSpawnChild_HallucinatedModelFallsBackSilently(t *testing.T) {
 	})
 
 	t.Run("real override 'claude-sonnet-4-6' still warns", func(t *testing.T) {
- // Distinct model that is NOT hallucinated → warning still fires
- // per the original behaviour. This is intentional: legitimate
- // overrides should be visible in the chat surface.
+		// Distinct model that is NOT hallucinated → warning still fires
+		// per the original behaviour. This is intentional: legitimate
+		// overrides should be visible in the chat surface.
 		if isLikelyHallucinatedModel("claude-sonnet-4-6") {
 			t.Fatal("legitimate model override must NOT be silently swallowed")
 		}

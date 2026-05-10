@@ -1196,7 +1196,7 @@ func TestResumeR3_ResolverErrorDistinctFromMissing(t *testing.T) {
 		if !errors.Is(err, ErrModelResolverError) {
 			t.Fatalf("case1: want ErrModelResolverError, got %v", err)
 		}
- // Event must carry reason=resolver-error AND the wrapped error string.
+		// Event must carry reason=resolver-error AND the wrapped error string.
 		evts := snapshotEvents(prog)
 		found := false
 		for _, ev := range evts {
@@ -1660,7 +1660,7 @@ func TestResumeR3_ResumeTimeoutEmitsLeakCount(t *testing.T) {
 	model := &sequentialMockModel{
 		fn: func(_ context.Context, _ provider.GenerateParams) (*provider.GenerateResult, error) {
 			startedOnce.Do(func() { close(started) })
- // Intentionally ignore ctx.Done. Block until test cleanup.
+			// Intentionally ignore ctx.Done. Block until test cleanup.
 			<-release
 			return textResult("late", 1, 1), nil
 		},
@@ -2183,10 +2183,10 @@ func TestResumeR3_RunTeardownEmitsLeakTelemetry(t *testing.T) {
 	model := &sequentialMockModel{
 		fn: func(_ context.Context, params provider.GenerateParams) (*provider.GenerateResult, error) {
 			joined := joinMessageText(params.Messages)
- // Routing priority: resume first (its transcript includes
- // both the original TRIGGER-STEP text AND the "RESUME-PROMPT"
- // marker from the coordinator's follow-up), then keepalive,
- // then trigger.
+			// Routing priority: resume first (its transcript includes
+			// both the original TRIGGER-STEP text AND the "RESUME-PROMPT"
+			// marker from the coordinator's follow-up), then keepalive,
+			// then trigger.
 			switch {
 			case strings.Contains(joined, "RESUME-PROMPT"):
 				resumeStartedOnce.Do(func() { close(resumeStarted) })
@@ -2223,12 +2223,12 @@ func TestResumeR3_RunTeardownEmitsLeakTelemetry(t *testing.T) {
 	exec := &Executor{
 		Runner: &AgentRunner{
 			model: model,
- // runStep builds its per-step AgentRunner with
- // RunID = e.Runner.RunID (executor.go:1519). ResumeStep
- // later consults e.runID which reads e.RunID. Set BOTH
- // to the same value so Append/Load keys align - otherwise
- // the transcript lands under "" and the Send is dropped
- // as no-transcript.
+			// runStep builds its per-step AgentRunner with
+			// RunID = e.Runner.RunID (executor.go:1519). ResumeStep
+			// later consults e.runID which reads e.RunID. Set BOTH
+			// to the same value so Append/Load keys align - otherwise
+			// the transcript lands under "" and the Send is dropped
+			// as no-transcript.
 			runID: "run-teardown-test",
 		},
 		Workflow: newTestWorkflow([]Step{
@@ -2336,15 +2336,15 @@ func TestResumeR3_RunTeardownEmitsLeakTelemetry(t *testing.T) {
 		if r != "resume-timeout" {
 			continue
 		}
- // count is stored as int64 via atomic.Int64.Load.
+		// count is stored as int64 via atomic.Int64.Load.
 		count, _ := ev.Data["count"].(int64)
 		if count < 1 {
 			t.Errorf("count=%d, want >=1", count)
 		}
- // assert the human-readable Message string carries the
- // production-canonical "leaked=<n>" format so future refactors
- // cannot silently break visual telemetry. Production emits this
- // at executor.go:352 (see cancelRun teardown block).
+		// assert the human-readable Message string carries the
+		// production-canonical "leaked=<n>" format so future refactors
+		// cannot silently break visual telemetry. Production emits this
+		// at executor.go:352 (see cancelRun teardown block).
 		if !strings.Contains(ev.Message, "leaked=") {
 			t.Errorf("EventMessage.Message missing 'leaked=' marker; got %q", ev.Message)
 		}
@@ -2435,11 +2435,11 @@ func TestResumeR3_ActiveResumeIDClearedOnAllErrorPaths(t *testing.T) {
 	})
 
 	t.Run("load-no-transcript", func(t *testing.T) {
- // ResumeStep bails with ErrNoTranscript BEFORE allocating a
- // resumeState when transcriptStore is nil. With a store that
- // returns ErrNoTranscript from Load, the state IS allocated,
- // CAS to running=true happens, then Load returns the error
- // and the cap-error cleanup block runs.
+		// ResumeStep bails with ErrNoTranscript BEFORE allocating a
+		// resumeState when transcriptStore is nil. With a store that
+		// returns ErrNoTranscript from Load, the state IS allocated,
+		// CAS to running=true happens, then Load returns the error
+		// and the cap-error cleanup block runs.
 		store := &fakeLoadErrorStore{err: resume.ErrNoTranscript}
 		e := &Executor{
 			Runner:          &AgentRunner{model: &idModel{id: "m"}},
@@ -2768,7 +2768,7 @@ func TestDrainCoordReverseReplies_CustomStepID(t *testing.T) {
 	}
 }
 
-// TestExecutor_CustomStepIDAutoRegistersCoordRouterInbox - 
+// TestExecutor_CustomStepIDAutoRegistersCoordRouterInbox -
 // production-path companion to TestDrainCoordReverseReplies_CustomStepID.
 // Drives the Executor directly (bypassing Orchestrator) with a custom
 // StepID="primary" coord runner, runs the wiring loop at executor.go

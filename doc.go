@@ -11,8 +11,10 @@
 // - [Orchestrator.RunAgent] runs a single agent loop with no DAG.
 // The CLI binary at cmd/zenflow is a thin wrapper around the same
 // Orchestrator. Embedders use the library form directly:
+//
 //	import "github.com/zendev-sh/zenflow"
 //	func main {
+//
 // orch := zenflow.New(zenflow.WithModelResolver(modelResolver))
 // defer orch.Close
 // wf, err := zenflow.LoadWorkflow("workflow.yaml")
@@ -21,7 +23,9 @@
 // }
 // res, err := orch.RunFlow(ctx, wf)
 // // ...
+//
 //	}
+//
 // # Coordinator and messaging
 // A coordinator is itself an [AgentRunner] running in parallel with the
 // step DAG. It owns four default tools: forward_to_agent (coord ->

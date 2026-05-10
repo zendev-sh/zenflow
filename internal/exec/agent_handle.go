@@ -176,17 +176,17 @@ func (h *AgentHandle) Cancel() error {
 // Cancel). Only the first call wins.
 func (h *AgentHandle) finish(res AgentResult) {
 	h.once.Do(func() {
- // Non-blocking send because the channel is buffered size 1,
- // but guard with select to be explicit and avoid any future
- // regression if buffering changes.
+		// Non-blocking send because the channel is buffered size 1,
+		// but guard with select to be explicit and avoid any future
+		// regression if buffering changes.
 		select {
 		case h.done <- res:
 		default:
 		}
 		close(h.done)
- // Signal internal consumers (registry-cleanup, TTL watchdog)
- // that the handle is terminal - they MUST read from `finished`,
- // not `done`, or they would steal the buffered AgentResult.
+		// Signal internal consumers (registry-cleanup, TTL watchdog)
+		// that the handle is terminal - they MUST read from `finished`,
+		// not `done`, or they would steal the buffered AgentResult.
 		close(h.finished)
 	})
 }
@@ -333,13 +333,13 @@ func (o *Orchestrator) RunAgentAsync(ctx context.Context, cfg AgentConfig) (*Age
 				)
 			}
 		}()
- // Wait on `finished` (close-only signal), NOT `done`, so we
- // never steal the buffered AgentResult that an external
- // `<-h.Done` reader must receive.
+		// Wait on `finished` (close-only signal), NOT `done`, so we
+		// never steal the buffered AgentResult that an external
+		// `<-h.Done` reader must receive.
 		<-h.finished
- // Panic-injection seam (test-only). Production: nil → no-op.
- // Tests assign panicInRegistryCleanupHook to exercise the
- // recover branch above without modifying production behaviour.
+		// Panic-injection seam (test-only). Production: nil → no-op.
+		// Tests assign panicInRegistryCleanupHook to exercise the
+		// recover branch above without modifying production behaviour.
 		if hook := panicInRegistryCleanupHook; hook != nil {
 			hook(h)
 		}
@@ -358,7 +358,7 @@ func (o *Orchestrator) RunAgentAsync(ctx context.Context, cfg AgentConfig) (*Age
 				)
 			}
 		}()
- // Panic-injection seam (test-only). Production: nil → no-op.
+		// Panic-injection seam (test-only). Production: nil → no-op.
 		if hook := panicInTTLWatchdogHook; hook != nil {
 			hook(h)
 		}
@@ -366,29 +366,29 @@ func (o *Orchestrator) RunAgentAsync(ctx context.Context, cfg AgentConfig) (*Age
 		defer t.Stop()
 		select {
 		case <-t.C:
- // Finish FIRST so the TTL sentinel wins against the agent
- // goroutine, which would otherwise observe the ctx cancel
- // below and race to call finish with "context canceled".
- // finish is once-guarded; cancel then unwinds the
- // agent goroutine, whose later finish call is a no-op.
+			// Finish FIRST so the TTL sentinel wins against the agent
+			// goroutine, which would otherwise observe the ctx cancel
+			// below and race to call finish with "context canceled".
+			// finish is once-guarded; cancel then unwinds the
+			// agent goroutine, whose later finish call is a no-op.
 			h.finish(AgentResult{Error: AgentError{Sentinel: ErrAgentHandleTimeout}})
 			cancel()
 		case <-h.finished:
- // Normal finish path closed the signal; nothing to do. We
- // wait on `finished` rather than `done` so we never steal
- // the buffered AgentResult.
+			// Normal finish path closed the signal; nothing to do. We
+			// wait on `finished` rather than `done` so we never steal
+			// the buffered AgentResult.
 		}
 	}()
 
 	// Agent goroutine.
 	go func() {
- // Release the runCtx resources on every exit path. Without this,
- // the WithCancel child + its timer (if any) leak until the parent
- // ctx is cancelled - which for long-lived embedders that reuse a
- // single parent ctx across many RunAgentAsync calls means
- // per-call accumulation. h.cancel may also be invoked by the TTL
- // watchdog or an explicit Cancel; calling cancel multiple times
- // is documented as safe (no-op on subsequent calls).
+		// Release the runCtx resources on every exit path. Without this,
+		// the WithCancel child + its timer (if any) leak until the parent
+		// ctx is cancelled - which for long-lived embedders that reuse a
+		// single parent ctx across many RunAgentAsync calls means
+		// per-call accumulation. h.cancel may also be invoked by the TTL
+		// watchdog or an explicit Cancel; calling cancel multiple times
+		// is documented as safe (no-op on subsequent calls).
 		defer cancel()
 		defer func() {
 			if r := recover(); r != nil {
@@ -411,9 +411,9 @@ func (o *Orchestrator) RunAgentAsync(ctx context.Context, cfg AgentConfig) (*Age
 			out = *res
 		}
 		if err != nil {
- // Preserve the underlying error as-is (callers using
- // errors.Is on goai / ctx errors still work). Wrap into
- // AgentResult.Error.
+			// Preserve the underlying error as-is (callers using
+			// errors.Is on goai / ctx errors still work). Wrap into
+			// AgentResult.Error.
 			out.Error = err
 		}
 		h.finish(out)
@@ -493,10 +493,10 @@ func (o *Orchestrator) Close() error {
 	o.closeOnce.Do(func() {
 		o.closed.Store(true)
 
- // Snapshot and drop all handles under the lock, then Cancel
- // outside the lock - Cancel calls finish which wakes the
- // cleanup-watcher goroutine that itself takes handleMu.
- // Calling Cancel while holding handleMu would deadlock.
+		// Snapshot and drop all handles under the lock, then Cancel
+		// outside the lock - Cancel calls finish which wakes the
+		// cleanup-watcher goroutine that itself takes handleMu.
+		// Calling Cancel while holding handleMu would deadlock.
 		o.handleMu.Lock()
 		total := 0
 		for _, slice := range o.handleRegistry {
@@ -513,14 +513,14 @@ func (o *Orchestrator) Close() error {
 			_ = h.Cancel()
 		}
 
- // Bounded await: give in-flight agent goroutines up to a total
- // of closeDrainDeadline (across all handles) to drain after
- // Cancel. Cancel finishes the handle synchronously via
- // finish, which closes h.finished - but the underlying agent
- // goroutine (running the user-supplied runner) may still be
- // unwinding. We wait per-handle on h.finished with a deadline
- // so Close returns deterministically rather than racing with
- // goroutine teardown - observable lifecycle drain.
+		// Bounded await: give in-flight agent goroutines up to a total
+		// of closeDrainDeadline (across all handles) to drain after
+		// Cancel. Cancel finishes the handle synchronously via
+		// finish, which closes h.finished - but the underlying agent
+		// goroutine (running the user-supplied runner) may still be
+		// unwinding. We wait per-handle on h.finished with a deadline
+		// so Close returns deterministically rather than racing with
+		// goroutine teardown - observable lifecycle drain.
 		totalDeadline := closeDrainDeadline
 		deadline := time.Now().Add(totalDeadline)
 		var notDrained int
@@ -571,7 +571,7 @@ func (o *Orchestrator) unregisterHandle(h *AgentHandle) {
 	slice := o.handleRegistry[h.sessionID]
 	for i, cand := range slice {
 		if cand == h {
- // Preserve order-free compaction - swap-remove.
+			// Preserve order-free compaction - swap-remove.
 			slice[i] = slice[len(slice)-1]
 			slice[len(slice)-1] = nil
 			slice = slice[:len(slice)-1]

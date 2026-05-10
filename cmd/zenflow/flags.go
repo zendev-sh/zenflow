@@ -111,10 +111,10 @@ func parseFlags(args []string) (cmdFlags, error) {
 			}
 			f.maxRetries = n
 		case "--max-depth":
- // Cap recursion depth for nested agent spawning. cmdAgent
- // has its own --max-depth parser (predates parseFlags);
- // flow/goal route it through here via WithMaxDepth(flags.
- // maxDepth) in buildOrchestratorOpts.
+			// Cap recursion depth for nested agent spawning. cmdAgent
+			// has its own --max-depth parser (predates parseFlags);
+			// flow/goal route it through here via WithMaxDepth(flags.
+			// maxDepth) in buildOrchestratorOpts.
 			i++
 			if i >= len(args) {
 				return f, fmt.Errorf("--max-depth requires a value")
@@ -202,11 +202,17 @@ func argsContainHelp(args []string) bool {
 // with "--" (i.e. flags begin immediately).
 // - rest: the remaining args, suitable to hand to parseFlags.
 // Examples:
+//
 //	splitPositionalContext([]string{"topic: AI", "--model", "x"})
+//
 // → "topic: AI", []string{"--model", "x"}
+//
 //	splitPositionalContext([]string{"--quiet"})
+//
 // → "", []string{"--quiet"}
+//
 //	splitPositionalContext([]string{})
+//
 // → "", []string{}
 // Restricted to a single positional after the command's primary
 // argument - multiple positionals are an unsupported pattern and the

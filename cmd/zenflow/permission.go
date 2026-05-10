@@ -4,18 +4,25 @@
 // handler that prompts on stdin, plus pre-approval / pre-deny flags for
 // non-interactive use (CI, scripts).
 // Behavior matrix:
+//
 //	flag combination | result
 //	-------------------------+---------------------------------
 //	--yolo | allow every tool, no prompt (YOLO mode)
 //	--allow bash,read | allow listed without prompt;
+//
 // | prompt others (or deny if non-TTY)
+//
 //	--deny bash,write | deny listed without prompt
 //	--strict + --allow ... | deny anything not on --allow list
 //	(no flags) + TTY | prompt for every tool call
 //	(no flags) + non-TTY | deny with helpful error message
+//
 // Interactive prompt:
+//
 //	Tool [bash] wants to run. Allow? [y/N/a (always)]
+//
 // Responses:
+//
 //	y / Y allow once
 //	n / N / empty deny + report tool error
 //	a / A allow this tool name for the rest of the run
@@ -104,21 +111,21 @@ func parsePermFlags(args []string) (remaining []string, pf permFlags, err error)
 		}
 	}
 	if pf.yolo && (len(pf.allow) > 0 || len(pf.deny) > 0 || pf.strict) {
- // --yolo auto-approves everything; combining it with --allow/--deny/
- // --strict is a contradiction the runtime would silently let --yolo
- // win (it's checked first in RequestPermission). Catching the
- // ambiguity at parse time prevents a class of "I set --deny and it
- // didn't deny anything" bugs.
+		// --yolo auto-approves everything; combining it with --allow/--deny/
+		// --strict is a contradiction the runtime would silently let --yolo
+		// win (it's checked first in RequestPermission). Catching the
+		// ambiguity at parse time prevents a class of "I set --deny and it
+		// didn't deny anything" bugs.
 		return nil, pf, fmt.Errorf("--yolo auto-approves every tool; remove --allow/--deny/--strict (or drop --yolo)")
 	}
 	if pf.sandbox {
 		if pf.yolo {
 			return nil, pf, fmt.Errorf("cannot combine --sandbox and --yolo")
 		}
- // Reject overlap between --deny and sandbox defaults - the deny check
- // fires before allow in RequestPermission, so a sandbox-default tool
- // on the deny list is silently denied even though sandbox "enables" it.
- // This ambiguity is almost certainly a user mistake; fail loudly.
+		// Reject overlap between --deny and sandbox defaults - the deny check
+		// fires before allow in RequestPermission, so a sandbox-default tool
+		// on the deny list is silently denied even though sandbox "enables" it.
+		// This ambiguity is almost certainly a user mistake; fail loudly.
 		var conflicts []string
 		sandboxDefaults := zenflow.SandboxDefaultAllow()
 		for _, d := range pf.deny {
@@ -131,14 +138,14 @@ func parsePermFlags(args []string) (remaining []string, pf permFlags, err error)
 		if len(conflicts) > 0 {
 			return nil, pf, fmt.Errorf("--deny conflicts with --sandbox defaults: %v (sandbox enables read/write/grep/glob; remove from --deny or drop --sandbox)", conflicts)
 		}
- // --sandbox implies strict mode.
+		// --sandbox implies strict mode.
 		pf.strict = true
- // Prepend the safe defaults so explicit --allow X,Y can add more
- // on top, but bash is always blocked (filtered out below).
+		// Prepend the safe defaults so explicit --allow X,Y can add more
+		// on top, but bash is always blocked (filtered out below).
 		merged := make([]string, 0, len(sandboxDefaults)+len(pf.allow))
 		merged = append(merged, sandboxDefaults...)
 		merged = append(merged, pf.allow...)
- // Remove "bash" regardless of what the caller passed - sandbox wins.
+		// Remove "bash" regardless of what the caller passed - sandbox wins.
 		filtered := merged[:0]
 		for _, t := range merged {
 			if t != "bash" {
@@ -291,19 +298,19 @@ func (h *cliPermissionHandler) prompt(ctx context.Context, req zenflow.Permissio
 			ch <- readResult{line: line, err: err}
 		}()
 
- // Watcher: set an immediate deadline the moment ctx is done.
+		// Watcher: set an immediate deadline the moment ctx is done.
 		go func() {
 			select {
 			case <-ctx.Done():
- // Trigger os.ErrDeadlineExceeded in the reader goroutine.
+				// Trigger os.ErrDeadlineExceeded in the reader goroutine.
 				_ = dr.SetReadDeadline(time.Now())
 			case <-done:
- // Reader finished normally - nothing to do.
+				// Reader finished normally - nothing to do.
 			}
 		}()
 
 		res := <-ch
- // Clear the deadline so subsequent reads on the same fd work normally.
+		// Clear the deadline so subsequent reads on the same fd work normally.
 		_ = dr.SetReadDeadline(time.Time{})
 
 		if ctx.Err() != nil {

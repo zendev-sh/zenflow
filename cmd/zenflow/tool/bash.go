@@ -35,18 +35,18 @@ func bashToolIn(workdir string) goai.Tool {
 				return "", err
 			}
 
- // Apply per-invocation timeout (capped at 300s).
- // (2026-05-04) - cap BEFORE the multiplication.
- // `time.Duration(p.TimeoutSeconds) * time.Second` overflows
- // the int64 nanosecond counter for `p.TimeoutSeconds >
- // 9_223_372_036` (about 292 years), wrapping to a large
- // negative value that the post-multiply `> 300s` guard
- // silently failed to catch. The result was a context with
- // an already-expired deadline - every bash call returned
- // `context.DeadlineExceeded`. Since `p.TimeoutSeconds` is
- // LLM-controlled tool input, an adversarial or
- // hallucinating model could trip this with a single large
- // integer.
+			// Apply per-invocation timeout (capped at 300s).
+			// (2026-05-04) - cap BEFORE the multiplication.
+			// `time.Duration(p.TimeoutSeconds) * time.Second` overflows
+			// the int64 nanosecond counter for `p.TimeoutSeconds >
+			// 9_223_372_036` (about 292 years), wrapping to a large
+			// negative value that the post-multiply `> 300s` guard
+			// silently failed to catch. The result was a context with
+			// an already-expired deadline - every bash call returned
+			// `context.DeadlineExceeded`. Since `p.TimeoutSeconds` is
+			// LLM-controlled tool input, an adversarial or
+			// hallucinating model could trip this with a single large
+			// integer.
 			timeout := bashTimeout
 			if p.TimeoutSeconds > 0 {
 				secs := p.TimeoutSeconds
@@ -58,16 +58,16 @@ func bashToolIn(workdir string) goai.Tool {
 			ctx, cancel := context.WithTimeout(ctx, timeout)
 			defer cancel()
 
- // / - pick `sh -c` on Unix and
- // `powershell.exe -Command` on Windows. selectShell hides
- // the platform check; wrapCommand strips stray whitespace
- // for PowerShell. See platform.go for rationale.
+			// / - pick `sh -c` on Unix and
+			// `powershell.exe -Command` on Windows. selectShell hides
+			// the platform check; wrapCommand strips stray whitespace
+			// for PowerShell. See platform.go for rationale.
 			shell, flag := selectShell()
 			cmd := exec.CommandContext(ctx, shell, flag, wrapCommand(p.Command))
 			if workdir != "" {
- // Sandbox mode: force cmd.Dir to workdir, ignore LLM input.
- // normalize workdir to native separators so the
- // shell receives a path it actually understands.
+				// Sandbox mode: force cmd.Dir to workdir, ignore LLM input.
+				// normalize workdir to native separators so the
+				// shell receives a path it actually understands.
 				cmd.Dir = normalizePath(workdir)
 			} else if p.WorkingDirectory != "" {
 				cmd.Dir = normalizePath(p.WorkingDirectory)
@@ -75,22 +75,22 @@ func bashToolIn(workdir string) goai.Tool {
 
 			setProcessGroup(cmd)
 
- // Capture stdout and stderr with size limits.
+			// Capture stdout and stderr with size limits.
 			var stdout, stderr bytes.Buffer
 			cmd.Stdout = &limitedWriter{w: &stdout, remaining: bashMaxOutput}
 			cmd.Stderr = &limitedWriter{w: &stderr, remaining: bashMaxOutput}
 
 			err := cmd.Run()
 
- // Combine output, capping total at bashMaxOutput.
+			// Combine output, capping total at bashMaxOutput.
 			combined := stdout.String() + stderr.String()
 			if len(combined) > bashMaxOutput {
 				combined = combined[:bashMaxOutput] + "\n...[output truncated at 1MB]"
 			}
 
 			if err != nil {
- // Return the output along with the error message so the caller
- // can see stderr even when the command fails.
+				// Return the output along with the error message so the caller
+				// can see stderr even when the command fails.
 				return combined + err.Error(), nil
 			}
 			return combined, nil

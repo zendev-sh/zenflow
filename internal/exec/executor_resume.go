@@ -327,9 +327,9 @@ func (e *Executor) ResumeStep(ctx context.Context, stepID, prompt, fromAgent str
 
 	state.mu.Lock()
 	if state.running {
- // Queue path - running resume's mailbox is guaranteed
- // non-nil under F2 invariant (we only ever flip running=true
- // after installing activeMailbox+activeWake atomically).
+		// Queue path - running resume's mailbox is guaranteed
+		// non-nil under F2 invariant (we only ever flip running=true
+		// after installing activeMailbox+activeWake atomically).
 		activeMailbox := state.activeMailbox
 		activeWake := state.activeWake
 		activeResumeID := state.activeResumeID
@@ -342,19 +342,19 @@ func (e *Executor) ResumeStep(ctx context.Context, stepID, prompt, fromAgent str
 			Type:      router.MessageInfo,
 			Timestamp: time.Now(),
 		}
- // G2: Append can fail when the mailbox is at its bounded cap
- // (ErrMailboxFull). Capture the error: on failure, do NOT
- // emit EventResumeQueued (would mislead operators into
- // thinking the message was accepted) - emit a drop event
- // instead and return ErrMailboxFullOnResume so the Router
- // can map it to DropReasonMailboxFull.
+		// G2: Append can fail when the mailbox is at its bounded cap
+		// (ErrMailboxFull). Capture the error: on failure, do NOT
+		// emit EventResumeQueued (would mislead operators into
+		// thinking the message was accepted) - emit a drop event
+		// instead and return ErrMailboxFullOnResume so the Router
+		// can map it to DropReasonMailboxFull.
 		if activeMailbox != nil {
 			if _, err := activeMailbox.Append(stepID, queued); err != nil {
- // emit BOTH a drop event (delivery-loss signal)
- // AND an EventResumeFailed (resume-lifecycle signal)
- // so observers subscribed to either channel learn
- // about the rejected enqueue. Keeps parity with the
- // resolver-error path which also emits Failed.
+				// emit BOTH a drop event (delivery-loss signal)
+				// AND an EventResumeFailed (resume-lifecycle signal)
+				// so observers subscribed to either channel learn
+				// about the rejected enqueue. Keeps parity with the
+				// resolver-error path which also emits Failed.
 				queuedResumeID := resumeIDGen()
 				if e.Progress != nil {
 					e.Progress.OnEvent(ctx, Event{
@@ -396,7 +396,7 @@ func (e *Executor) ResumeStep(ctx context.Context, stepID, prompt, fromAgent str
 			default:
 			}
 		}
- // Synthesize a "queued" handle: DoneCh closed immediately.
+		// Synthesize a "queued" handle: DoneCh closed immediately.
 		done := make(chan struct{})
 		close(done)
 		queuedHandle := &ResumeHandle{
@@ -406,11 +406,11 @@ func (e *Executor) ResumeStep(ctx context.Context, stepID, prompt, fromAgent str
 			DoneCh:         done,
 			Result:         "queued",
 		}
- // F4: emit a dedicated EventResumeQueued so observers see the
- // accept-into-mailbox path (instead of silently returning a
- // queued handle with no trace in the event log).
- // VA-4b: include activeResumeID so operators can correlate the
- // queued event with the currently-running resume.
+		// F4: emit a dedicated EventResumeQueued so observers see the
+		// accept-into-mailbox path (instead of silently returning a
+		// queued handle with no trace in the event log).
+		// VA-4b: include activeResumeID so operators can correlate the
+		// queued event with the currently-running resume.
 		if e.Progress != nil {
 			e.Progress.OnEvent(ctx, Event{
 				Type:      types.EventResumeQueued,
@@ -440,10 +440,10 @@ func (e *Executor) ResumeStep(ctx context.Context, stepID, prompt, fromAgent str
 	// window will observe running=true with a non-nil mailbox.
 	transcript, err := e.transcriptStore.Load(e.runID(), stepID)
 	if err != nil {
- // VA-3b: if the store sealed the slot past its cap AND the
- // caller enabled WithTruncationOnCapReached AND the store
- // implements TranscriptTruncatedLoader, fall back to
- // LoadTruncated so the step stays resumable.
+		// VA-3b: if the store sealed the slot past its cap AND the
+		// caller enabled WithTruncationOnCapReached AND the store
+		// implements TranscriptTruncatedLoader, fall back to
+		// LoadTruncated so the step stays resumable.
 		if errors.Is(err, resume.ErrTranscriptTooLarge) && e.TruncateOnCapReached {
 			if loader, ok := e.transcriptStore.(resume.TranscriptTruncatedLoader); ok {
 				trunc, terr := loader.LoadTruncated(e.runID(), stepID, resume.DefaultTruncatedResumeMessages)
@@ -464,11 +464,11 @@ func (e *Executor) ResumeStep(ctx context.Context, stepID, prompt, fromAgent str
 						})
 					}
 				} else if terr != nil {
- // Case B: LoadTruncated itself errored. Surface
- // both errors so observers see the fallback attempt
- // AND the original seal cause. Emit a dedicated
- // event so operators can distinguish a legitimate
- // seal from a truncation-path failure.
+					// Case B: LoadTruncated itself errored. Surface
+					// both errors so observers see the fallback attempt
+					// AND the original seal cause. Emit a dedicated
+					// event so operators can distinguish a legitimate
+					// seal from a truncation-path failure.
 					if e.Progress != nil {
 						e.Progress.OnEvent(ctx, Event{
 							Type:      types.EventMessage,
@@ -485,11 +485,11 @@ func (e *Executor) ResumeStep(ctx context.Context, stepID, prompt, fromAgent str
 					err = errors.Join(err, terr)
 				}
 			} else {
- // Case A: operator opted in to truncation but the
- // configured transcript store does not implement
- // TranscriptTruncatedLoader. Emit a warning so the
- // opt-in is not silently ignored. Original err still
- // surfaces downstream.
+				// Case A: operator opted in to truncation but the
+				// configured transcript store does not implement
+				// TranscriptTruncatedLoader. Emit a warning so the
+				// opt-in is not silently ignored. Original err still
+				// surfaces downstream.
 				if e.Progress != nil {
 					e.Progress.OnEvent(ctx, Event{
 						Type:      types.EventMessage,
@@ -531,10 +531,10 @@ func (e *Executor) ResumeStep(ctx context.Context, stepID, prompt, fromAgent str
 	if transcript.Model != "" && e.Runner != nil && e.Runner.model != nil {
 		stepString := e.StepModelString(stepID)
 		runnerID := e.Runner.model.ModelID()
- // Match path: transcript.Model equals EITHER the
- // workflow-step string OR the wrapped provider.ModelID.
+		// Match path: transcript.Model equals EITHER the
+		// workflow-step string OR the wrapped provider.ModelID.
 		if transcript.Model == stepString || transcript.Model == runnerID {
- // Match - no resolver needed.
+			// Match - no resolver needed.
 		} else if e.ModelResolver == nil {
 			state.mu.Lock()
 			state.running = false
@@ -552,9 +552,9 @@ func (e *Executor) ResumeStep(ctx context.Context, stepID, prompt, fromAgent str
 			e.emitResumeFailed(ctx, handle, "model-mismatch", 0)
 			return nil, ErrModelResolverMissing
 		} else {
- // VA-6b: distinguish "resolver returned error" from
- // "resolver returned nil" so operators can tell
- // infrastructure failure from config gap.
+			// VA-6b: distinguish "resolver returned error" from
+			// "resolver returned nil" so operators can tell
+			// infrastructure failure from config gap.
 			resolved, rerr := e.ModelResolver(transcript.Model)
 			if rerr != nil {
 				state.mu.Lock()
@@ -706,8 +706,8 @@ func (e *Executor) runResume(
 	// goroutine return, so no manual Done is needed here.)
 	defer func() {
 		e.resumeActiveCount.Add(-1)
- // Release the serial lock so a queued or future
- // ResumeStep call for the same stepID can run.
+		// Release the serial lock so a queued or future
+		// ResumeStep call for the same stepID can run.
 		state.mu.Lock()
 		state.running = false
 		state.activeMailbox = nil
@@ -753,13 +753,13 @@ func (e *Executor) runResume(
 		wake:            resumeWake,
 		maxWakeCycles:   e.MaxWakeCycles,
 		initialMessages: transcript.Messages,
- // Test-only: forward the executor's pre-start drain gate so
- // -race -count=N tests can deterministically hold the drain
- // until all setup Appends have landed. nil in production.
+		// Test-only: forward the executor's pre-start drain gate so
+		// -race -count=N tests can deterministically hold the drain
+		// until all setup Appends have landed. nil in production.
 		preStartDrainGate: e.resumePreStartDrainGate,
- // Do NOT re-persist into the same transcript slot: resume
- // responses are side-channel, not mutations of the saved
- // step conversation.
+		// Do NOT re-persist into the same transcript slot: resume
+		// responses are side-channel, not mutations of the saved
+		// step conversation.
 		transcript: nil,
 	}
 
@@ -787,14 +787,14 @@ func (e *Executor) runResume(
 	// zenflow-resume-reverse metadata flag so Router.Send does NOT
 	// cascade-resume if the sender's mailbox was also sealed.
 	if handle.OriginalSender != "" && e.Router != nil {
- // Router.Send returns error. Reverse-reply drops are
- // already observable via the executor's installed OnDrop
- // callback (DropReasonTargetTerminal when the OriginalSender
- // finished before the resume completed; F7 metadata short-
- // circuits cascade-resume into the same drop reason). Discard
- // the per-call error so the resume goroutine's exit path is
- // unaffected - the EventMessageDropped pipeline carries the
- // signal operators consume.
+		// Router.Send returns error. Reverse-reply drops are
+		// already observable via the executor's installed OnDrop
+		// callback (DropReasonTargetTerminal when the OriginalSender
+		// finished before the resume completed; F7 metadata short-
+		// circuits cascade-resume into the same drop reason). Discard
+		// the per-call error so the resume goroutine's exit path is
+		// unaffected - the EventMessageDropped pipeline carries the
+		// signal operators consume.
 		_ = e.Router.Send(handle.OriginalSender, RouterMessage{
 			From:    handle.StepID,
 			To:      handle.OriginalSender,

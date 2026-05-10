@@ -157,7 +157,7 @@ func TestSentinelErrors_Identity(t *testing.T) {
 			if !errors.Is(sentinel, sentinel) {
 				t.Errorf("errors.Is(%v, %v) = false, want true", sentinel, sentinel)
 			}
- // Wrapping must not lose identity.
+			// Wrapping must not lose identity.
 			wrapped := errors.Join(errors.New("outer"), sentinel)
 			if !errors.Is(wrapped, sentinel) {
 				t.Errorf("errors.Is(wrapped, sentinel) = false; sentinel %v escaped errors.Is", sentinel)

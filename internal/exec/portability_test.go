@@ -263,11 +263,11 @@ func TestDetectMixedScript_RareScripts(t *testing.T) {
 		name string
 		in   string
 	}{
- // U+0531 ARMENIAN CAPITAL LETTER AYB + Latin.
+		// U+0531 ARMENIAN CAPITAL LETTER AYB + Latin.
 		{"armenian+latin", "a\u0531b"},
- // U+05D0 HEBREW LETTER ALEF + Latin.
+		// U+05D0 HEBREW LETTER ALEF + Latin.
 		{"hebrew+latin", "a\u05D0b"},
- // U+0628 ARABIC LETTER BEH + Latin.
+		// U+0628 ARABIC LETTER BEH + Latin.
 		{"arabic+latin", "a\u0628b"},
 	}
 	for _, c := range cases {
@@ -292,14 +292,14 @@ func TestDetectMixedScript_RareScripts(t *testing.T) {
 	}
 }
 
-// TestSanitizeWorkflowUnicode_WarnsOnMixedScriptName - 
+// TestSanitizeWorkflowUnicode_WarnsOnMixedScriptName -
 // coverage for the DetectMixedScript branch inside
 // SanitizeWorkflowUnicode. The call is observational (slog.Warn), so
 // the test only needs to exercise the branch; we assert no error is
 // returned and the name survives verbatim.
 func TestSanitizeWorkflowUnicode_WarnsOnMixedScriptName(t *testing.T) {
 	wf := &Workflow{
- // Latin 'p' + Cyrillic 'а' (U+0430) + Latin suffix.
+		// Latin 'p' + Cyrillic 'а' (U+0430) + Latin suffix.
 		Name:  "p\u0430ypal",
 		Steps: []Step{{ID: "a", Instructions: "ok"}},
 	}

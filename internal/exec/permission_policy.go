@@ -25,7 +25,7 @@ var ErrToolDenied = errors.New("zenflow: tool denied by --deny flag")
 var ErrToolNotAllowed = errors.New("zenflow: tool not in --allow list (--strict mode)")
 
 // SandboxDefaultAllow returns the canonical safe-tool allow-list applied
-// by --sandbox: read, write, grep, glob. bash is intentionally absent - 
+// by --sandbox: read, write, grep, glob. bash is intentionally absent -
 // the whole point of sandbox mode is to block shell access. Callers may
 // extend with --allow, but bash remains blocked even then (sandbox wins).
 // Re-exported at the root facade as zenflow.SandboxDefaultAllow. Returns

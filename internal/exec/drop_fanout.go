@@ -58,7 +58,7 @@ func (d *dropFanout) run() {
 	for {
 		select {
 		case <-d.stop:
- // Drain remaining buffered events before exit.
+			// Drain remaining buffered events before exit.
 			for {
 				select {
 				case e := <-d.events:
@@ -87,7 +87,7 @@ func (d *dropFanout) dispatch(e DropEvent) {
 		return
 	}
 	if d.events == nil {
- // Synchronous path.
+		// Synchronous path.
 		d.invoke(e)
 		return
 	}

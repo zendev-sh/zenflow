@@ -47,9 +47,9 @@ steps:
 `
 	wf, err := ParseWorkflow([]byte(anchorYAML))
 	if err != nil {
- // Acceptable behavior IF rejection becomes the contract: but
- // we explicitly enforce that the current parser DOES accept
- // merge keys. If this changes, the test must change too.
+		// Acceptable behavior IF rejection becomes the contract: but
+		// we explicitly enforce that the current parser DOES accept
+		// merge keys. If this changes, the test must change too.
 		t.Fatalf("yaml merge keys rejected - current parser is documented to resolve them via yaml.v3. Update spec/v1/spec.md alongside this rejection. err=%v", err)
 	}
 	rev, ok := wf.Agents["reviewer"]
@@ -147,9 +147,9 @@ func TestEdge_UTFBOM(t *testing.T) {
 	bomYAML := "\xef\xbb\xbfname: bom-test\nsteps:\n  - id: step1\n    instructions: \"do\"\n"
 	wf, err := ParseWorkflow([]byte(bomYAML))
 	if err != nil {
- // Rejection is acceptable IF the parser's contract is
- // documented as such. Force the contract to be explicit:
- // either accept and strip, or reject with a typed error.
+		// Rejection is acceptable IF the parser's contract is
+		// documented as such. Force the contract to be explicit:
+		// either accept and strip, or reject with a typed error.
 		var ve *ValidationError
 		if !errors.As(err, &ve) {
 			t.Errorf("BOM rejection used non-typed error: %T (%v)", err, err)

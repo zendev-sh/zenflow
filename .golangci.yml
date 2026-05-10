@@ -21,6 +21,12 @@
 version: "2"
 run:
   timeout: 5m
+formatters:
+  enable:
+    - gofmt
+  settings:
+    gofmt:
+      simplify: true
 linters:
   default: standard
   exclusions:

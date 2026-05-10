@@ -35,12 +35,12 @@ import (
 func buildOrchestratorOpts(flags cmdFlags) []zenflow.Option {
 	var progressSink zenflow.ProgressSink
 	if flags.jsonOutput {
- // B7: JSONSink moved to public sink package (zenflow/sink/json.go)
- // so library consumers can construct it without importing cmd/zenflow.
+		// B7: JSONSink moved to public sink package (zenflow/sink/json.go)
+		// so library consumers can construct it without importing cmd/zenflow.
 		progressSink = sink.JSON(stdout)
 	} else {
- // Bind sink to the package-level `stdout` writer so tests that
- // redirect stdout capture sink output too.
+		// Bind sink to the package-level `stdout` writer so tests that
+		// redirect stdout capture sink output too.
 		progressSink = NewStdoutSinkTo(stdout, WithStdoutShowPlan(flags.showPlan), WithStdoutVerbose(flags.verbose))
 	}
 	opts := []zenflow.Option{zenflow.WithProgress(progressSink)}
@@ -68,7 +68,7 @@ func buildOrchestratorOpts(flags cmdFlags) []zenflow.Option {
 			opts = append(opts, zenflow.WithDefaultModel(modelID))
 		}
 	} else if flags.model != "" {
- // No provider resolved - pass raw model string as default.
+		// No provider resolved - pass raw model string as default.
 		opts = append(opts, zenflow.WithDefaultModel(flags.model))
 	}
 

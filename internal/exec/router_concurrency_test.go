@@ -56,7 +56,7 @@ func TestRouter_StepLock_SerializesSendVsClose(t *testing.T) {
 	}()
 	go func() {
 		defer wg.Done()
- // Let some sends accumulate, then close.
+		// Let some sends accumulate, then close.
 		time.Sleep(time.Microsecond * 100)
 		r.Close("s")
 	}()
@@ -191,8 +191,8 @@ func TestWaitForStepTermination_HoldTimeoutForcesExit(t *testing.T) {
 	nowCalls := 0
 	nowFn := func() time.Time {
 		nowCalls++
- // First call: at deadline calculation.
- // Subsequent calls: post-deadline so the holdCtx fires fast.
+		// First call: at deadline calculation.
+		// Subsequent calls: post-deadline so the holdCtx fires fast.
 		if nowCalls == 1 {
 			return base
 		}

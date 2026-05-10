@@ -88,8 +88,8 @@ func (p *eventBusSinkPump) run() {
 	for {
 		select {
 		case <-p.stop:
- // Drain any remaining buffered events before returning so
- // late drops still surface (no silent loss).
+			// Drain any remaining buffered events before returning so
+			// late drops still surface (no silent loss).
 			for {
 				select {
 				case e := <-p.events:
@@ -106,8 +106,8 @@ func (p *eventBusSinkPump) run() {
 
 func (p *eventBusSinkPump) deliver(e eventBusEntry) {
 	defer func() {
- // C10 panic isolation: a panic in user-supplied sink must NOT
- // kill the pump goroutine.
+		// C10 panic isolation: a panic in user-supplied sink must NOT
+		// kill the pump goroutine.
 		if r := recover(); r != nil {
 			slog.Warn("event sink panic recovered", "panic", r, "event_type", fmt.Sprintf("%T", e.ev))
 		}
@@ -139,10 +139,10 @@ func (p *eventBusSinkPump) OnEvent(ctx context.Context, ev Event) {
 	case p.events <- entry:
 		p.pushed.Add(1)
 	default:
- // Overflow path: bounded retry on the caller's goroutine. Select on
- // p.stop (pump shutting down) rather than ctx.Done (single call) so
- // cancellation of one caller does not short-circuit delivery for other
- // pending events while the pump is still running.
+		// Overflow path: bounded retry on the caller's goroutine. Select on
+		// p.stop (pump shutting down) rather than ctx.Done (single call) so
+		// cancellation of one caller does not short-circuit delivery for other
+		// pending events while the pump is still running.
 		t := time.NewTimer(p.timeout)
 		defer t.Stop()
 		select {
@@ -175,7 +175,7 @@ func (p *eventBusSinkPump) OnOutput(ctx context.Context, out Output) {
 		case <-t.C:
 			p.dropped.Add(1)
 		case <-p.stop:
- // Drop when the pump is shutting down.
+			// Drop when the pump is shutting down.
 			p.dropped.Add(1)
 		}
 	}

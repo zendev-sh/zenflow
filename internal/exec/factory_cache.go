@@ -91,11 +91,11 @@ func (c *FactoryCache) For(sessionID string) *Orchestrator {
 		if existing != nil && !existing.IsClosed() {
 			return existing
 		}
- // Cached entry was closed externally (e.g. via session-deleted
- // wiring) - drop it and re-create below.
+		// Cached entry was closed externally (e.g. via session-deleted
+		// wiring) - drop it and re-create below.
 		c.mu.Lock()
- // Re-check under the lock to avoid clobbering a concurrent
- // fresh entry.
+		// Re-check under the lock to avoid clobbering a concurrent
+		// fresh entry.
 		if cur, ok2 := c.items[sessionID]; ok2 && cur == existing {
 			delete(c.items, sessionID)
 		}
@@ -119,9 +119,9 @@ func (c *FactoryCache) For(sessionID string) *Orchestrator {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if existing, ok := c.items[sessionID]; ok && existing != nil && !existing.IsClosed() {
- // Lost the race - discard the freshly-built orchestrator so
- // only the winning instance is visible to callers. Close the
- // loser so its goroutines do not linger.
+		// Lost the race - discard the freshly-built orchestrator so
+		// only the winning instance is visible to callers. Close the
+		// loser so its goroutines do not linger.
 		_ = orch.Close()
 		slog.Debug("FactoryCache: race-loser orchestrator closed", "session_id", sessionID)
 		return existing
@@ -148,11 +148,11 @@ func (c *FactoryCache) For(sessionID string) *Orchestrator {
 func (c *FactoryCache) callInnerWithTimeout(sessionID string) *Orchestrator {
 	resCh := make(chan *Orchestrator, 1)
 	go func() {
- // Best-effort send: if the caller already timed out and moved
- // on, the channel slot is taken or no reader is waiting - drop
- // silently and let the goroutine exit. The dropped result is
- // the caller's responsibility to recover via the next For
- // call.
+		// Best-effort send: if the caller already timed out and moved
+		// on, the channel slot is taken or no reader is waiting - drop
+		// silently and let the goroutine exit. The dropped result is
+		// the caller's responsibility to recover via the next For
+		// call.
 		select {
 		case resCh <- c.inner(sessionID):
 		default:

@@ -8,7 +8,6 @@ import (
 
 	"github.com/zendev-sh/goai/provider"
 	"github.com/zendev-sh/zenflow"
-	
 )
 
 func zflProviderUsage(in, out int) provider.Usage {

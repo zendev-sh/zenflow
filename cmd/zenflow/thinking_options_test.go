@@ -52,7 +52,7 @@ func TestThinkingProviderOptions_LowMediumHigh(t *testing.T) {
 			if po == nil {
 				t.Fatalf("level %q: got nil", tc.level)
 			}
- // Bedrock: reasoningConfig.{type,budgetTokens,maxReasoningEffort}
+			// Bedrock: reasoningConfig.{type,budgetTokens,maxReasoningEffort}
 			rc, ok := po["reasoningConfig"].(map[string]any)
 			if !ok {
 				t.Fatalf("missing reasoningConfig: %#v", po)
@@ -66,7 +66,7 @@ func TestThinkingProviderOptions_LowMediumHigh(t *testing.T) {
 			if rc["maxReasoningEffort"] != tc.level {
 				t.Errorf("reasoningConfig.maxReasoningEffort = %v, want %s", rc["maxReasoningEffort"], tc.level)
 			}
- // Anthropic: thinking.{type,budgetTokens}
+			// Anthropic: thinking.{type,budgetTokens}
 			th, ok := po["thinking"].(map[string]any)
 			if !ok {
 				t.Fatalf("missing thinking: %#v", po)
@@ -74,7 +74,7 @@ func TestThinkingProviderOptions_LowMediumHigh(t *testing.T) {
 			if th["budgetTokens"] != tc.budget {
 				t.Errorf("thinking.budgetTokens = %v, want %d", th["budgetTokens"], tc.budget)
 			}
- // Google: thinkingConfig.{includeThoughts,thinkingLevel,thinkingBudget}
+			// Google: thinkingConfig.{includeThoughts,thinkingLevel,thinkingBudget}
 			tc2, ok := po["thinkingConfig"].(map[string]any)
 			if !ok {
 				t.Fatalf("missing thinkingConfig: %#v", po)
@@ -85,7 +85,7 @@ func TestThinkingProviderOptions_LowMediumHigh(t *testing.T) {
 			if tc2["thinkingBudget"] != tc.budget {
 				t.Errorf("thinkingConfig.thinkingBudget = %v, want %d", tc2["thinkingBudget"], tc.budget)
 			}
- // OpenAI: top-level reasoning_effort + reasoning_summary
+			// OpenAI: top-level reasoning_effort + reasoning_summary
 			if po["reasoning_effort"] != tc.level {
 				t.Errorf("reasoning_effort = %v, want %s", po["reasoning_effort"], tc.level)
 			}

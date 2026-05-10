@@ -57,9 +57,9 @@ func TestComputeColorEnabled_NonTerminal(t *testing.T) {
 	// In `go test`, stdout is a pipe - stdoutStat succeeds but
 	// ModeCharDevice is not set, so computeColorEnabled returns false.
 	if computeColorEnabled() {
- // This can legitimately be true when run from a real terminal
- // (e.g. `go test -v` with stdout attached to a PTY). Accept it;
- // the test is informational in that scenario.
+		// This can legitimately be true when run from a real terminal
+		// (e.g. `go test -v` with stdout attached to a PTY). Accept it;
+		// the test is informational in that scenario.
 		t.Log("computeColorEnabled() = true: stdout is a real terminal, skipping assertion")
 	}
 }

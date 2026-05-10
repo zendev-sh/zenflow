@@ -13,10 +13,14 @@ import (
 // mailbox stack at IDLE traffic - the per-tick poll cost paid by
 // workflows that opt-in to a coordinator but produce no router messages.
 // Two variants:
+//
 //	baseline - NoopCoordinator => Executor.Run skips mailbox + engine
+//
 // allocation entirely (executor.go ~line 336). This
 // measures the pure 10-step parallel scheduler cost.
+//
 //	with-engine - silentCoordinator (CoordinatorAgent that always
+//
 // returns nil messages) => Executor.Run allocates
 // Router + InMemoryMailboxStore + DeliveryEngine, the
 // poller ticks every 500ms while steps run, AND each

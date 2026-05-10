@@ -430,7 +430,7 @@ func (o *orderTrackingLLM) DoGenerate(_ context.Context, req provider.GeneratePa
 	// Figure out which step this is from the user message content.
 	for _, m := range req.Messages {
 		if m.Role == provider.RoleUser {
- // Extract step identity from instructions.
+			// Extract step identity from instructions.
 			msgText := ""
 			for _, p := range m.Content {
 				if p.Type == provider.PartText {
@@ -438,7 +438,7 @@ func (o *orderTrackingLLM) DoGenerate(_ context.Context, req provider.GeneratePa
 				}
 			}
 			o.mu.Lock()
- // Find "do X" pattern.
+			// Find "do X" pattern.
 			for _, id := range []string{"a", "b", "c", "d"} {
 				if strings.Contains(msgText, "do "+id) {
 					(*o.order)[idx] = id
@@ -1248,8 +1248,8 @@ func TestRunLoopStep_JudgeAgentNotFound(t *testing.T) {
 		Name: "judge-not-found",
 		Agents: map[string]AgentConfig{
 			"w": {Description: "worker"},
- // "judge" agent intentionally missing - will exist in validation
- // but we'll reference a different name at runtime
+			// "judge" agent intentionally missing - will exist in validation
+			// but we'll reference a different name at runtime
 		},
 		Steps: []Step{
 			{
@@ -1285,7 +1285,7 @@ func TestRunLoopStep_JudgeFailure_ProgressLogging(t *testing.T) {
 	model := &sequentialMockModel{
 		fn: func(_ context.Context, req provider.GenerateParams) (*provider.GenerateResult, error) {
 			callCount++
- // Odd calls = worker (succeed), Even calls = judge (fail)
+			// Odd calls = worker (succeed), Even calls = judge (fail)
 			if callCount%2 == 1 {
 				return &provider.GenerateResult{Text: "worker output", Usage: provider.Usage{InputTokens: 5, OutputTokens: 3}}, nil
 			}
@@ -1404,10 +1404,10 @@ func TestRunLoopStep_MaxIterExhausted_UntilAgent(t *testing.T) {
 		fn: func(_ context.Context, req provider.GenerateParams) (*provider.GenerateResult, error) {
 			callCount++
 			if callCount%2 == 1 {
- // Worker
+				// Worker
 				return &provider.GenerateResult{Text: "work output", Usage: provider.Usage{InputTokens: 5, OutputTokens: 3}}, nil
 			}
- // Judge: returns done=false (never approves).
+			// Judge: returns done=false (never approves).
 			return &provider.GenerateResult{
 				Text:  "not done",
 				Usage: provider.Usage{InputTokens: 3, OutputTokens: 2},
@@ -1754,7 +1754,7 @@ func TestRunLoopStep_StructuredResultInJudgePrompt(t *testing.T) {
 		fn: func(_ context.Context, req provider.GenerateParams) (*provider.GenerateResult, error) {
 			callCount++
 			if callCount == 1 {
- // Worker: submit structured result
+				// Worker: submit structured result
 				return &provider.GenerateResult{
 					Text:  "work done",
 					Usage: provider.Usage{InputTokens: 5, OutputTokens: 3},
@@ -1764,7 +1764,7 @@ func TestRunLoopStep_StructuredResultInJudgePrompt(t *testing.T) {
 				}, nil
 			}
 			if callCount == 2 {
- // Capture the judge prompt to verify structured result is included.
+				// Capture the judge prompt to verify structured result is included.
 				for _, m := range req.Messages {
 					if m.Role == provider.RoleUser {
 						for _, p := range m.Content {
@@ -1774,7 +1774,7 @@ func TestRunLoopStep_StructuredResultInJudgePrompt(t *testing.T) {
 						}
 					}
 				}
- // Judge says done.
+				// Judge says done.
 				return &provider.GenerateResult{
 					Text:  "",
 					Usage: provider.Usage{InputTokens: 3, OutputTokens: 2},
@@ -1851,10 +1851,10 @@ func TestRunLoopStep_JudgeSaysDone(t *testing.T) {
 		fn: func(_ context.Context, req provider.GenerateParams) (*provider.GenerateResult, error) {
 			callCount++
 			if callCount == 1 {
- // Worker
+				// Worker
 				return &provider.GenerateResult{Text: "work output", Usage: provider.Usage{InputTokens: 5, OutputTokens: 3}}, nil
 			}
- // Judge: submit_result with done=true
+			// Judge: submit_result with done=true
 			return &provider.GenerateResult{
 				Text:  "",
 				Usage: provider.Usage{InputTokens: 3, OutputTokens: 2},
@@ -2133,8 +2133,8 @@ func TestExecutor_AbortSemaphoreWait(t *testing.T) {
 			t.Errorf("step %q missing from results", id)
 			continue
 		}
- // Step a: StepFailed (ran and failed). Steps b, c: StepCancelled
- // (either via semaphore abort select or done_label cleanup).
+		// Step a: StepFailed (ran and failed). Steps b, c: StepCancelled
+		// (either via semaphore abort select or done_label cleanup).
 		if sr.Status != spec.StepFailed && sr.Status != spec.StepCancelled {
 			t.Errorf("step %q status = %q, want StepFailed or StepCancelled", id, sr.Status)
 		}
@@ -2271,7 +2271,7 @@ func TestExecutor_IsolationWarning(t *testing.T) {
 		Progress:     sink,
 		Workflow:     wf,
 		DefaultModel: "gpt-4o",
- // Isolation is nil - should trigger warning.
+		// Isolation is nil - should trigger warning.
 	}
 
 	result, err := exec.Run(t.Context())
@@ -2348,7 +2348,7 @@ func TestExecutor_IsolationWarning_NoProgress(t *testing.T) {
 		Runner:       &AgentRunner{model: model, tools: nil},
 		Workflow:     wf,
 		DefaultModel: "gpt-4o",
- // No Progress and no Isolation - triggers slog fallback path.
+		// No Progress and no Isolation - triggers slog fallback path.
 	}
 	result, err := exec.Run(t.Context())
 	if err != nil {
@@ -2595,7 +2595,7 @@ func TestExecutor_IsolationCleanupError_NoProgress(t *testing.T) {
 		Workflow:     wf,
 		DefaultModel: "gpt-4o",
 		Isolation:    &failingIsolation{cleanupErr: errors.New("cleanup boom")},
- // No Progress → triggers slog fallback path
+		// No Progress → triggers slog fallback path
 	}
 	result, err := exec.Run(t.Context())
 	if err != nil {
@@ -2701,7 +2701,7 @@ func TestExecutor_LoopStep_InnerDAG_Until(t *testing.T) {
 	// Loop with inner steps + until condition that references inner step results.
 	model := &mockModel{
 		responses: []*provider.GenerateResult{
- // Iteration 0: inner step
+			// Iteration 0: inner step
 			{Text: "test output", Usage: provider.Usage{InputTokens: 5, OutputTokens: 3}},
 		},
 	}
@@ -2744,7 +2744,7 @@ func TestExecutor_LoopStep_Until_WithResult(t *testing.T) {
 	// see the result in the eval context.
 	model := &mockModel{
 		responses: []*provider.GenerateResult{
- // Worker: returns submit_result with status
+			// Worker: returns submit_result with status
 			{Text: "", Usage: provider.Usage{InputTokens: 5, OutputTokens: 3}, ToolCalls: []provider.ToolCall{
 				{ID: "sr1", Name: "submit_result", Input: json.RawMessage(`{"status":"pass","count":42}`)},
 			}},
@@ -2831,9 +2831,9 @@ func TestExecutor_LoopStep_UntilCELError(t *testing.T) {
 func TestExecutor_LoopStep_UntilAgent_Done(t *testing.T) {
 	model := &mockModel{
 		responses: []*provider.GenerateResult{
- // Worker iteration
+			// Worker iteration
 			{Text: "work done", Usage: provider.Usage{InputTokens: 5, OutputTokens: 3}},
- // Judge says done (via submit_result)
+			// Judge says done (via submit_result)
 			{Text: "", Usage: provider.Usage{InputTokens: 5, OutputTokens: 3}, ToolCalls: []provider.ToolCall{
 				{ID: "sr1", Name: "submit_result", Input: json.RawMessage(`{"done":true}`)},
 			}},
@@ -2883,17 +2883,17 @@ func TestExecutor_LoopStep_UntilAgent_Done(t *testing.T) {
 func TestExecutor_LoopStep_OutputMode_Cumulative(t *testing.T) {
 	model := &mockModel{
 		responses: []*provider.GenerateResult{
- // Iteration 1: pro-argue, con-argue
+			// Iteration 1: pro-argue, con-argue
 			{Text: "PRO_R1: remote work boosts productivity", Usage: provider.Usage{InputTokens: 5, OutputTokens: 3}},
 			{Text: "CON_R1: remote work isolates teams", Usage: provider.Usage{InputTokens: 5, OutputTokens: 3}},
- // Judge after R1: not done
+			// Judge after R1: not done
 			{Text: "", Usage: provider.Usage{InputTokens: 5, OutputTokens: 3}, ToolCalls: []provider.ToolCall{
 				{ID: "j1", Name: "submit_result", Input: json.RawMessage(`{"done":false}`)},
 			}},
- // Iteration 2: pro-argue, con-argue
+			// Iteration 2: pro-argue, con-argue
 			{Text: "PRO_R2: telemetry shows higher output", Usage: provider.Usage{InputTokens: 5, OutputTokens: 3}},
 			{Text: "CON_R2: but onboarding suffers", Usage: provider.Usage{InputTokens: 5, OutputTokens: 3}},
- // Judge after R2: done
+			// Judge after R2: done
 			{Text: "", Usage: provider.Usage{InputTokens: 5, OutputTokens: 3}, ToolCalls: []provider.ToolCall{
 				{ID: "j2", Name: "submit_result", Input: json.RawMessage(`{"done":true}`)},
 			}},
@@ -3018,7 +3018,7 @@ func TestExecutor_LoopStep_OutputMode_Last_DoesNotSetPreserveContent(t *testing.
 				Loop: &Loop{
 					UntilAgent:    "judge",
 					MaxIterations: &maxIter,
- // outputMode default = "last"
+					// outputMode default = "last"
 				},
 				Instructions: "iterate",
 			},
@@ -3066,7 +3066,7 @@ func TestExecutor_LoopStep_OutputMode_Last_DefaultBackwardCompat(t *testing.T) {
 				Loop: &Loop{
 					UntilAgent:    "judge",
 					MaxIterations: &maxIter,
- // OutputMode omitted = "last" (default).
+					// OutputMode omitted = "last" (default).
 					Steps: []Step{
 						{ID: "pro", Agent: "pro", Instructions: "x"},
 						{ID: "con", Agent: "con", Instructions: "y", DependsOn: []string{"pro"}},
@@ -3115,9 +3115,9 @@ func TestExecutor_LoopStep_OutputMode_Last_DefaultBackwardCompat(t *testing.T) {
 func TestExecutor_LoopStep_UntilAgent_JudgeEventsCarryStepID(t *testing.T) {
 	model := &mockModel{
 		responses: []*provider.GenerateResult{
- // Worker iteration
+			// Worker iteration
 			{Text: "work done", Usage: provider.Usage{InputTokens: 5, OutputTokens: 3}},
- // Judge says done (via submit_result)
+			// Judge says done (via submit_result)
 			{Text: "", Usage: provider.Usage{InputTokens: 5, OutputTokens: 3}, ToolCalls: []provider.ToolCall{
 				{ID: "sr1", Name: "submit_result", Input: json.RawMessage(`{"done":true}`)},
 			}},
@@ -3246,7 +3246,7 @@ func (j *judgeFailLLM) DoGenerate(_ context.Context, _ provider.GenerateParams) 
 	n := *j.callCount
 	j.mu.Unlock()
 	if n%2 == 0 {
- // Even calls are judge calls → fail
+		// Even calls are judge calls → fail
 		return nil, errors.New("judge LLM error")
 	}
 	// Odd calls are worker calls → succeed
@@ -3260,7 +3260,7 @@ func TestExecutor_LoopStep_ExhaustedBothConditions(t *testing.T) {
 	model := &mockModel{
 		responses: []*provider.GenerateResult{
 			{Text: "iter1", Usage: provider.Usage{InputTokens: 5, OutputTokens: 3}},
- // Judge says not done (via submit_result)
+			// Judge says not done (via submit_result)
 			{Text: "", Usage: provider.Usage{InputTokens: 5, OutputTokens: 3}, ToolCalls: []provider.ToolCall{
 				{ID: "sr1", Name: "submit_result", Input: json.RawMessage(`{"done":false}`)},
 			}},
@@ -3351,10 +3351,10 @@ func TestExecutor_RepeatUntil_InnerDAG_Failed(t *testing.T) {
 
 func TestExecutor_RepeatUntil_InnerDAG_Timeout(t *testing.T) {
 	if runtime.GOOS == "windows" {
- // Windows' default scheduler timer is ~15.6 ms; the 1 ms vs 10 ms
- // race this test relies on is too tight to be reliable there.
- // Coverage of the runRepeatUntilInnerDAG timeout branch holds via
- // the ubuntu / macos runs.
+		// Windows' default scheduler timer is ~15.6 ms; the 1 ms vs 10 ms
+		// race this test relies on is too tight to be reliable there.
+		// Coverage of the runRepeatUntilInnerDAG timeout branch holds via
+		// the ubuntu / macos runs.
 		t.Skip("scheduler timer granularity on Windows makes the 1ms-vs-10ms race flaky")
 	}
 	slowLLM := &slowMockLLM{}
@@ -3536,7 +3536,7 @@ func TestExecutor_Include_PathTraversal_NoBaseDir(t *testing.T) {
 		Steps: []Step{
 			{ID: "inc", Include: "/etc/passwd"},
 		},
- // No BaseDir → absolute path rejected
+		// No BaseDir → absolute path rejected
 	}
 	exec := newTestExecutor(model, nil, wf)
 	result, err := exec.Run(t.Context())
@@ -3803,7 +3803,7 @@ func TestExecutor_LoopStep_UntilAgent_WithTracer(t *testing.T) {
 	model := &mockModel{
 		responses: []*provider.GenerateResult{
 			{Text: "work done", Usage: provider.Usage{InputTokens: 5, OutputTokens: 3}},
- // Judge done via submit_result
+			// Judge done via submit_result
 			{Text: "", Usage: provider.Usage{InputTokens: 5, OutputTokens: 3}, ToolCalls: []provider.ToolCall{
 				{ID: "sr1", Name: "submit_result", Input: json.RawMessage(`{"done":true}`)},
 			}},
@@ -3890,15 +3890,15 @@ func TestExecutor_LoopStep_UntilAgent_NotDone_WithTracer(t *testing.T) {
 	// Judge returns done=false, then done=true on second iteration.
 	model := &mockModel{
 		responses: []*provider.GenerateResult{
- // Worker iter 1
+			// Worker iter 1
 			{Text: "work1", Usage: provider.Usage{InputTokens: 5, OutputTokens: 3}},
- // Judge iter 1: not done (submit_result)
+			// Judge iter 1: not done (submit_result)
 			{Text: "", Usage: provider.Usage{InputTokens: 5, OutputTokens: 3}, ToolCalls: []provider.ToolCall{
 				{ID: "sr1", Name: "submit_result", Input: json.RawMessage(`{"done":false}`)},
 			}},
- // Worker iter 2
+			// Worker iter 2
 			{Text: "work2", Usage: provider.Usage{InputTokens: 5, OutputTokens: 3}},
- // Judge iter 2: done
+			// Judge iter 2: done
 			{Text: "", Usage: provider.Usage{InputTokens: 5, OutputTokens: 3}, ToolCalls: []provider.ToolCall{
 				{ID: "sr2", Name: "submit_result", Input: json.RawMessage(`{"done":true}`)},
 			}},
@@ -3998,10 +3998,10 @@ steps:
 	GenerateRunID = func() (string, error) {
 		callCount++
 		if callCount == 1 {
- // First call (parent) succeeds.
+			// First call (parent) succeeds.
 			return "run_parent", nil
 		}
- // Second call (nested include) fails.
+		// Second call (nested include) fails.
 		return "", errors.New("nested run ID error")
 	}
 	t.Cleanup(func() { GenerateRunID = origGen })

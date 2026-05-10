@@ -59,8 +59,8 @@ func findZenflowModuleRoot(dir string) string {
 	for {
 		gomod := filepath.Join(dir, "go.mod")
 		if data, err := os.ReadFile(gomod); err == nil {
- // Match either exact line or line+newline prefix (handles trailing /)
- // by checking that the module line appears as a full line.
+			// Match either exact line or line+newline prefix (handles trailing /)
+			// by checking that the module line appears as a full line.
 			for line := range strings.Lines(string(data)) {
 				trimmed := strings.TrimSpace(line)
 				if trimmed == zenflowModuleLine || strings.HasPrefix(trimmed, zenflowModuleLine+"/") {

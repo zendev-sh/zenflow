@@ -99,7 +99,7 @@ func TestMailbox_Concurrent(t *testing.T) {
 		for {
 			select {
 			case <-done:
- // final drain
+				// final drain
 				m := store.Unread(stepID)
 				rmu.Lock()
 				totalRead += len(m)

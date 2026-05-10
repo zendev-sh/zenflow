@@ -152,9 +152,9 @@ func TestRunCoordinatorLoop_CleanupTimeoutFires(t *testing.T) {
 	go func() { cleanup(); close(doneCh) }()
 	select {
 	case <-doneCh:
- // Cleanup returned within bounded time even though the
- // goroutine may still be live (it'll exit when block closes /
- // ctx is reaped at test end).
+	// Cleanup returned within bounded time even though the
+	// goroutine may still be live (it'll exit when block closes /
+	// ctx is reaped at test end).
 	case <-time.After(2 * time.Second):
 		t.Fatal("cleanup did not return within 2s; cleanup-timeout did not fire")
 	}
