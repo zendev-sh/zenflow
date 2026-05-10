@@ -12,6 +12,9 @@ docs/.vitepress/cache/
 # Export-script audit log (regenerated each `make zenflow-export`).
 .strip.log
 
+# CLI binary built from ./cmd/zenflow.
+/zenflow
+
 # Maintainer-only git hooks. Shipped into the clone tree by the export
 # script so the maintainer can `cp hooks/* .git/hooks/` post-export,
 # but never committed (mirrors goai's convention).
