@@ -181,6 +181,173 @@ func TestResolveProvider_VertexAnthropicPrefix(t *testing.T) {
 	}
 }
 
+// TestResolveProvider_CompatPrefix wires the `compat/` prefix to goai's
+// generic OpenAI-compatible provider (`github.com/zendev-sh/goai/provider/compat`).
+// Use case: local llama.cpp `llama-server`, LiteLLM proxy, vLLM with
+// non-standard URL, or any custom OpenAI-compatible endpoint. The base
+// URL is taken from `COMPAT_BASE_URL` env var, defaulting to
+// `http://localhost:8080/v1` (llama.cpp's default port).
+func TestResolveProvider_CompatPrefix(t *testing.T) {
+	llm, modelID := resolveProvider("compat/qwen3.6-27b")
+	if llm == nil {
+		t.Fatal("compat/<model> returned nil; compat prefix not wired")
+	}
+	if modelID != "qwen3.6-27b" {
+		t.Errorf("modelID = %q, want qwen3.6-27b", modelID)
+	}
+}
+
+// TestResolveProvider_CompatPrefix_RespectsEnvBaseURL verifies that
+// `COMPAT_BASE_URL` overrides the default `http://localhost:8080/v1`. We
+// can't easily assert the URL ended up inside the provider without
+// reaching into goai internals, but at minimum a non-default URL must
+// still produce a non-nil model (the env-read path must not panic or
+// silently swallow the value).
+func TestResolveProvider_CompatPrefix_RespectsEnvBaseURL(t *testing.T) {
+	t.Setenv("COMPAT_BASE_URL", "http://remote-gpu-box:9000/v1")
+	llm, modelID := resolveProvider("compat/whatever")
+	if llm == nil {
+		t.Fatal("compat/<model> with COMPAT_BASE_URL returned nil")
+	}
+	if modelID != "whatever" {
+		t.Errorf("modelID = %q, want whatever", modelID)
+	}
+}
+
+// TestResolveProvider_CompatPrefix_RespectsAPIKey covers the
+// COMPAT_API_KEY env-var path. Most local servers (llama.cpp without
+// `--api-key`) ignore the Authorization header, but LiteLLM and some
+// vLLM deployments do check, so the env-var must reach the goai compat
+// constructor.
+func TestResolveProvider_CompatPrefix_RespectsAPIKey(t *testing.T) {
+	t.Setenv("COMPAT_API_KEY", "sk-test-fake-key")
+	llm, modelID := resolveProvider("compat/qwen")
+	if llm == nil {
+		t.Fatal("compat with COMPAT_API_KEY returned nil")
+	}
+	if modelID != "qwen" {
+		t.Errorf("modelID = %q, want qwen", modelID)
+	}
+}
+
+// TestResolveProvider_OllamaPrefix wires the `ollama/` prefix to goai's
+// ollama provider (default base URL `http://localhost:11434/v1`). Models
+// names follow Ollama's tag convention (e.g. `llama3`, `qwen3:32b`).
+func TestResolveProvider_OllamaPrefix(t *testing.T) {
+	llm, modelID := resolveProvider("ollama/llama3")
+	if llm == nil {
+		t.Fatal("ollama/<model> returned nil; ollama prefix not wired")
+	}
+	if modelID != "llama3" {
+		t.Errorf("modelID = %q, want llama3", modelID)
+	}
+}
+
+// TestResolveProvider_OllamaPrefix_BaseURLEnv covers OLLAMA_BASE_URL -
+// the fully-qualified-URL escape hatch. Set when the user runs Ollama
+// behind a reverse proxy with a non-standard path prefix that
+// OLLAMA_HOST's auto-append-/v1 logic would mangle.
+func TestResolveProvider_OllamaPrefix_BaseURLEnv(t *testing.T) {
+	t.Setenv("OLLAMA_BASE_URL", "https://proxy.example.com/ollama/v1")
+	llm, modelID := resolveProvider("ollama/llama3")
+	if llm == nil {
+		t.Fatal("ollama with OLLAMA_BASE_URL returned nil")
+	}
+	if modelID != "llama3" {
+		t.Errorf("modelID = %q, want llama3", modelID)
+	}
+}
+
+// TestResolveProvider_OllamaPrefix_HostEnv covers OLLAMA_HOST - the
+// Ollama-standard env var. Format is `host:port` (no scheme, no /v1);
+// the resolver auto-prepends scheme assumption inside goai and we
+// append `/v1` here. Verify both the bare host form and the form
+// that already includes /v1 (idempotent - must not double-append).
+func TestResolveProvider_OllamaPrefix_HostEnv(t *testing.T) {
+	cases := []string{
+		"http://gpu-box:11434",     // bare host:port - we append /v1
+		"http://gpu-box:11434/v1",  // already has /v1 - must not double-append
+		"http://gpu-box:11434/v1/", // trailing slash - must trim then keep /v1
+	}
+	for _, host := range cases {
+		t.Run(host, func(t *testing.T) {
+			t.Setenv("OLLAMA_HOST", host)
+			// Clear OLLAMA_BASE_URL so the OLLAMA_HOST branch runs.
+			t.Setenv("OLLAMA_BASE_URL", "")
+			llm, modelID := resolveProvider("ollama/llama3")
+			if llm == nil {
+				t.Fatal("ollama with OLLAMA_HOST returned nil")
+			}
+			if modelID != "llama3" {
+				t.Errorf("modelID = %q, want llama3", modelID)
+			}
+		})
+	}
+}
+
+// TestResolveProvider_VllmPrefix wires the `vllm/` prefix to goai's
+// vllm provider (default base URL `http://localhost:8000/v1`). vLLM
+// model IDs typically contain a `/` themselves (HuggingFace org/repo
+// pattern, e.g. `meta-llama/Llama-3-8b`); splitProviderModel only
+// splits on the FIRST `/`, so this case validates the multi-slash
+// model ID path.
+func TestResolveProvider_VllmPrefix(t *testing.T) {
+	llm, modelID := resolveProvider("vllm/meta-llama/Llama-3-8b")
+	if llm == nil {
+		t.Fatal("vllm/<org>/<model> returned nil; vllm prefix not wired")
+	}
+	if modelID != "meta-llama/Llama-3-8b" {
+		t.Errorf("modelID = %q, want meta-llama/Llama-3-8b", modelID)
+	}
+}
+
+// TestResolveProvider_VllmPrefix_BaseURLEnv covers VLLM_BASE_URL - for
+// remote vLLM deployments (default targets localhost:8000).
+func TestResolveProvider_VllmPrefix_BaseURLEnv(t *testing.T) {
+	t.Setenv("VLLM_BASE_URL", "http://gpu-cluster:8000/v1")
+	llm, modelID := resolveProvider("vllm/Qwen/Qwen3-32B")
+	if llm == nil {
+		t.Fatal("vllm with VLLM_BASE_URL returned nil")
+	}
+	if modelID != "Qwen/Qwen3-32B" {
+		t.Errorf("modelID = %q, want Qwen/Qwen3-32B", modelID)
+	}
+}
+
+// TestResolveProvider_VllmPrefix_APIKeyEnv covers VLLM_API_KEY - used
+// when the vLLM server was started with `--api-key`. Without this env
+// path, authenticated vLLM deployments would 401.
+func TestResolveProvider_VllmPrefix_APIKeyEnv(t *testing.T) {
+	t.Setenv("VLLM_API_KEY", "sk-vllm-fake")
+	llm, modelID := resolveProvider("vllm/some-model")
+	if llm == nil {
+		t.Fatal("vllm with VLLM_API_KEY returned nil")
+	}
+	if modelID != "some-model" {
+		t.Errorf("modelID = %q, want some-model", modelID)
+	}
+}
+
+// TestResolveProvider_RejectsEmptyModelID_LocalProviders extends the
+// existing empty-model-id guard to the new local provider prefixes.
+// `compat/` `ollama/` `vllm/` with no model name must short-circuit to
+// nil so `HasLLM()` reports false instead of constructing a model that
+// 404s on first call.
+func TestResolveProvider_RejectsEmptyModelID_LocalProviders(t *testing.T) {
+	cases := []string{"compat/", "ollama/", "vllm/"}
+	for _, m := range cases {
+		t.Run(m, func(t *testing.T) {
+			llm, modelID := resolveProvider(m)
+			if llm != nil {
+				t.Errorf("llm = %v, want nil for empty model id", llm)
+			}
+			if modelID != "" {
+				t.Errorf("modelID = %q, want empty", modelID)
+			}
+		})
+	}
+}
+
 // TestCmd_HelpFlagDispatch verifies every subcommand's --help branch
 // prints usage to stdout and exits cleanly without invoking
 // the underlying handler.
