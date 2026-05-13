@@ -16,9 +16,19 @@ import (
 	"github.com/zendev-sh/goai/provider"
 	"github.com/zendev-sh/goai/provider/azure"
 	"github.com/zendev-sh/goai/provider/bedrock"
+	"github.com/zendev-sh/goai/provider/compat"
 	"github.com/zendev-sh/goai/provider/google"
+	"github.com/zendev-sh/goai/provider/ollama"
 	"github.com/zendev-sh/goai/provider/vertex"
+	"github.com/zendev-sh/goai/provider/vllm"
 )
+
+// defaultCompatBaseURL is the fallback base URL when neither
+// COMPAT_BASE_URL is set nor an explicit value is wired through. It
+// matches llama.cpp's `llama-server` default port - by far the most
+// common local OpenAI-compatible endpoint anyone running zenflow
+// against a local model would have.
+const defaultCompatBaseURL = "http://localhost:8080/v1"
 
 // resolveProvider creates a LanguageModel from the --model flag value.
 // Format: "provider/model" (e.g., "google/gemini-2.5-flash", "bedrock/anthropic.claude-sonnet-4-6").
@@ -103,6 +113,52 @@ func resolveModel(providerName, modelID string) provider.LanguageModel {
 		// shape; explicit prefix so callers don't have to guess. Same ADC
 		// requirement as vertex/.
 		return vertex.AnthropicChat(modelID)
+	case "compat":
+		// Generic OpenAI-compatible endpoint - local llama.cpp
+		// `llama-server`, LiteLLM proxy, custom inference server, etc.
+		// goai's compat package requires WithBaseURL (no built-in
+		// default), so we read COMPAT_BASE_URL or fall back to
+		// llama-server's default `http://localhost:8080/v1`. Optional
+		// auth via COMPAT_API_KEY (most local servers don't check).
+		baseURL := os.Getenv("COMPAT_BASE_URL")
+		if baseURL == "" {
+			baseURL = defaultCompatBaseURL
+		}
+		opts := []compat.Option{compat.WithBaseURL(baseURL)}
+		if key := os.Getenv("COMPAT_API_KEY"); key != "" {
+			opts = append(opts, compat.WithAPIKey(key))
+		}
+		return compat.Chat(modelID, opts...)
+	case "ollama":
+		// Ollama's OpenAI-compatible endpoint. Defaults to
+		// `http://localhost:11434/v1` (baked into goai). Override via
+		// OLLAMA_BASE_URL for a fully-qualified URL, or OLLAMA_HOST
+		// (Ollama's standard env var - `host:port` without `/v1`,
+		// which we append).
+		var opts []ollama.Option
+		if base := os.Getenv("OLLAMA_BASE_URL"); base != "" {
+			opts = append(opts, ollama.WithBaseURL(base))
+		} else if host := os.Getenv("OLLAMA_HOST"); host != "" {
+			u := strings.TrimRight(host, "/")
+			if !strings.HasSuffix(u, "/v1") {
+				u += "/v1"
+			}
+			opts = append(opts, ollama.WithBaseURL(u))
+		}
+		return ollama.Chat(modelID, opts...)
+	case "vllm":
+		// vLLM's OpenAI-compatible endpoint. Defaults to
+		// `http://localhost:8000/v1` (baked into goai). vLLM supports
+		// optional API-key auth via `--api-key` flag - pick that up
+		// from VLLM_API_KEY when set.
+		var opts []vllm.Option
+		if base := os.Getenv("VLLM_BASE_URL"); base != "" {
+			opts = append(opts, vllm.WithBaseURL(base))
+		}
+		if key := os.Getenv("VLLM_API_KEY"); key != "" {
+			opts = append(opts, vllm.WithAPIKey(key))
+		}
+		return vllm.Chat(modelID, opts...)
 	default:
 		// No provider prefix - auto-detect from model name and env vars.
 		return autoModelFromModelName(modelID)
