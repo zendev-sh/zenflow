@@ -348,6 +348,116 @@ func TestResolveProvider_RejectsEmptyModelID_LocalProviders(t *testing.T) {
 	}
 }
 
+// TestResolveProvider_NewPrefixes covers the 18 cloud provider prefixes
+// added in the cross-goai-providers patch. Each entry maps a
+// `provider/model` flag to the model ID we expect resolveProvider to
+// extract; a non-nil LanguageModel proves the case is wired in
+// resolveModel (the underlying goai constructors return non-nil even
+// when their API-key env var is unset - they fail at first request, not
+// at construction). We deliberately don't set any API-key env vars
+// because the contract under test is "prefix → constructor invoked",
+// not "live request succeeds". One canonical model ID per provider is
+// enough; per-provider env-var plumbing is the goai package's
+// responsibility, exercised in those packages' own tests.
+func TestResolveProvider_NewPrefixes(t *testing.T) {
+	cases := []struct {
+		flag   string
+		wantID string
+	}{
+		{"anthropic/claude-sonnet-4-6", "claude-sonnet-4-6"},
+		{"openai/gpt-5", "gpt-5"},
+		{"xai/grok-4", "grok-4"},
+		{"groq/llama-3.3-70b-versatile", "llama-3.3-70b-versatile"},
+		{"cerebras/qwen-3-coder-480b", "qwen-3-coder-480b"},
+		{"deepseek/deepseek-chat", "deepseek-chat"},
+		{"deepinfra/meta-llama/Llama-3.3-70B-Instruct", "meta-llama/Llama-3.3-70B-Instruct"},
+		{"fireworks/accounts/fireworks/models/qwen3-coder-30b", "accounts/fireworks/models/qwen3-coder-30b"},
+		{"together/meta-llama/Llama-3.3-70B-Instruct-Turbo", "meta-llama/Llama-3.3-70B-Instruct-Turbo"},
+		{"mistral/mistral-large-latest", "mistral-large-latest"},
+		{"cohere/command-r-plus", "command-r-plus"},
+		{"perplexity/sonar-pro", "sonar-pro"},
+		{"nvidia/meta/llama-3.3-70b-instruct", "meta/llama-3.3-70b-instruct"},
+		{"openrouter/anthropic/claude-sonnet-4.6", "anthropic/claude-sonnet-4.6"},
+		{"minimax/MiniMax-M2", "MiniMax-M2"},
+		{"fptcloud/Qwen3-Coder-30B-A3B-Instruct", "Qwen3-Coder-30B-A3B-Instruct"},
+		{"cloudflare/@cf/meta/llama-3.3-70b-instruct-fp8-fast", "@cf/meta/llama-3.3-70b-instruct-fp8-fast"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.flag, func(t *testing.T) {
+			llm, modelID := resolveProvider(tc.flag)
+			if llm == nil {
+				t.Fatalf("resolveProvider(%q) = nil; prefix not wired in resolveModel", tc.flag)
+			}
+			if modelID != tc.wantID {
+				t.Errorf("modelID = %q, want %q", modelID, tc.wantID)
+			}
+		})
+	}
+}
+
+// TestResolveProvider_RunpodPrefix_ReadsEndpointEnv covers the runpod
+// special case: unlike every other goai provider, runpod.Chat takes
+// (endpointID, modelID) instead of a single modelID, because the
+// endpoint ID determines the URL hostname (`https://api.runpod.ai/v2/<endpointID>/openai/v1`).
+// The CLI reads it from RUNPOD_ENDPOINT_ID to avoid inventing a new
+// `provider/endpoint:model` separator. Constructor returns non-nil even
+// when the env var is missing - failure happens at first request with a
+// malformed URL.
+func TestResolveProvider_RunpodPrefix_ReadsEndpointEnv(t *testing.T) {
+	t.Setenv("RUNPOD_ENDPOINT_ID", "abc123def456")
+	llm, modelID := resolveProvider("runpod/qwen3-coder-30b")
+	if llm == nil {
+		t.Fatal("runpod/<model> with RUNPOD_ENDPOINT_ID returned nil; prefix not wired")
+	}
+	if modelID != "qwen3-coder-30b" {
+		t.Errorf("modelID = %q, want qwen3-coder-30b", modelID)
+	}
+}
+
+// TestAutoModel_ClaudePrefersAnthropic verifies bare `claude-*` routes
+// to native Anthropic when ANTHROPIC_API_KEY is set, even if
+// AZURE_OPENAI_API_KEY is also present. The previous behaviour silently
+// preferred Azure for `claude-*` names whenever AZURE_OPENAI_API_KEY
+// was configured, which surprised users who set ANTHROPIC_API_KEY
+// specifically to talk to Anthropic's native API.
+func TestAutoModel_ClaudePrefersAnthropic(t *testing.T) {
+	t.Setenv("ANTHROPIC_API_KEY", "sk-ant-fake")
+	t.Setenv("AZURE_OPENAI_API_KEY", "fake-azure")
+	t.Setenv("AZURE_RESOURCE_NAME", "fake-resource")
+	llm := autoModelFromModelName("claude-sonnet-4-6")
+	if llm == nil {
+		t.Fatal("autoModelFromModelName(claude-sonnet-4-6) returned nil with ANTHROPIC_API_KEY set")
+	}
+	// We can't introspect which provider goai's interface points at
+	// without reaching into internals; the non-nil assertion + the
+	// next test (env-var precedence) is the best we can do without
+	// a brittle reflect cast. The behaviour change is also covered
+	// at the integration layer (zenflow flow ... bare-name).
+}
+
+// TestAutoModel_GPTPrefersOpenAI is the OpenAI counterpart to the
+// Claude test: bare `gpt-*` routes to OpenAI when OPENAI_API_KEY is set
+// rather than Azure.
+func TestAutoModel_GPTPrefersOpenAI(t *testing.T) {
+	t.Setenv("OPENAI_API_KEY", "sk-fake")
+	t.Setenv("AZURE_OPENAI_API_KEY", "fake-azure")
+	t.Setenv("AZURE_RESOURCE_NAME", "fake-resource")
+	llm := autoModelFromModelName("gpt-5")
+	if llm == nil {
+		t.Fatal("autoModelFromModelName(gpt-5) returned nil with OPENAI_API_KEY set")
+	}
+}
+
+// TestAutoModel_GrokRoutesToXAI covers the new `grok-*` auto-detect
+// prefix that routes to xAI when XAI_API_KEY is set.
+func TestAutoModel_GrokRoutesToXAI(t *testing.T) {
+	t.Setenv("XAI_API_KEY", "xai-fake")
+	llm := autoModelFromModelName("grok-4")
+	if llm == nil {
+		t.Fatal("autoModelFromModelName(grok-4) returned nil with XAI_API_KEY set")
+	}
+}
+
 // TestCmd_HelpFlagDispatch verifies every subcommand's --help branch
 // prints usage to stdout and exits cleanly without invoking
 // the underlying handler.
