@@ -5,22 +5,55 @@ package main
 // "bedrock/anthropic.claude-sonnet-4-6"). Bare model names without a
 // provider prefix are also supported via autoModelFromModelName, which
 // guesses the provider from the model name + which API-key env var is
-// set. Env vars considered: GEMINI_API_KEY,
-// GOOGLE_GENERATIVE_AI_API_KEY, AWS_ACCESS_KEY_ID,
-// AZURE_OPENAI_API_KEY, ZENFLOW_MODEL.
+// set.
+//
+// Supported provider prefixes: anthropic, azure, azure-deployment,
+// bedrock, cerebras, cloudflare, cohere, compat, deepinfra, deepseek,
+// fireworks, fptcloud, google, groq, minimax, mistral, nvidia, ollama,
+// openai, openrouter, perplexity, runpod, together, vertex,
+// vertex-anthropic, vllm, xai.
+//
+// Each provider's API key (and other config) is read from its standard
+// env var by the underlying goai constructor: ANTHROPIC_API_KEY,
+// CEREBRAS_API_KEY, CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID,
+// COHERE_API_KEY, DEEPINFRA_API_KEY, DEEPSEEK_API_KEY,
+// FIREWORKS_API_KEY, FPT_API_KEY (+ FPT_REGION), GEMINI_API_KEY,
+// GOOGLE_GENERATIVE_AI_API_KEY, GROQ_API_KEY, MINIMAX_API_KEY,
+// MISTRAL_API_KEY, NVIDIA_API_KEY, OPENAI_API_KEY, OPENROUTER_API_KEY,
+// PERPLEXITY_API_KEY, RUNPOD_API_KEY + RUNPOD_ENDPOINT_ID,
+// TOGETHER_AI_API_KEY (or TOGETHER_API_KEY), AWS_ACCESS_KEY_ID,
+// AZURE_OPENAI_API_KEY, XAI_API_KEY, ZENFLOW_MODEL.
 
 import (
 	"os"
 	"strings"
 
 	"github.com/zendev-sh/goai/provider"
+	"github.com/zendev-sh/goai/provider/anthropic"
 	"github.com/zendev-sh/goai/provider/azure"
 	"github.com/zendev-sh/goai/provider/bedrock"
+	"github.com/zendev-sh/goai/provider/cerebras"
+	"github.com/zendev-sh/goai/provider/cloudflare"
+	"github.com/zendev-sh/goai/provider/cohere"
 	"github.com/zendev-sh/goai/provider/compat"
+	"github.com/zendev-sh/goai/provider/deepinfra"
+	"github.com/zendev-sh/goai/provider/deepseek"
+	"github.com/zendev-sh/goai/provider/fireworks"
+	"github.com/zendev-sh/goai/provider/fptcloud"
 	"github.com/zendev-sh/goai/provider/google"
+	"github.com/zendev-sh/goai/provider/groq"
+	"github.com/zendev-sh/goai/provider/minimax"
+	"github.com/zendev-sh/goai/provider/mistral"
+	"github.com/zendev-sh/goai/provider/nvidia"
 	"github.com/zendev-sh/goai/provider/ollama"
+	"github.com/zendev-sh/goai/provider/openai"
+	"github.com/zendev-sh/goai/provider/openrouter"
+	"github.com/zendev-sh/goai/provider/perplexity"
+	"github.com/zendev-sh/goai/provider/runpod"
+	"github.com/zendev-sh/goai/provider/together"
 	"github.com/zendev-sh/goai/provider/vertex"
 	"github.com/zendev-sh/goai/provider/vllm"
+	"github.com/zendev-sh/goai/provider/xai"
 )
 
 // defaultCompatBaseURL is the fallback base URL when neither
@@ -159,6 +192,75 @@ func resolveModel(providerName, modelID string) provider.LanguageModel {
 			opts = append(opts, vllm.WithAPIKey(key))
 		}
 		return vllm.Chat(modelID, opts...)
+	case "anthropic":
+		// Anthropic Messages API. Reads ANTHROPIC_API_KEY (and
+		// optional ANTHROPIC_BASE_URL) from env.
+		return anthropic.Chat(modelID)
+	case "openai":
+		// OpenAI Chat Completions API. Reads OPENAI_API_KEY (and
+		// optional OPENAI_BASE_URL) from env. For Azure-hosted
+		// OpenAI use the `azure/` or `azure-deployment/` prefix.
+		return openai.Chat(modelID)
+	case "xai":
+		// xAI (Grok). Reads XAI_API_KEY.
+		return xai.Chat(modelID)
+	case "groq":
+		// Groq LPU inference. Reads GROQ_API_KEY.
+		return groq.Chat(modelID)
+	case "cerebras":
+		// Cerebras inference. Reads CEREBRAS_API_KEY.
+		return cerebras.Chat(modelID)
+	case "deepseek":
+		// DeepSeek API. Reads DEEPSEEK_API_KEY.
+		return deepseek.Chat(modelID)
+	case "deepinfra":
+		// DeepInfra serverless inference. Reads DEEPINFRA_API_KEY.
+		return deepinfra.Chat(modelID)
+	case "fireworks":
+		// Fireworks AI inference. Reads FIREWORKS_API_KEY.
+		return fireworks.Chat(modelID)
+	case "together":
+		// Together AI inference. Reads TOGETHER_AI_API_KEY (with
+		// TOGETHER_API_KEY as fallback for backwards compatibility).
+		return together.Chat(modelID)
+	case "mistral":
+		// Mistral La Plateforme. Reads MISTRAL_API_KEY.
+		return mistral.Chat(modelID)
+	case "cohere":
+		// Cohere Chat v2. Reads COHERE_API_KEY.
+		return cohere.Chat(modelID)
+	case "perplexity":
+		// Perplexity online inference. Reads PERPLEXITY_API_KEY.
+		return perplexity.Chat(modelID)
+	case "nvidia":
+		// NVIDIA NIM / build.nvidia.com. Reads NVIDIA_API_KEY.
+		return nvidia.Chat(modelID)
+	case "openrouter":
+		// OpenRouter (multi-provider router). Reads OPENROUTER_API_KEY.
+		return openrouter.Chat(modelID)
+	case "minimax":
+		// MiniMax (Anthropic-compatible protocol). Reads MINIMAX_API_KEY.
+		return minimax.Chat(modelID)
+	case "fptcloud":
+		// FPT Smart Cloud AI Marketplace (OpenAI-compatible).
+		// Reads FPT_API_KEY and optional FPT_REGION (global|jp) and
+		// FPT_BASE_URL.
+		return fptcloud.Chat(modelID)
+	case "cloudflare":
+		// Cloudflare Workers AI. Reads CLOUDFLARE_API_TOKEN and
+		// CLOUDFLARE_ACCOUNT_ID from env (both required for live
+		// requests; constructor still returns non-nil if either is
+		// unset and fails at request time).
+		return cloudflare.Chat(modelID)
+	case "runpod":
+		// RunPod serverless inference. Needs both an endpoint ID and a
+		// model ID; the endpoint ID lives in env (RUNPOD_ENDPOINT_ID)
+		// because there's no clean way to pack it into the
+		// `provider/model` string without inventing a new separator.
+		// Reads RUNPOD_API_KEY for auth. If RUNPOD_ENDPOINT_ID is
+		// unset the constructor still returns a non-nil model that
+		// will fail at first request with a clear URL error.
+		return runpod.Chat(os.Getenv("RUNPOD_ENDPOINT_ID"), modelID)
 	default:
 		// No provider prefix - auto-detect from model name and env vars.
 		return autoModelFromModelName(modelID)
@@ -210,10 +312,26 @@ func isBedrockCrossRegionPattern(modelName string) bool {
 
 // autoModelFromModelName creates a LanguageModel by guessing the provider from model name.
 // Used when --model has no provider/ prefix (bare model name).
+//
+// Auto-detection is intentionally conservative: only a few well-known
+// prefixes (gemini-, gpt-, claude-, grok-) plus Bedrock vendor-prefix
+// dotted IDs are recognised. For everything else (qwen-*, llama-*,
+// mixtral-*, deepseek-*, etc.) callers must use an explicit
+// `provider/model` prefix because those names are served by multiple
+// providers and we refuse to guess between them.
+//
+// For names served natively (claude-*, gpt-*), the provider's direct
+// API key takes precedence over Azure when both are set; the previous
+// behaviour silently routed them to Azure whenever AZURE_OPENAI_API_KEY
+// was present, which surprised users who set ANTHROPIC_API_KEY or
+// OPENAI_API_KEY specifically to use the native API.
 func autoModelFromModelName(modelName string) provider.LanguageModel {
 	hasGemini := os.Getenv("GEMINI_API_KEY") != "" || os.Getenv("GOOGLE_GENERATIVE_AI_API_KEY") != ""
 	hasBedrock := os.Getenv("AWS_ACCESS_KEY_ID") != ""
 	hasAzure := os.Getenv("AZURE_OPENAI_API_KEY") != ""
+	hasAnthropic := os.Getenv("ANTHROPIC_API_KEY") != ""
+	hasOpenAI := os.Getenv("OPENAI_API_KEY") != ""
+	hasXAI := os.Getenv("XAI_API_KEY") != ""
 
 	switch {
 	case len(modelName) >= 7 && modelName[:7] == "gemini-":
@@ -231,12 +349,25 @@ func autoModelFromModelName(modelName string) provider.LanguageModel {
 			return bedrock.Chat(modelName)
 		}
 	case len(modelName) >= 4 && modelName[:4] == "gpt-":
+		// Prefer native OpenAI over Azure when both are configured.
+		if hasOpenAI {
+			return openai.Chat(modelName)
+		}
 		if hasAzure {
 			return azure.Chat(modelName, azure.WithDeploymentBasedURLs(true))
 		}
 	case len(modelName) >= 7 && modelName[:7] == "claude-":
+		// Prefer native Anthropic, then Bedrock cross-region (for
+		// dot-prefixed IDs we already matched above), then Azure.
+		if hasAnthropic {
+			return anthropic.Chat(modelName)
+		}
 		if hasAzure {
 			return azure.Chat(modelName)
+		}
+	case len(modelName) >= 5 && modelName[:5] == "grok-":
+		if hasXAI {
+			return xai.Chat(modelName)
 		}
 	default:
 		if hasAzure {
@@ -244,7 +375,16 @@ func autoModelFromModelName(modelName string) provider.LanguageModel {
 		}
 	}
 
-	// Fallback: try any available provider.
+	// Fallback: try any available provider in a stable priority order.
+	// Native single-vendor keys come before multi-tenant clouds so that
+	// e.g. an OPENAI_API_KEY-only setup with a bare model name still
+	// works without needing a provider prefix.
+	if hasOpenAI {
+		return openai.Chat(modelName)
+	}
+	if hasAnthropic {
+		return anthropic.Chat(modelName)
+	}
 	if hasGemini {
 		return google.Chat(modelName)
 	}
