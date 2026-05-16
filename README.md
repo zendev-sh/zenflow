@@ -24,6 +24,12 @@
   <a href="https://zenflow.sh/examples">Examples</a>
 </p>
 
+<p align="center">
+  <a href="https://zenflow.sh/agent-orchestration.html">
+    <img src="docs/public/agent-orchestration-topology-dark.gif" alt="zenflow runtime topology: user input flows through the orchestrator, splitting into the LLM coordinator and DAG executor, fanning out to agents that call the provider tool loop" width="900">
+  </a>
+</p>
+
 ---
 
 > [!IMPORTANT]

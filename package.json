@@ -9,9 +9,11 @@
   "scripts": {
     "dev": "vitepress dev docs",
     "build": "vitepress build docs",
-    "preview": "vitepress preview docs"
+    "preview": "vitepress preview docs",
+    "export:topology-gif": "node scripts/export-topology-gif.mjs"
   },
   "devDependencies": {
+    "playwright": "^1.60.0",
     "vitepress": "^1.6.3",
     "vue": "^3.5.13"
   },
