@@ -267,6 +267,18 @@ func (o *Orchestrator) HasLLM() bool {
 // fall back to the Orchestrator defaults (registered via WithModel /
 // WithTools / WithProgress / WithMaxTurns) when unset. Stable.
 func (o *Orchestrator) RunAgent(ctx context.Context, cfg AgentConfig) (*AgentResult, error) {
+	return o.runAgent(ctx, cfg, nil)
+}
+
+// runAgent is the shared implementation behind RunAgent and
+// RunAgentAsync. When ms is nil (synchronous RunAgent) the messaging
+// substrate - per-call MessageRouter, MailboxStore, wake channel and
+// derived primary step ID - is built fresh here. When ms is non-nil
+// (RunAgentAsync) it was pre-built by the caller and attached to the
+// AgentHandle so consumers can address the running agent's mailbox
+// via AgentHandle.SendMessage. The runID is taken from ms when
+// provided so the handle, the transcript slot and the run all agree.
+func (o *Orchestrator) runAgent(ctx context.Context, cfg AgentConfig, ms *agentMessaging) (*AgentResult, error) {
 	// Symmetric with RunAgentAsync: once Close has been called, the
 	// orchestrator's background goroutines are cancelled and its
 	// handle registry has been drained; a new RunAgent would be
@@ -280,7 +292,12 @@ func (o *Orchestrator) RunAgent(ctx context.Context, cfg AgentConfig) (*AgentRes
 	}
 
 	// Generate run ID for tracing, or use caller-supplied ID when set.
+	// When the caller pre-built the messaging substrate (RunAgentAsync)
+	// its runID is authoritative so the handle and run never diverge.
 	runID := o.runID
+	if ms != nil {
+		runID = ms.runID
+	}
 	if runID == "" {
 		var err error
 		runID, err = GenerateRunID()
@@ -310,8 +327,12 @@ func (o *Orchestrator) RunAgent(ctx context.Context, cfg AgentConfig) (*AgentRes
 	// agent-tool-spawned children. This unlocks inter-agent messaging
 	// on the RunAgent path. The mailbox is per-call - successive
 	// RunAgent invocations get distinct mailbox instances so inbox
-	// state cannot leak between calls.
-	router := NewMessageRouter()
+	// state cannot leak between calls. RunAgentAsync supplies the
+	// substrate pre-built so the AgentHandle shares the same router.
+	if ms == nil {
+		ms = newAgentMessaging(runID)
+	}
+	router := ms.router
 	if o.routerObserver != nil {
 		// Observer panics MUST NOT crash the agent run. Telemetry/debug
 		// hooks installed in production are the most likely source of
@@ -333,14 +354,13 @@ func (o *Orchestrator) RunAgent(ctx context.Context, cfg AgentConfig) (*AgentRes
 			o.routerObserver(router)
 		}()
 	}
-	mailbox := NewInMemoryMailboxStore()
-	router.SetMailbox(mailbox)
-	primaryStepID := agentPrimaryStepID(runID)
-	router.RegisterStep(primaryStepID)
-	router.RegisterInbox(primaryStepID)
+	mailbox := ms.mailbox
+	primaryStepID := ms.primaryStepID
 	defer func() {
 		// Close the primary inbox so the per-call mailbox does not
-		// retain dangling open-step state across calls.
+		// retain dangling open-step state across calls. A SendMessage
+		// arriving after this point drops with target-terminal, which
+		// the consumer reads as "agent done - resurrect instead".
 		router.Close(primaryStepID)
 	}()
 
@@ -401,12 +421,11 @@ func (o *Orchestrator) RunAgent(ctx context.Context, cfg AgentConfig) (*AgentRes
 
 	// Per-call router/mailbox are populated on the runner so the
 	// runner observes inter-agent messages addressed to primaryStepID.
-	// Wake gives the runner a wake channel symmetric to the executor's
-	// per-step wiring; for the standalone RunAgent path no
-	// DeliveryEngine watches the mailbox, but the channel is allocated
-	// so the runner's mailbox-mode predicates (Mailbox+Wake non-nil)
-	// can engage if a future engine is introduced.
-	wake := make(chan struct{}, 1)
+	// Wake gives the runner a wake channel: AgentHandle.SendMessage
+	// appends to the mailbox and signals this channel directly, so a
+	// user message reaches a still-running agent at its next turn
+	// boundary without needing a DeliveryEngine on the standalone path.
+	wake := ms.wake
 	runnerOpts := []AgentRunnerOption{
 		WithRunnerModel(o.model),
 		WithRunnerTools(effectiveTools...),
@@ -418,6 +437,19 @@ func (o *Orchestrator) RunAgent(ctx context.Context, cfg AgentConfig) (*AgentRes
 		WithRunnerMailbox(mailbox),
 		WithRunnerWake(wake),
 		WithRunnerRouter(router),
+	}
+	// Persist the standalone agent's transcript so a finished agent can
+	// be resurrected: the consumer loads (runID, primaryStepID) from
+	// the store and respawns with cfg.InitialMessages. Without this the
+	// RunAgent path keeps no transcript and resurrection is impossible.
+	if o.transcriptStoreFactory != nil {
+		runnerOpts = append(runnerOpts, WithRunnerTranscript(o.transcriptStoreFactory()))
+	}
+	// InitialMessages (resurrection): prepend the saved transcript
+	// before the new user prompt so the respawned agent sees the full
+	// prior conversation.
+	if len(cfg.InitialMessages) > 0 {
+		runnerOpts = append(runnerOpts, WithRunnerInitialMessages(cfg.InitialMessages))
 	}
 	if o.streaming {
 		runnerOpts = append(runnerOpts, WithRunnerStreaming())

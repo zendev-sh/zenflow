@@ -124,6 +124,74 @@ type AgentHandle struct {
 	// which bucket to purge after Done closes. Empty string is a
 	// valid bucket (single-session deployments).
 	sessionID string
+
+	// msg is the per-call messaging substrate (router, mailbox, wake
+	// channel, derived primary step ID, run ID). RunAgentAsync builds
+	// it before the agent goroutine starts and shares the same
+	// instance with the inner runAgent call, so SendMessage can
+	// address the running agent's mailbox. nil only on handles built
+	// via NewAgentHandle (test fixtures); SendMessage guards on it.
+	msg *agentMessaging
+}
+
+// RunID returns the zenflow run ID of the agent behind this handle.
+// Pair with PrimaryStepID to load the agent's transcript from a
+// TranscriptStore (resurrection). Empty when the handle was built via
+// NewAgentHandle without a messaging substrate.
+func (h *AgentHandle) RunID() string {
+	if h == nil || h.msg == nil {
+		return ""
+	}
+	return h.msg.runID
+}
+
+// PrimaryStepID returns the step ID the standalone agent's transcript
+// and mailbox are keyed by. Pair with RunID for TranscriptStore.Load.
+func (h *AgentHandle) PrimaryStepID() string {
+	if h == nil || h.msg == nil {
+		return ""
+	}
+	return h.msg.primaryStepID
+}
+
+// SendMessage delivers a user message into a still-running agent's
+// mailbox and signals its wake channel, so the agent picks the
+// message up at its next turn boundary. The return string mirrors the
+// router contract: "queued: <stepID>" on success, "dropped: <reason>"
+// when the agent has already finished (its inbox is closed) - the
+// consumer reads a drop as "agent done, resurrect instead". Returns a
+// non-nil error only on misuse (a handle with no messaging substrate).
+func (h *AgentHandle) SendMessage(text string) (string, error) {
+	if h == nil || h.msg == nil || h.msg.router == nil {
+		return "", errors.New("zenflow: agent handle has no messaging substrate")
+	}
+	// Fast-path: the agent already finished. Its inbox is closed; a
+	// Send would drop anyway, but checking finished first gives the
+	// caller a stable signal instead of a router-internal reason.
+	select {
+	case <-h.finished:
+		return "dropped: " + DropReasonStrings()[DropReasonTargetTerminal], nil
+	default:
+	}
+	m := RouterMessage{
+		From:      "user",
+		To:        h.msg.primaryStepID,
+		Content:   text,
+		Type:      RouterMessageInfo,
+		Timestamp: time.Now(),
+	}
+	if err := h.msg.router.Send(h.msg.primaryStepID, m); err != nil {
+		// *DropError.Error() already starts with "dropped: " - pass
+		// through verbatim rather than double-prefixing.
+		return err.Error(), nil
+	}
+	// Non-blocking wake: a buffered (cap-1) signal already pending is
+	// sufficient - the runner drains the whole mailbox on each wake.
+	select {
+	case h.msg.wake <- struct{}{}:
+	default:
+	}
+	return "queued: " + h.msg.primaryStepID, nil
 }
 
 // NewAgentHandle constructs an AgentHandle with both internal
@@ -248,7 +316,23 @@ func newAgentHandleID() (string, error) {
 // ProgressSink, SubagentToolSet, SessionID, etc.) flows through to
 // the runner - no silent field dropping.
 var runAgentAsyncRunner = func(o *Orchestrator, ctx context.Context, cfg AgentConfig) (*AgentResult, error) {
-	return o.RunAgent(ctx, cfg)
+	return o.runAgent(ctx, cfg, msFromContext(ctx))
+}
+
+// msCtxKey keys the per-call agentMessaging substrate stored on the
+// RunAgentAsync context. RunAgentAsync builds the substrate, attaches
+// it to the AgentHandle (for SendMessage) AND threads it through the
+// context so the default runAgentAsyncRunner can hand the same
+// instance to runAgent - without changing the public 3-arg test seam
+// signature. Tests that override runAgentAsyncRunner return synthetic
+// results and never call runAgent, so they ignore the key.
+type msCtxKey struct{}
+
+// msFromContext extracts the agentMessaging substrate threaded onto a
+// RunAgentAsync context, or nil for a synchronous RunAgent call.
+func msFromContext(ctx context.Context) *agentMessaging {
+	ms, _ := ctx.Value(msCtxKey{}).(*agentMessaging)
+	return ms
 }
 
 // SetRunAgentAsyncRunnerForTest swaps runAgentAsyncRunner so tests
@@ -292,13 +376,31 @@ func (o *Orchestrator) RunAgentAsync(ctx context.Context, cfg AgentConfig) (*Age
 	if err != nil {
 		return nil, err
 	}
+	// Build the messaging substrate so the AgentHandle can address the
+	// running agent's mailbox via SendMessage. The same instance is
+	// threaded onto runCtx so the inner runAgent shares it instead of
+	// building its own.
+	//
+	// Unlike RunFlow / synchronous RunAgent, RunAgentAsync ALWAYS
+	// generates a fresh run ID and never honours o.runID: a single
+	// orchestrator spawns many concurrent async agents (the consumer's
+	// BG-agent + task-subagent fan-out), and each needs its own run ID
+	// so their transcripts and mailboxes do not collide. The handle ID
+	// is the caller-facing identity; the run ID is internal.
+	runID, err := GenerateRunID()
+	if err != nil {
+		return nil, err
+	}
+	ms := newAgentMessaging(runID)
 	runCtx, cancel := context.WithCancel(ctx)
+	runCtx = context.WithValue(runCtx, msCtxKey{}, ms)
 	h := &AgentHandle{
 		ID:        id,
 		done:      make(chan AgentResult, 1),
 		finished:  make(chan struct{}),
 		cancel:    cancel,
 		sessionID: cfg.SessionID,
+		msg:       ms,
 	}
 
 	// Register the handle under its sessionID so ListAgentHandles

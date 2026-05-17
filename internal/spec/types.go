@@ -120,6 +120,16 @@ type AgentConfig struct {
 	// single-session key ("" bucket); consumers must populate it
 	// for multi-session deployments.
 	SessionID string `json:"-" yaml:"-"`
+
+	// InitialMessages pre-loads a saved conversation transcript that
+	// the agent loop prepends BEFORE the new user prompt. Empty / nil
+	// → the agent starts cold from `Prompt` alone. Non-empty → the
+	// agent resumes with the full prior context (resurrection: a
+	// consumer respawns a finished agent with its loaded transcript
+	// plus a new user message). Forwarded verbatim to the AgentRunner
+	// via WithRunnerInitialMessages on the RunAgent / RunAgentAsync
+	// path. Per-call only; never read from workflow YAML.
+	InitialMessages []provider.Message `json:"-" yaml:"-"`
 }
 
 // Step is a single node in the workflow DAG. Stable.
