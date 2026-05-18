@@ -116,8 +116,20 @@ type AgentRunner struct {
 	// StopCausePredicate.
 	// - AgentRunner then drains mailbox.Unread, MarkReads them, and
 	// re-enters goai.GenerateText with the appended messages.
-	// When mailbox+Wake are nil, the runner skips messaging entirely (the
-	// agent has no inter-agent inbox, e.g. the standalone RunAgent path).
+	//
+	// Standalone-agent contract (RunAgent / RunAgentAsync, AUV2 PR4
+	// "chat with a running agent"): the standalone path wires a
+	// per-call mailbox + Wake too, but with NO DeliveryEngine ticking.
+	// Instead AgentHandle.SendMessage is the producer: it appends the
+	// user message to the mailbox and signals Wake directly. The
+	// runner picks the message up at its next turn boundary exactly as
+	// above. Delivery is therefore only possible WHILE the agent is
+	// still running: once the runner reaches a natural idle exit it
+	// returns and RunAgent closes the inbox, so a later SendMessage
+	// drops with target-terminal. The consumer reads that drop as
+	// "agent finished" and resurrects it from its saved transcript
+	// instead. When mailbox+Wake are nil the runner skips messaging
+	// entirely (the agent has no inbox at all).
 	mailbox MailboxStore
 	wake    chan struct{}
 
