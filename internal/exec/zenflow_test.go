@@ -1083,6 +1083,9 @@ func TestRunFlow_EmitsPlanReadyBeforeExecute(t *testing.T) {
 	if gotWf != wf {
 		t.Fatalf("EventPlanReady workflow does not match input: got=%p want=%p", gotWf, wf)
 	}
+	if found.Timestamp.IsZero() {
+		t.Fatalf("EventPlanReady has zero Timestamp")
+	}
 }
 
 // TestRunAgent_StreamingVerbose exercises the WithRunnerStreaming and

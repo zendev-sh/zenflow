@@ -572,6 +572,9 @@ func (o *Orchestrator) RunFlow(ctx context.Context, wf *Workflow, opts ...RunFlo
 // plan_ready emit, which fires before wrapProgressNonBlocking
 // installs its pump-level recover.
 func emitPlanReady(ctx context.Context, sink ProgressSink, ev Event) {
+	if ev.Timestamp.IsZero() {
+		ev.Timestamp = time.Now()
+	}
 	defer func() {
 		if r := recover(); r != nil {
 			slog.Warn("panic in ProgressSink.OnEvent (plan_ready)",
