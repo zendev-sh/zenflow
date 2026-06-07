@@ -2,7 +2,6 @@ package coord
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -68,28 +67,32 @@ var (
 // the runner so a single monotonic sequence spans every coord-side
 // routing tool call within a workflow.
 
-// forwardArgs is the JSON payload accepted by forward_to_agent.
+// forwardArgs is the JSON payload accepted by forward_to_agent. The
+// jsonschema tags drive goai.SchemaFrom; under v0.8.0's strict-mode
+// schema generation every field is required and additionalProperties is
+// false, so `kind` is now always supplied (unknown/empty values still
+// fall back to "info" via kindToRouterMessageType).
 type forwardArgs struct {
-	TargetStepID string `json:"target_step_id"`
-	Text         string `json:"text"`
-	Kind         string `json:"kind"` // optional: "info" (default), "context_update", "cancel"
+	TargetStepID string `json:"target_step_id" jsonschema:"description=The stepID of the agent to receive the message (must be a registered workflow step)."`
+	Text         string `json:"text" jsonschema:"description=Message text to deliver."`
+	Kind         string `json:"kind" jsonschema:"description=Optional message kind. Defaults to 'info'. Unknown values fall back to 'info' rather than erroring.,enum=info|context_update|cancel"`
 }
 
 // narrateArgs is the JSON payload accepted by narrate.
 type narrateArgs struct {
-	Text string `json:"text"`
+	Text string `json:"text" jsonschema:"description=The narration text to surface to the user."`
 }
 
 // finalizeArgs is the JSON payload accepted by finalize.
 type finalizeArgs struct {
-	Summary string `json:"summary"` // optional: synthesis text the caller may surface as EventCoordinatorSynthesis
+	Summary string `json:"summary" jsonschema:"description=Optional final synthesis text the caller may surface as EventCoordinatorSynthesis."`
 }
 
 // sendMessageArgs is the JSON payload accepted by send_message. Per
 // D-Z1 there is NO `to` field - agents cannot select the destination;
 // the tool always routes to the canonical coord inbox key.
 type sendMessageArgs struct {
-	Text string `json:"text"`
+	Text string `json:"text" jsonschema:"description=Message text to send to the coordinator."`
 }
 
 // kindToRouterMessageType maps the LLM-visible "kind" string to the
@@ -135,15 +138,9 @@ func kindToRouterMessageType(kind string) router.MessageType {
 // surfaces as an Execute error; a router drop is a runtime routing
 // outcome and surfaces as a non-error tool-result string.
 func ForwardToAgentToolDef(runner RunnerHandle) goai.Tool {
-	return goai.Tool{
-		Name:        toolNameForwardToAgent,
-		Description: "Forward a message to a running step agent. Coordinator uses this to inject context, follow-up questions, or instructions into a sibling step's mailbox. Hub-to-spoke only - agents cannot reply directly via this tool. Use kind='context_update' for context injection, 'cancel' to request the recipient stop, or omit/use 'info' for general notes.",
-		InputSchema: json.RawMessage(`{"type":"object","properties":{"target_step_id":{"type":"string","description":"The stepID of the agent to receive the message (must be a registered workflow step)."},"text":{"type":"string","description":"Message text to deliver."},"kind":{"type":"string","enum":["info","context_update","cancel"],"description":"Optional message kind. Defaults to 'info'. Unknown values fall back to 'info' rather than erroring."}},"required":["target_step_id","text"]}`),
-		Execute: func(ctx context.Context, input json.RawMessage) (string, error) {
-			var args forwardArgs
-			if err := json.Unmarshal(input, &args); err != nil {
-				return "", fmt.Errorf("forward_to_agent: parse args: %w", err)
-			}
+	return goai.NewTool(toolNameForwardToAgent,
+		"Forward a message to a running step agent. Coordinator uses this to inject context, follow-up questions, or instructions into a sibling step's mailbox. Hub-to-spoke only - agents cannot reply directly via this tool. Use kind='context_update' for context injection, 'cancel' to request the recipient stop, or omit/use 'info' for general notes.",
+		func(ctx context.Context, args forwardArgs) (string, error) {
 			if args.TargetStepID == "" {
 				return "", ErrForwardTargetRequired
 			}
@@ -227,8 +224,7 @@ func ForwardToAgentToolDef(runner RunnerHandle) goai.Tool {
 				return err.Error(), nil
 			}
 			return "queued: " + id, nil
-		},
-	}
+		})
 }
 
 // BuildUnknownStepHint formats a helpful suffix listing currently
@@ -318,15 +314,9 @@ func emitMessageSent(ctx context.Context, runner RunnerHandle, to, text string, 
 // missing coord is a runtime routing outcome (the user opted out of
 // a coord), not a coord-side configuration bug.
 func SendMessageToolDef(runner RunnerHandle) goai.Tool {
-	return goai.Tool{
-		Name:        toolNameSendMessage,
-		Description: "Send a message to the workflow coordinator. Hub-only routing - agents cannot directly message siblings; the coordinator decides forwarding. Use this for status updates, questions, or requests for context the coordinator can route to other steps.",
-		InputSchema: json.RawMessage(`{"type":"object","properties":{"text":{"type":"string","description":"Message text to send to the coordinator."}},"required":["text"]}`),
-		Execute: func(ctx context.Context, input json.RawMessage) (string, error) {
-			var args sendMessageArgs
-			if err := json.Unmarshal(input, &args); err != nil {
-				return "", fmt.Errorf("send_message: parse args: %w", err)
-			}
+	return goai.NewTool(toolNameSendMessage,
+		"Send a message to the workflow coordinator. Hub-only routing - agents cannot directly message siblings; the coordinator decides forwarding. Use this for status updates, questions, or requests for context the coordinator can route to other steps.",
+		func(ctx context.Context, args sendMessageArgs) (string, error) {
 			if strings.TrimSpace(args.Text) == "" {
 				return "", ErrSendMessageEmpty
 			}
@@ -346,8 +336,7 @@ func SendMessageToolDef(runner RunnerHandle) goai.Tool {
 				return err.Error(), nil
 			}
 			return "queued: " + id, nil
-		},
-	}
+		})
 }
 
 // NarrateToolDef returns the `narrate` tool. The coord LLM calls it to
@@ -362,15 +351,9 @@ func SendMessageToolDef(runner RunnerHandle) goai.Tool {
 // Safety: when runner.Progress is nil the tool returns a clear
 // error. The coord must be wired with a sink before narrate can fire.
 func NarrateToolDef(runner RunnerHandle) goai.Tool {
-	return goai.Tool{
-		Name:        toolNameNarrate,
-		Description: "Emit a narration message for the user/observer. Coordinator uses this to explain reasoning, summarize step results, or surface user-facing context. Does NOT route to step agents - use forward_to_agent for that.",
-		InputSchema: json.RawMessage(`{"type":"object","properties":{"text":{"type":"string","description":"The narration text to surface to the user."}},"required":["text"]}`),
-		Execute: func(ctx context.Context, input json.RawMessage) (string, error) {
-			var args narrateArgs
-			if err := json.Unmarshal(input, &args); err != nil {
-				return "", fmt.Errorf("narrate: parse args: %w", err)
-			}
+	return goai.NewTool(toolNameNarrate,
+		"Emit a narration message for the user/observer. Coordinator uses this to explain reasoning, summarize step results, or surface user-facing context. Does NOT route to step agents - use forward_to_agent for that.",
+		func(ctx context.Context, args narrateArgs) (string, error) {
 			if strings.TrimSpace(args.Text) == "" {
 				return "", ErrNarrateEmpty
 			}
@@ -387,8 +370,7 @@ func NarrateToolDef(runner RunnerHandle) goai.Tool {
 				Message:   args.Text,
 			})
 			return "narrated", nil
-		},
-	}
+		})
 }
 
 // FinalizeToolDef returns the `finalize` tool. The coord LLM calls it
@@ -407,18 +389,11 @@ func NarrateToolDef(runner RunnerHandle) goai.Tool {
 // CLI usage the loop also surfaces runner.FinalSummary as
 // EventCoordinatorSynthesis before disposing the runner.
 func FinalizeToolDef(runner RunnerHandle) goai.Tool {
-	return goai.Tool{
-		Name:        toolNameFinalize,
-		Description: "Signal that coordination is complete. The caller's Run loop should exit after this tool returns. Coordinator MUST call this explicitly when it is done routing/narrating - there is no implicit finalization. Optional 'summary' carries the final synthesis text for the caller to surface as EventCoordinatorSynthesis.",
-		InputSchema: json.RawMessage(`{"type":"object","properties":{"summary":{"type":"string","description":"Optional final synthesis text the caller may surface as EventCoordinatorSynthesis."}}}`),
-		Execute: func(_ context.Context, input json.RawMessage) (string, error) {
-			var args finalizeArgs
-			if err := json.Unmarshal(input, &args); err != nil {
-				return "", fmt.Errorf("finalize: parse args: %w", err)
-			}
+	return goai.NewTool(toolNameFinalize,
+		"Signal that coordination is complete. The caller's Run loop should exit after this tool returns. Coordinator MUST call this explicitly when it is done routing/narrating - there is no implicit finalization. Optional 'summary' carries the final synthesis text for the caller to surface as EventCoordinatorSynthesis.",
+		func(_ context.Context, args finalizeArgs) (string, error) {
 			runner.SetFinalSummary(args.Summary)
 			runner.MarkFinalized()
 			return "finalized", nil
-		},
-	}
+		})
 }

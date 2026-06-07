@@ -42,44 +42,32 @@ For full flag references (`bash` working directory, `grep` flags, `read` byte li
 
 ## Library-supplied tools
 
-When using zenflow as a Go library, you register tools via `WithTools`. A tool is just a `goai.Tool`:
+When using zenflow as a Go library, you register tools via `WithTools`. A tool is just a `goai.Tool`. The simplest way to build one is `goai.NewTool`, which generates the JSON Schema from your input struct and unmarshals arguments for you:
 
 ```go
 import (
     "context"
-    "encoding/json"
 
     "github.com/zendev-sh/goai"
     "github.com/zendev-sh/zenflow"
 )
 
-httpGet := goai.Tool{
-    Name:        "http_get",
-    Description: "Fetch a URL and return the response body.",
-    InputSchema: json.RawMessage(`{
-        "type": "object",
-        "required": ["url"],
-        "properties": {
-            "url": {"type": "string"}
-        }
-    }`),
-    Execute: func(ctx context.Context, raw json.RawMessage) (string, error) {
-        var args struct {
-            URL string `json:"url"`
-        }
-        if err := json.Unmarshal(raw, &args); err != nil {
-            return "", err
-        }
+httpGet := goai.NewTool("http_get",
+    "Fetch a URL and return the response body.",
+    func(ctx context.Context, args struct {
+        URL string `json:"url" jsonschema:"description=The URL to fetch"`
+    }) (string, error) {
         // ... do the HTTP call, return the body or an error string.
         return body, nil
-    },
-}
+    })
 
 orch := zenflow.New(
     zenflow.WithModel(llm),
     zenflow.WithTools(httpGet, otherTool, ...),
 )
 ```
+
+`NewTool` derives a strict-mode schema: every field of the input struct is `required` and `additionalProperties` is `false`. Use the `jsonschema` struct tag for per-field `description=...` and `enum=a|b|c` (descriptions must not contain commas - the tag parser uses commas to separate `description` from `enum`). For a schema shape `NewTool` cannot express, fall back to the raw `goai.Tool{Name, Description, InputSchema, Execute}` struct literal with a hand-written `InputSchema`.
 
 The same tool surface [goai](https://goai.sh) uses everywhere. Zenflow does not wrap or extend `goai.Tool` - what works in [goai](https://goai.sh) works in zenflow. See [goai tools docs](https://goai.sh) for the complete API.
 

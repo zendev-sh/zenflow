@@ -2,7 +2,6 @@ package tool
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -14,19 +13,12 @@ import (
 func writeTool() goai.Tool { return writeToolIn("") }
 
 func writeToolIn(workdir string) goai.Tool {
-	return goai.Tool{
-		Name:        "write",
-		Description: "Write content to a file at the given path. Creates parent directories as needed. Rejects paths containing '..' traversal or that resolve outside the configured workdir.",
-		InputSchema: json.RawMessage(`{"type":"object","properties":{"path":{"type":"string","description":"The file path to write"},"content":{"type":"string","description":"The content to write"}},"required":["path","content"]}`),
-		Execute: func(_ context.Context, args json.RawMessage) (string, error) {
-			var p struct {
-				Path    string `json:"path"`
-				Content string `json:"content"`
-			}
-			if err := json.Unmarshal(args, &p); err != nil {
-				return "", err
-			}
-
+	return goai.NewTool("write",
+		"Write content to a file at the given path. Creates parent directories as needed. Rejects paths containing '..' traversal or that resolve outside the configured workdir.",
+		func(_ context.Context, p struct {
+			Path    string `json:"path" jsonschema:"description=The file path to write"`
+			Content string `json:"content" jsonschema:"description=The content to write"`
+		}) (string, error) {
 			// Reject path traversal: check raw path for ".." components before cleaning.
 			for part := range strings.SplitSeq(filepath.ToSlash(p.Path), "/") {
 				if part == ".." {
@@ -51,6 +43,5 @@ func writeToolIn(workdir string) goai.Tool {
 				return "", err
 			}
 			return "ok", nil
-		},
-	}
+		})
 }

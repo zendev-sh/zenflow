@@ -48,6 +48,16 @@ func TestAgentToolDef(t *testing.T) {
 	}
 }
 
+func TestAgentToolDef_ExecuteIsNoop(t *testing.T) {
+	// The agent tool is dispatched by the spawner hook; its Execute body is a
+	// no-op that returns the sentinel when invoked directly.
+	def := AgentToolDef()
+	_, err := def.Execute(t.Context(), []byte(`{"name":"x","instructions":"y"}`))
+	if !errors.Is(err, ErrAgentToolDirectInvocation) {
+		t.Fatalf("want ErrAgentToolDirectInvocation, got %v", err)
+	}
+}
+
 func TestAgentSpawner_SyncChild(t *testing.T) {
 	model := &mockModel{
 		responses: []*provider.GenerateResult{

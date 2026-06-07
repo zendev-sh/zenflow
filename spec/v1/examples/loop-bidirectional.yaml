@@ -24,6 +24,14 @@ agents:
     description: "Worker that performs a task, sends progress updates to coord via send_message, and reads coord context-updates from its inbox."
   judge:
     description: "Judge: stop after worker has reported progress on all 3 stages."
+    prompt: |
+      You are the termination judge for a 3-stage loop. The worker completes
+      ONE stage per iteration and reports it as "STAGE_<n>: ..." then replies
+      "STAGE_<n>_DONE". Your ONLY job is to count how many stages the worker
+      has reported in the iteration history below.
+      - If the history shows STAGE_3 has been reported, call submit_result with {"done": true}.
+      - If STAGE_3 has not appeared yet, call submit_result with {"done": false}.
+      Do NOT ask the worker to evaluate anything; you are only counting stages.
     resultSchema:
       type: object
       required: [done]

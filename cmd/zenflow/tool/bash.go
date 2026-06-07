@@ -3,7 +3,6 @@ package tool
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"io"
 	"os/exec"
 	"time"
@@ -21,20 +20,13 @@ const (
 func bashTool() goai.Tool { return bashToolIn("") }
 
 func bashToolIn(workdir string) goai.Tool {
-	return goai.Tool{
-		Name:        "bash",
-		Description: "Execute a shell command and return its combined stdout and stderr. WARNING: bash is unsandboxed - the command runs with the same privileges as the host process. When a workdir is configured, the LLM-supplied working_directory is ignored and the command is forced to run in the workdir; this does NOT prevent the shell itself from `cd ..`-ing or writing to absolute paths during the command.",
-		InputSchema: json.RawMessage(`{"type":"object","properties":{"command":{"type":"string","description":"The shell command to execute"},"timeout_seconds":{"type":"integer","description":"Per-command timeout in seconds (default 30, max 300)"},"working_directory":{"type":"string","description":"Working directory for the command (ignored when a workdir sandbox is configured)"}},"required":["command"]}`),
-		Execute: func(ctx context.Context, args json.RawMessage) (string, error) {
-			var p struct {
-				Command          string `json:"command"`
-				TimeoutSeconds   int    `json:"timeout_seconds"`
-				WorkingDirectory string `json:"working_directory"`
-			}
-			if err := json.Unmarshal(args, &p); err != nil {
-				return "", err
-			}
-
+	return goai.NewTool("bash",
+		"Execute a shell command and return its combined stdout and stderr. WARNING: bash is unsandboxed - the command runs with the same privileges as the host process. When a workdir is configured, the LLM-supplied working_directory is ignored and the command is forced to run in the workdir; this does NOT prevent the shell itself from `cd ..`-ing or writing to absolute paths during the command.",
+		func(ctx context.Context, p struct {
+			Command          string `json:"command" jsonschema:"description=The shell command to execute"`
+			TimeoutSeconds   int    `json:"timeout_seconds" jsonschema:"description=Per-command timeout in seconds (default 30; max 300)"`
+			WorkingDirectory string `json:"working_directory" jsonschema:"description=Working directory for the command (ignored when a workdir sandbox is configured)"`
+		}) (string, error) {
 			// Apply per-invocation timeout (capped at 300s).
 			// (2026-05-04) - cap BEFORE the multiplication.
 			// `time.Duration(p.TimeoutSeconds) * time.Second` overflows
@@ -94,8 +86,7 @@ func bashToolIn(workdir string) goai.Tool {
 				return combined + err.Error(), nil
 			}
 			return combined, nil
-		},
-	}
+		})
 }
 
 // limitedWriter wraps a writer and stops writing after a byte limit.

@@ -40,14 +40,19 @@ func sanitizeAgentName(name string) string {
 	return cmp.Or(clean, "agent")
 }
 
+// agentToolParams is the JSON payload accepted by the agent tool. The
+// jsonschema tags drive goai.SchemaFrom (v0.8.0 strict-mode schema):
+// every field becomes required and additionalProperties is false. Field
+// descriptions must avoid commas - goai's tag parser splits on commas to
+// separate description from enum - so wording uses '/' and ';' instead.
 type agentToolParams struct {
-	Name            string   `json:"name"`
-	Description     string   `json:"description"`
-	Prompt          string   `json:"prompt"`
-	Tools           []string `json:"tools,omitempty"`
-	Model           string   `json:"model,omitempty"`
-	Instructions    string   `json:"instructions"`
-	RunInBackground bool     `json:"run_in_background"`
+	Name            string   `json:"name" jsonschema:"description=Short identifier for this child (alphanumeric/underscore/dash; matches Bedrock/OpenAI tool-name regex [a-zA-Z0-9_-]+)"`
+	Description     string   `json:"description" jsonschema:"description=Short description of the child's role (one sentence)"`
+	Prompt          string   `json:"prompt" jsonschema:"description=Role/persona prompt for the child"`
+	Tools           []string `json:"tools,omitempty" jsonschema:"description=Subset of parent's tool names the child may call. Omit or pass empty to inherit parent's full tool set."`
+	Model           string   `json:"model,omitempty" jsonschema:"description=OPTIONAL model identifier. OMIT this field entirely to inherit the parent's model. Do NOT pass strings like 'default' / 'auto' / 'gpt-4' unless that exact provider/model is configured - invalid identifiers fall back to the parent default but emit a warning."`
+	Instructions    string   `json:"instructions" jsonschema:"description=Specific task instructions for this invocation"`
+	RunInBackground bool     `json:"run_in_background" jsonschema:"description=If true the child launches async and returns immediately. Default false."`
 }
 
 // agentSpawner handles child agent creation and execution.
@@ -89,27 +94,12 @@ var _ childSpawner = (*agentSpawner)(nil)
 // and-forget. Backgrounded children deliver results to the inbox on
 // the parent's next turn.
 func AgentToolDef() goai.Tool {
-	return goai.Tool{
-		Name:        toolNameAgent,
-		Description: "Spawn a child agent to handle a focused subtask. The child runs with its own LLM context and returns its result string.",
-		InputSchema: json.RawMessage(`{
-			"type": "object",
-			"properties": {
-				"name": {"type": "string", "description": "Short identifier for this child (alphanumeric, underscore, dash; matches Bedrock/OpenAI tool-name regex [a-zA-Z0-9_-]+)"},
-				"description": {"type": "string", "description": "Short description of the child's role (one sentence)"},
-				"prompt": {"type": "string", "description": "Role/persona prompt for the child"},
-				"tools": {"type": "array", "items": {"type": "string"}, "description": "Subset of parent's tool names the child may call. Omit or pass empty to inherit parent's full tool set."},
-				"model": {"type": "string", "description": "OPTIONAL model identifier. OMIT this field entirely to inherit the parent's model. Do NOT pass strings like 'default', 'auto', or 'gpt-4' unless that exact provider/model is configured - invalid identifiers fall back to the parent default but emit a warning."},
-				"instructions": {"type": "string", "description": "Specific task instructions for this invocation"},
-				"run_in_background": {"type": "boolean", "description": "If true, launch async and return immediately. Default false."}
-			},
-			"required": ["name", "instructions"]
-		}`),
-		Execute: func(_ context.Context, _ json.RawMessage) (string, error) {
+	return goai.NewTool(toolNameAgent,
+		"Spawn a child agent to handle a focused subtask. The child runs with its own LLM context and returns its result string.",
+		func(_ context.Context, _ agentToolParams) (string, error) {
 			// No-op placeholder: actual dispatch handled by OnBeforeToolExecute hook in AgentRunner.
 			return "", ErrAgentToolDirectInvocation
-		},
-	}
+		})
 }
 
 // invalidModelHallucinations enumerates strings that LLMs commonly emit

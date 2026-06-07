@@ -2,7 +2,6 @@ package tool
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -18,17 +17,11 @@ var readAll = io.ReadAll
 func readTool() goai.Tool { return readToolIn("") }
 
 func readToolIn(workdir string) goai.Tool {
-	return goai.Tool{
-		Name:        "read",
-		Description: "Read the contents of a file at the given path (capped at 1 MB). Rejects paths that resolve outside the configured workdir.",
-		InputSchema: json.RawMessage(`{"type":"object","properties":{"path":{"type":"string","description":"The file path to read"}},"required":["path"]}`),
-		Execute: func(_ context.Context, args json.RawMessage) (string, error) {
-			var p struct {
-				Path string `json:"path"`
-			}
-			if err := json.Unmarshal(args, &p); err != nil {
-				return "", err
-			}
+	return goai.NewTool("read",
+		"Read the contents of a file at the given path (capped at 1 MB). Rejects paths that resolve outside the configured workdir.",
+		func(_ context.Context, p struct {
+			Path string `json:"path" jsonschema:"description=The file path to read"`
+		}) (string, error) {
 			// normalize path separators so a Windows caller
 			// passing `subdir/file.txt` works the same as
 			// `subdir\file.txt`. Containment + workdir join already
@@ -56,6 +49,5 @@ func readToolIn(workdir string) goai.Tool {
 				return string(data[:readMaxSize]), fmt.Errorf("file exceeds 1 MB limit (truncated)")
 			}
 			return string(data), nil
-		},
-	}
+		})
 }
