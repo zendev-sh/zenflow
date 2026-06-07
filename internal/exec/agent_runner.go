@@ -575,13 +575,34 @@ func (r *AgentRunner) Run(ctx context.Context, cfg AgentConfig, userMessage stri
 		}
 	}
 
-	// Auto-inject submit_result tool if agent has ResultSchema.
+	// Auto-inject submit_result tool if agent has ResultSchema and the caller
+	// has not already supplied a tool named "submit_result". Mirroring the
+	// send_message guard: a downstream caller can override the built-in tool
+	// (e.g. custom schema or description) without being silently shadowed or
+	// triggering the duplicate-name validation below.
 	var submitDone atomic.Bool
 	var submitResult atomic.Pointer[map[string]any]
 	var submitHandler *SubmitResultHandler
 	if cfg.ResultSchema != nil {
 		submitHandler = NewSubmitResultHandler(cfg.ResultSchema)
-		tools = append(tools[:len(tools):len(tools)], SubmitResultToolDef(cfg.ResultSchema))
+		hasSubmitResult := false
+		for _, t := range tools {
+			if t.Name == toolNameSubmitResult {
+				hasSubmitResult = true
+				break
+			}
+		}
+		if !hasSubmitResult {
+			tools = append(tools[:len(tools):len(tools)], SubmitResultToolDef(cfg.ResultSchema))
+		}
+	}
+
+	// Validate tool name uniqueness after all tool assembly (user-supplied
+	// tools, auto-injected send_message, auto-injected submit_result).
+	// Duplicates silently override each other in goai (last-wins), making
+	// bugs very hard to trace. Return a clear error instead.
+	if err := validateToolNames(tools); err != nil {
+		return nil, err
 	}
 
 	// Build initial user message (with attachments).
