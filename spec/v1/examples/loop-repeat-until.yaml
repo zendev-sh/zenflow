@@ -23,6 +23,18 @@ agents:
     maxTurns: 10
   judge:
     description: "Judge agent that decides if the review cycle is complete. Set result.done=true when ready, result.done=false to continue."
+    prompt: |
+      You decide whether an iterative code-review cycle should STOP. Read the
+      iteration history below, focusing on the most recent implementation and
+      review. Call submit_result with {"done": true} when ANY of these hold:
+        - the latest review says the code is ready (e.g. "LGTM" or no issues), OR
+        - the implementation is functional and the review only raises minor or
+          stylistic nits (naming, comments, micro-optimizations), OR
+        - two or more review rounds have already passed and the remaining
+          feedback is not a correctness or compilation blocker.
+      Only return {"done": false} (with a one-line reason) when a genuine
+      functional or compilation bug remains in an early round. Prefer stopping
+      over endless polishing - do NOT keep looping on cosmetic feedback.
     model: "claude-sonnet-4-6"
     maxTurns: 3
     resultSchema:
@@ -53,7 +65,14 @@ steps:
           instructions: "Implement or fix the rate limiter based on review feedback."
         - id: review
           agent: reviewer
-          instructions: "Review the implementation. Output LGTM if ready, or list issues to fix."
+          instructions: |
+            Review the current implementation. If the code is functional and
+            broadly correct, reply with exactly "LGTM" on its own line - do NOT
+            block on minor, stylistic, or "nice to have" issues, and do not
+            demand extra features or tests. Only withhold "LGTM" (and then list
+            the specific defects) when there is a real correctness or
+            compilation bug. Bias strongly toward approving on the first or
+            second round; this is a demo loop, not a production gate.
           dependsOn:
             - implement
 

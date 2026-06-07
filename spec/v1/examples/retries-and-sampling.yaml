@@ -2,18 +2,22 @@ name: retries-and-sampling
 version: 1
 description: |
   Demonstrates step-level and workflow-level maxRetries plus per-agent
-  sampling controls (temperature, topP). The step-level retries field is
-  the maximum attempt count after the first failure; the workflow-level
-  options.maxRetries acts as a default when step.maxRetries is unset.
+  sampling controls. The step-level retries field is the maximum attempt
+  count after the first failure; the workflow-level options.maxRetries acts
+  as a default when step.maxRetries is unset.
+
+  Sampling note: temperature and topP are alternative controls. Some
+  providers (e.g. Anthropic) reject requests that set BOTH at once, so this
+  example never combines them on a single agent - the drafter raises
+  temperature for variety; the judge demonstrates topP-only nucleus sampling.
 
 agents:
   drafter:
     description: "Drafts a brief response; uses higher temperature for variety."
     temperature: 0.9
-    topP: 0.95
   judge:
-    description: "Decides whether the draft is acceptable; deterministic."
-    temperature: 0.0
+    description: "Decides whether the draft is acceptable; uses topP-only nucleus sampling."
+    topP: 0.1
 
 options:
   maxRetries: 1

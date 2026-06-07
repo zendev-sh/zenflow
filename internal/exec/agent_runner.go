@@ -452,6 +452,35 @@ func (r *AgentRunner) Tools() []goai.Tool { return r.tools }
 // Stable.
 func (r *AgentRunner) Wake() chan struct{} { return r.wake }
 
+// reasoningModelPrefixes names the OpenAI reasoning families (o-series,
+// gpt-5 family, gpt-oss) that reject custom temperature / top_p. Consumed
+// by isReasoningModel.
+var reasoningModelPrefixes = []string{"o1", "o3", "o4", "gpt-5", "gpt-oss"}
+
+// isReasoningModel reports whether model names an OpenAI reasoning-family
+// model that rejects custom temperature / top_p. Any provider prefix is
+// stripped first ("azure/gpt-5.5" -> "gpt-5.5"), then the bare name is
+// matched against reasoningModelPrefixes (each prefix must be the whole name
+// or be followed by '-' or '.', so "o1" matches "o1" / "o1-mini" but not
+// "o1abc", and "gpt-5" matches "gpt-5" / "gpt-5.5" / "gpt-5-mini"). The
+// conversational "-chat" variants (e.g. gpt-5-chat) DO accept sampling
+// params and are deliberately excluded.
+func isReasoningModel(model string) bool {
+	m := strings.ToLower(strings.TrimSpace(model))
+	if i := strings.LastIndex(m, "/"); i >= 0 {
+		m = m[i+1:]
+	}
+	if strings.Contains(m, "chat") {
+		return false
+	}
+	for _, p := range reasoningModelPrefixes {
+		if m == p || (strings.HasPrefix(m, p) && (m[len(p)] == '-' || m[len(p)] == '.')) {
+			return true
+		}
+	}
+	return false
+}
+
 // Run executes the agent loop using goai.GenerateText with WithMaxSteps.
 // goai owns the tool loop. Zenflow hooks handle: permissions, agent spawning,
 // submit_result, and progress events. Inter-agent message delivery (when
@@ -752,10 +781,18 @@ func (r *AgentRunner) Run(ctx context.Context, cfg AgentConfig, userMessage stri
 	if r.stateRef != nil {
 		baseOpts = append(baseOpts, goai.WithStateRef(r.stateRef))
 	}
-	if cfg.Temperature != nil {
+	// Reasoning models (OpenAI o-series, gpt-5 family, gpt-oss) reject a
+	// non-default temperature / top_p with an HTTP 400. Drop those sampling
+	// params here so a workflow that sets them in YAML still runs on such a
+	// model (provider defaults apply) instead of hard-failing. The goal
+	// decomposer already nils these for coordinator-generated agents; this
+	// guard covers the flow / agent / loop-judge paths where the model is
+	// only known at run time.
+	reasoning := isReasoningModel(model)
+	if cfg.Temperature != nil && !reasoning {
 		baseOpts = append(baseOpts, goai.WithTemperature(*cfg.Temperature))
 	}
-	if cfg.TopP != nil {
+	if cfg.TopP != nil && !reasoning {
 		baseOpts = append(baseOpts, goai.WithTopP(*cfg.TopP))
 	}
 

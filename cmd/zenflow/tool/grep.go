@@ -3,7 +3,6 @@ package tool
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -22,20 +21,13 @@ const grepMaxOutput = 1 << 20 // 1 MB
 // Windows uses PowerShell Select-String. Both produce equivalent output
 // (file:line:content lines) and honour the same input JSON schema.
 func grepToolIn(workdir string) goai.Tool {
-	return goai.Tool{
-		Name:        "grep",
-		Description: "Search for a pattern in files. Returns matching lines with file names and line numbers. Uses fixed-string matching by default; set regex=true for regex patterns. When a workdir is configured, the search path must be within the workdir.",
-		InputSchema: json.RawMessage(`{"type":"object","properties":{"pattern":{"type":"string","description":"The pattern to search for"},"path":{"type":"string","description":"The file or directory to search in (relative to workdir when a workdir is configured)"},"regex":{"type":"boolean","description":"Use regex matching instead of fixed-string (default: false)"}},"required":["pattern","path"]}`),
-		Execute: func(ctx context.Context, args json.RawMessage) (string, error) {
-			var p struct {
-				Pattern string `json:"pattern"`
-				Path    string `json:"path"`
-				Regex   bool   `json:"regex"`
-			}
-			if err := json.Unmarshal(args, &p); err != nil {
-				return "", err
-			}
-
+	return goai.NewTool("grep",
+		"Search for a pattern in files. Returns matching lines with file names and line numbers. Uses fixed-string matching by default; set regex=true for regex patterns. When a workdir is configured, the search path must be within the workdir.",
+		func(ctx context.Context, p struct {
+			Pattern string `json:"pattern" jsonschema:"description=The pattern to search for"`
+			Path    string `json:"path" jsonschema:"description=The file or directory to search in (relative to workdir when a workdir is configured)"`
+			Regex   bool   `json:"regex" jsonschema:"description=Use regex matching instead of fixed-string (default: false)"`
+		}) (string, error) {
 			// Resolve and validate the search path against workdir.
 			searchPath := p.Path
 			if workdir != "" {
@@ -83,6 +75,5 @@ func grepToolIn(workdir string) goai.Tool {
 				return combined, nil
 			}
 			return combined, nil
-		},
-	}
+		})
 }

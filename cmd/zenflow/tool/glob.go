@@ -2,7 +2,6 @@ package tool
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -16,18 +15,11 @@ import (
 // validated through resolveUnderWorkdir so symlinks that point outside workdir
 // are also filtered out.
 func globToolIn(workdir string) goai.Tool {
-	return goai.Tool{
-		Name:        "glob",
-		Description: "Search for files matching a glob pattern. When a workdir is configured, the pattern is relative to the workdir and cannot escape it.",
-		InputSchema: json.RawMessage(`{"type":"object","properties":{"pattern":{"type":"string","description":"The glob pattern to match (relative to workdir when a workdir is configured)"}},"required":["pattern"]}`),
-		Execute: func(_ context.Context, args json.RawMessage) (string, error) {
-			var p struct {
-				Pattern string `json:"pattern"`
-			}
-			if err := json.Unmarshal(args, &p); err != nil {
-				return "", err
-			}
-
+	return goai.NewTool("glob",
+		"Search for files matching a glob pattern. When a workdir is configured, the pattern is relative to the workdir and cannot escape it.",
+		func(_ context.Context, p struct {
+			Pattern string `json:"pattern" jsonschema:"description=The glob pattern to match (relative to workdir when a workdir is configured)"`
+		}) (string, error) {
 			if workdir == "" {
 				// Legacy / unconstrained mode.
 				matches, err := filepath.Glob(p.Pattern)
@@ -62,6 +54,5 @@ func globToolIn(workdir string) goai.Tool {
 				}
 			}
 			return strings.Join(safe, "\n"), nil
-		},
-	}
+		})
 }
