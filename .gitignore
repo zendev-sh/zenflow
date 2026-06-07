@@ -12,8 +12,12 @@ docs/.vitepress/cache/
 # Export-script audit log (regenerated each `make zenflow-export`).
 .strip.log
 
-# CLI binary built from ./cmd/zenflow.
+# CLI binary built from ./cmd/zenflow (root output or in-package `go build`).
 /zenflow
+/cmd/zenflow/zenflow
+
+# Go coverage profiles (`go test -coverprofile=...`, e.g. cov.out).
+*.out
 
 # Maintainer-only git hooks. Shipped into the clone tree by the export
 # script so the maintainer can `cp hooks/* .git/hooks/` post-export,
