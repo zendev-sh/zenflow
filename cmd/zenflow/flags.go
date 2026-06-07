@@ -32,12 +32,13 @@ type cmdFlags struct {
 	showPlan       bool   // show DAG diagram before execution
 	workdir        string // working directory for LLM tool execution (sandbox)
 	thinking       string // reasoning/thinking level: off|low|medium|high (default off)
+	pluginDir      string // directory to load .so plugins from (default ./plugins/)
 }
 
 // parseFlags parses common CLI flags from args (starting after the positional argument).
 // It returns the parsed flags and an error if an unknown flag or missing value is encountered.
 func parseFlags(args []string) (cmdFlags, error) {
-	f := cmdFlags{maxRetries: -1}
+	f := cmdFlags{maxRetries: -1, pluginDir: "./plugins/"}
 	// First pass: normalise `--key=value` into separate `--key` `value`
 	// tokens and respect a `--` POSIX terminator (everything after `--`
 	// is rejected with a clear message rather than silently consumed).
@@ -164,6 +165,12 @@ func parseFlags(args []string) (cmdFlags, error) {
 			default:
 				return f, fmt.Errorf("invalid --thinking value %q (want off|low|medium|high)", args[i])
 			}
+		case "--plugin-dir":
+			i++
+			if i >= len(args) {
+				return f, fmt.Errorf("--plugin-dir requires a value")
+			}
+			f.pluginDir = args[i]
 		default:
 			if !strings.HasPrefix(args[i], "-") {
 				return f, fmt.Errorf("unexpected positional argument %q (subcommands accept at most one positional; rest must be flags)", args[i])

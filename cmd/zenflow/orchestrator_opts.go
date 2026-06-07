@@ -89,6 +89,16 @@ func buildOrchestratorOpts(flags cmdFlags) []zenflow.Option {
 	}
 	opts = append(opts, zenflow.WithTools(tool.DefaultToolsIn(workdirAbs)...))
 
+	// Load plugin tools from --plugin-dir (default ./plugins/).
+	if flags.pluginDir != "" {
+		pluginTools, err := tool.LoadPlugins(flags.pluginDir)
+		if err != nil {
+			fmt.Fprintf(stderr, "zenflow: --plugin-dir: %v\n", err)
+		} else if len(pluginTools) > 0 {
+			opts = append(opts, zenflow.WithTools(pluginTools...))
+		}
+	}
+
 	// Max retries: CLI flag overrides YAML options.maxRetries.
 	if flags.maxRetries >= 0 {
 		opts = append(opts, zenflow.WithGoAIOptions(goai.WithMaxRetries(flags.maxRetries)))

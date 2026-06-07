@@ -259,6 +259,7 @@ func usage(w io.Writer) {
 	fmt.Fprintln(w, "  --summary-only      Skip per-step narration, show summary at end (flow/goal only)")
 	fmt.Fprintln(w, "  --resume RUN_ID     Resume from checkpoint (flow only)")
 	fmt.Fprintln(w, "  --workdir DIR       Sandbox directory for tool execution (chdirs here; defaults to cwd)")
+	fmt.Fprintln(w, "  --plugin-dir DIR    Directory to load .so plugin files from (default: ./plugins/)")
 	fmt.Fprintln(w, "  --trace             Enable OTel tracing (binaries shipped via Homebrew/GoReleaser have OTel built in; for `go install` from source, rebuild with -tags otel; default: stderr exporter; honors OTEL_EXPORTER_OTLP_ENDPOINT)")
 	fmt.Fprintln(w, "  --thinking LEVEL    Extended reasoning: off|low|medium|high (default off)")
 	fmt.Fprintln(w, "  --help, -h          Print this help text")
