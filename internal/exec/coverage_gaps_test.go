@@ -192,7 +192,6 @@ func TestLoadWorkflow_FileTooLarge(t *testing.T) {
 	}
 }
 
-
 // TestParseWorkflowJSON_TooLarge covers parse.go:79-81.
 func TestParseWorkflowJSON_TooLarge(t *testing.T) {
 	big := make([]byte, MaxFileSizeBytes+1)
