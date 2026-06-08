@@ -46,7 +46,7 @@ A real `zenflow flow spec/v1/examples/full-featured.yaml --model google/gemini-3
 
 ## Core features
 
-- **Declarative YAML agent workflows.** Multi-agent workflows expressed in a small composable spec: steps, dependencies, parallel fan-out, conditions (CEL), loops (`forEach`, repeat-until via `untilAgent`/`maxIterations`), and `includes` for sub-workflow reuse.
+- **Declarative YAML agent workflows.** Multi-agent workflows expressed in a small composable spec: steps, dependencies, parallel fan-out, conditions (CEL), loops (`forEach`, repeat-until via `untilAgent`/`maxIterations`), `includes` for sub-workflow reuse, and **tool steps** (`tool` / `toolInput`) that invoke a registered goai tool directly without an LLM call.
 - **LLM coordinator with hub-and-spoke messaging.** A coordinator agent narrates progress, forwards events between running steps, and finalizes the run. Peer agents never address each other directly.
 - **Race-safe Mailbox + Wake delivery.** Every message is delivered through a per-agent mailbox with explicit drop reasons. No silent loss, no out-of-order delivery, no leaked goroutines.
 - **Multi-provider verified.** Verified against Google `gemini-3-pro-preview`, AWS Bedrock (`anthropic.claude-sonnet-4-6`, `minimax.minimax-m2.5`), and Azure (`DeepSeek-V3.2`, `claude-sonnet-4-6`, `gpt-5`, `gpt-5.3-codex`) - any model [goai](https://goai.sh) supports works.

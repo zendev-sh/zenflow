@@ -28,8 +28,10 @@ func TestRenderDAG_AllExamples(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			wf, err := zenflow.LoadWorkflow(path)
 			if err != nil {
-				t.Skipf("skip (load error): %v", err)
-				return
+				// A shipped reference example that does not parse is a
+				// hard failure, not a skip: silently skipping let a
+				// camelCase/snake_case field-name regression slip through.
+				t.Fatalf("load error: %v", err)
 			}
 			result := Render(wf)
 			if result == "" {

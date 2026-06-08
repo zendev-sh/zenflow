@@ -502,6 +502,69 @@ func TestBuildEvalContext_NilStepResult(t *testing.T) {
 	}
 }
 
+// --- EvaluateCELToString tests ---
+
+func TestEvaluateCELToString_ReturnsString(t *testing.T) {
+	ctx := &EvalContext{Steps: map[string]*EvalStepContext{}}
+	got, err := EvaluateCELToString(`"hello"`, ctx)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if got != "hello" {
+		t.Errorf("EvaluateCELToString = %q, want %q", got, "hello")
+	}
+}
+
+func TestEvaluateCELToString_UsesStepsContext(t *testing.T) {
+	ctx := &EvalContext{
+		Steps: map[string]*EvalStepContext{
+			"s1": {Status: "completed", Content: "world", Result: map[string]any{}},
+		},
+	}
+	got, err := EvaluateCELToString(`steps.s1.content`, ctx)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if got != "world" {
+		t.Errorf("EvaluateCELToString = %q, want %q", got, "world")
+	}
+}
+
+func TestEvaluateCELToString_ErrorOnNonString(t *testing.T) {
+	ctx := &EvalContext{Steps: map[string]*EvalStepContext{}}
+	_, err := EvaluateCELToString("true", ctx)
+	if err == nil {
+		t.Error("expected error for non-string result, got nil")
+	}
+}
+
+func TestEvaluateCELToString_ErrorOnInvalidExpr(t *testing.T) {
+	ctx := &EvalContext{Steps: map[string]*EvalStepContext{}}
+	_, err := EvaluateCELToString("!!!invalid", ctx)
+	if err == nil {
+		t.Error("expected error for invalid expression, got nil")
+	}
+}
+
+func TestEvaluateCELToString_EvalError(t *testing.T) {
+	// Trigger the eval error path in EvaluateCELToString.
+	ctx := &EvalContext{Steps: map[string]*EvalStepContext{}}
+	// Access undefined variable causes eval error.
+	_, err := EvaluateCELToString("undefined_var", ctx)
+	if err == nil {
+		t.Error("expected error for undefined variable, got nil")
+	}
+}
+
+func TestEvaluateCELToArray_EvalError_ViaUndefined(t *testing.T) {
+	// Trigger the eval error path in EvaluateCELToArray via undefined var.
+	ctx := &EvalContext{Steps: map[string]*EvalStepContext{}}
+	_, err := EvaluateCELToArray("undefined_var + 1", ctx)
+	if err == nil {
+		t.Error("expected error for undefined variable, got nil")
+	}
+}
+
 func TestCEL_CachedEnv_Reuse(t *testing.T) {
 	// Issue 8: cachedCELEnv should return the same env on multiple calls.
 	env1, err1 := cachedCELEnv()

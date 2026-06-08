@@ -1,0 +1,27 @@
+description: "Tool step with agent-defined workflow using tool step"
+input: |
+  name: step-tool-example
+
+  agents:
+    analyst:
+      description: "Analyst who locates and reviews configuration files."
+
+  steps:
+    - id: find-config
+      agent: analyst
+      instructions: Find the path to the main config file and return it.
+
+    - id: read-config
+      dependsOn: [find-config]
+      tool: read
+      toolInput:
+        path: $steps["find-config"].content
+
+    - id: review
+      dependsOn: [read-config]
+      agent: analyst
+      instructions: Review the config and suggest improvements.
+expected:
+  valid: true
+  step_count: 3
+  topo_order: [find-config, read-config, review]

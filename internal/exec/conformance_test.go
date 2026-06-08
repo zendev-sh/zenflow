@@ -153,6 +153,18 @@ var errorCategoryToType = map[string]func(error) bool{
 		var target *ValidationError
 		return errors.As(err, &target)
 	},
+	"tool_has_agent": func(err error) bool {
+		var target *ValidationError
+		return errors.As(err, &target)
+	},
+	"tool_has_include": func(err error) bool {
+		var target *ValidationError
+		return errors.As(err, &target)
+	},
+	"tool_has_loop": func(err error) bool {
+		var target *ValidationError
+		return errors.As(err, &target)
+	},
 }
 
 func TestSpecConformance(t *testing.T) {

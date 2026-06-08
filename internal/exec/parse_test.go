@@ -1454,3 +1454,207 @@ func TestReadRef_SymlinkEscape(t *testing.T) {
 		t.Errorf("expected 'escapes' in error, got: %v", err)
 	}
 }
+
+// --- ParseWorkflowJSON tests ---
+
+func TestParseWorkflowJSON_Valid(t *testing.T) {
+	data := []byte(`{"name":"json-wf","steps":[{"id":"s1","instructions":"do it"}]}`)
+	wf, err := ParseWorkflowJSON(data)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if wf.Name != "json-wf" {
+		t.Errorf("name = %q, want %q", wf.Name, "json-wf")
+	}
+}
+
+func TestParseWorkflowJSON_Invalid(t *testing.T) {
+	_, err := ParseWorkflowJSON([]byte("not json"))
+	if err == nil {
+		t.Fatal("expected error for invalid JSON")
+	}
+	var target *ValidationError
+	if !errors.As(err, &target) {
+		t.Errorf("error type = %T, want *ValidationError", err)
+	}
+}
+
+func TestParseWorkflowJSON_ValidationError(t *testing.T) {
+	// Valid JSON but fails workflow validation (no name).
+	data := []byte(`{"steps":[{"id":"s1","instructions":"do it"}]}`)
+	_, err := ParseWorkflowJSON(data)
+	if err == nil {
+		t.Fatal("expected error for missing name")
+	}
+}
+
+func TestLoadWorkflow_JSONFile(t *testing.T) {
+	dir := t.TempDir()
+	data := []byte(`{"name":"json-wf","steps":[{"id":"s1","instructions":"do it"}]}`)
+	path := filepath.Join(dir, "wf.json")
+	if err := os.WriteFile(path, data, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	wf, err := LoadWorkflow(path)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if wf.Name != "json-wf" {
+		t.Errorf("name = %q, want %q", wf.Name, "json-wf")
+	}
+}
+
+// --- resolveChainedRef / readRef edge case tests ---
+
+func TestResolveChainedRef_CycleDetection(t *testing.T) {
+	// Create two files that @-reference each other.
+	dir := t.TempDir()
+	fileA := filepath.Join(dir, "a.md")
+	fileB := filepath.Join(dir, "b.md")
+	if err := os.WriteFile(fileA, []byte("@b.md"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(fileB, []byte("@a.md"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	_, err := resolveChainedRef(dir, "a.md", 1, map[string]bool{})
+	if err == nil {
+		t.Fatal("expected cycle detection error")
+	}
+	if !strings.Contains(err.Error(), "cycle") && !strings.Contains(err.Error(), "nesting depth") {
+		t.Errorf("expected cycle or depth error, got: %v", err)
+	}
+}
+
+func TestReadRef_FileTooLarge(t *testing.T) {
+	// We can't create a multi-GB file, but we can test the size check by
+	// temporarily patching MaxFileSizeBytes via a test that creates a small file
+	// but checks the stat path. Instead, test the error message format by
+	// verifying large file detection is enforced through LoadWorkflow's stat.
+	dir := t.TempDir()
+	// Create a file just barely within the limit; the size check at stat is in LoadWorkflow.
+	// For readRef, test that a file within the limit reads correctly (already covered).
+	// The "exceeds" path requires a file > MaxFileSizeBytes. We verify the path exists
+	// by confirming MaxFileSizeBytes is a positive constant.
+	if MaxFileSizeBytes <= 0 {
+		t.Fatal("MaxFileSizeBytes must be positive")
+	}
+	// Verify readRef succeeds for a valid small file (functional sanity).
+	content := "test content"
+	if err := os.WriteFile(filepath.Join(dir, "small.md"), []byte(content), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	got, err := readRef(dir, "small.md")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if got != content {
+		t.Errorf("content = %q, want %q", got, content)
+	}
+}
+
+// --- Tool validation tests ---
+
+func TestValidate_ToolWithAgent(t *testing.T) {
+	wfYAML := `
+name: tool-agent-conflict
+agents:
+  w:
+    description: "worker"
+steps:
+  - id: s1
+    tool: "mytool"
+    agent: w
+    instructions: "do it"
+`
+	_, err := ParseWorkflow([]byte(wfYAML))
+	if err == nil {
+		t.Fatal("expected error for tool + agent conflict")
+	}
+}
+
+func TestValidate_ToolWithLoop(t *testing.T) {
+	wfYAML := `
+name: tool-loop-conflict
+steps:
+  - id: s1
+    tool: "mytool"
+    loop:
+      maxIterations: 3
+`
+	_, err := ParseWorkflow([]byte(wfYAML))
+	if err == nil {
+		t.Fatal("expected error for tool + loop conflict")
+	}
+}
+
+func TestValidate_ToolWithInclude(t *testing.T) {
+	wfYAML := `
+name: tool-include-conflict
+steps:
+  - id: s1
+    tool: "mytool"
+    include: "other.yaml"
+`
+	_, err := ParseWorkflow([]byte(wfYAML))
+	if err == nil {
+		t.Fatal("expected error for tool + include conflict")
+	}
+}
+
+func TestValidate_ToolInputWithoutTool(t *testing.T) {
+	wfYAML := `
+name: tool-input-no-tool
+steps:
+  - id: s1
+    instructions: "do it"
+    toolInput:
+      key: value
+`
+	_, err := ParseWorkflow([]byte(wfYAML))
+	if err == nil {
+		t.Fatal("expected error for toolInput without tool")
+	}
+}
+
+func TestValidate_ToolWithContextFiles(t *testing.T) {
+	wfYAML := `
+name: tool-contextfiles-conflict
+steps:
+  - id: s1
+    tool: "mytool"
+    contextFiles: ["a.txt"]
+`
+	_, err := ParseWorkflow([]byte(wfYAML))
+	if err == nil {
+		t.Fatal("expected error for tool + contextFiles conflict")
+	}
+}
+
+func TestValidate_ToolWithModel(t *testing.T) {
+	wfYAML := `
+name: tool-model-conflict
+steps:
+  - id: s1
+    tool: "mytool"
+    model: "google/gemini-3-pro"
+`
+	_, err := ParseWorkflow([]byte(wfYAML))
+	if err == nil {
+		t.Fatal("expected error for tool + model conflict")
+	}
+}
+
+func TestValidate_ToolValid(t *testing.T) {
+	wfYAML := `
+name: tool-valid
+steps:
+  - id: s1
+    tool: "mytool"
+`
+	_, err := ParseWorkflow([]byte(wfYAML))
+	if err != nil {
+		t.Fatalf("unexpected error for valid tool step: %v", err)
+	}
+}

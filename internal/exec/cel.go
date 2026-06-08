@@ -106,6 +106,40 @@ func EvaluateCEL(expr string, ctx *EvalContext) (bool, error) {
 	return b, nil
 }
 
+// EvaluateCELToString compiles and evaluates a CEL expression that must return a string.
+// Used by command step argument evaluation for args starting with '$'.
+func EvaluateCELToString(expr string, ctx *EvalContext) (string, error) {
+	prog, err := compileCEL(expr)
+	if err != nil {
+		return "", err
+	}
+
+	result := ctx.Result
+	if result == nil {
+		result = map[string]any{}
+	}
+	vars := map[string]any{
+		"steps":     buildStepsMap(ctx.Steps),
+		"iteration": ctx.Iteration,
+		"item":      ctx.Item,
+		"index":     ctx.Index,
+		"content":   ctx.Content,
+		"result":    result,
+		"status":    ctx.Status,
+	}
+
+	out, _, err := prog.Eval(vars)
+	if err != nil {
+		return "", fmt.Errorf("cel eval %q: %w", expr, err)
+	}
+
+	sv, ok := out.Value().(string)
+	if !ok {
+		return "", fmt.Errorf("cel eval %q: result is %T, want string", expr, out.Value())
+	}
+	return sv, nil
+}
+
 // EvaluateCELToArray compiles and evaluates a CEL expression that must return a list.
 // Used by forEach CEL expressions to produce the iteration array.
 func EvaluateCELToArray(expr string, ctx *EvalContext) ([]any, error) {

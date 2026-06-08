@@ -117,6 +117,57 @@ Steps are the nodes of the workflow DAG. Each step represents a task assigned to
 | `condition` | string | No | CEL expression. Step is skipped when false. See [Section 5](#5-conditions). |
 | `include` | string | No | Sub-workflow reference. See [Section 7](#7-includes). |
 | `loop` | Loop | No | Loop configuration. See [Section 6](#6-loops). |
+| `tool` | string | No | Name of a registered goai tool to invoke directly. Available built-in CLI tools: `bash`, `read`, `write`, `glob`, `grep`. Mutually exclusive with `agent`, `instructions`, `loop`, and `include`. See [Section 4.1](#41-tool-steps). |
+| `toolInput` | object | No | Input fields for the tool named by `tool`. String values starting with `$` are evaluated as CEL expressions. Requires `tool` to be set. See [Section 4.1](#41-tool-steps). |
+
+### 4.1 Tool Steps
+
+A step may invoke a registered goai tool directly instead of running an LLM agent. Set `tool` to the tool name and optionally supply `toolInput` with a map of input fields.
+
+```yaml
+- id: read-config
+  depends_on: [find-config]
+  tool: read
+  toolInput:
+    path: $steps["find-config"].content
+```
+
+**CEL evaluation in `toolInput`**: any string value that starts with `$` (dollar sign) is treated as a CEL expression. The `$` prefix is stripped and the remainder is evaluated. The expression must return a string. The following variables are available:
+
+| Variable | Type | Description |
+|----------|------|-------------|
+| `steps["step-id"].content` | string | Text content of a completed step. |
+| `steps["step-id"].result` | object | Structured result of a completed step. |
+| `steps["step-id"].status` | string | Status of a completed step. |
+
+Non-string values in `toolInput` (numbers, booleans, objects, arrays) are passed through as-is without CEL evaluation.
+
+**Literal leading `$`**: to pass a string value that genuinely starts with `$` (e.g. `$HOME`, `$5.00`), escape it by doubling the dollar sign. A value beginning with `$$` is not evaluated as CEL; the leading `$$` collapses to a single `$` and the rest is passed through verbatim.
+
+**Available built-in CLI tools**: `bash`, `read`, `write`, `glob`, `grep`. Custom tools registered via `WithTools` on the orchestrator are also addressable.
+
+**Mutual exclusion**: a step with `tool` must not carry `agent`, `instructions`, `loop`, `include`, `contextFiles`, or `model`. `toolInput` requires `tool` to be set. These rules are enforced by the validator, not by the JSON Schema.
+
+**Compatible fields**: `dependsOn`, `condition`, `timeout`, `retries`, `maxRetries` all apply to tool steps in the same way as agent steps. The step's `content` output is the tool's return string; `result` is nil (tool steps do not produce structured output).
+
+**Three-step worked example**:
+
+```yaml
+- id: find-config
+  agent: analyst
+  instructions: Find the path to the main config file and return it.
+
+- id: read-config
+  dependsOn: [find-config]
+  tool: read
+  toolInput:
+    path: $steps["find-config"].content
+
+- id: review
+  dependsOn: [read-config]
+  agent: analyst
+  instructions: Review the config and suggest improvements.
+```
 
 ### Dependency Model
 
@@ -653,6 +704,10 @@ These rules cannot be expressed in JSON Schema and require custom validation log
 
 **Include Mutual Exclusion**:
 - A step with `include` must not have `agent`, `instructions`, `loop`, `condition`, `contextFiles`, or `model`.
+
+**Tool Mutual Exclusion**:
+- A step with `tool` must not have `agent`, `instructions`, `loop`, `include`, `contextFiles`, or `model`.
+- A step with `toolInput` must have `tool` set.
 
 **ForEach Mutual Exclusion**:
 - If `loop.forEach` is present, `loop.maxIterations`, `loop.until`, `loop.untilAgent`, and `loop.delay` must be absent.

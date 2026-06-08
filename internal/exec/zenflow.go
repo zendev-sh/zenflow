@@ -673,6 +673,7 @@ func (o *Orchestrator) runFlowWithID(ctx context.Context, wf *Workflow, runID st
 		RunID:           runID,
 		FlowContext:     cfg.flowContext,
 		Router:          router,
+		Tools:           o.tools,
 	}
 	o.applyExecutorOptions(exec)
 

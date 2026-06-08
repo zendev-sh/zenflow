@@ -166,6 +166,16 @@
         },
         "loop": {
           "$ref": "#/$defs/Loop"
+        },
+        "tool": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Name of a registered goai tool to invoke directly (e.g. \"bash\", \"read\", \"write\", \"glob\", \"grep\"). Mutually exclusive with agent, instructions, loop, include, contextFiles, and model (enforced by validation, not schema). toolInput requires tool to be set."
+        },
+        "toolInput": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Input fields for the tool named by tool. String values starting with '$' are evaluated as CEL expressions returning string; a literal leading '$' is escaped by doubling ('$$'). CEL context: steps[\"step-id\"].content, steps[\"step-id\"].result, steps[\"step-id\"].status. Requires tool to be set."
         }
       }
     },

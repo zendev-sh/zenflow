@@ -13,6 +13,37 @@ Zenflow distinguishes three kinds of tools:
 2. **Library-supplied tools** - any `goai.Tool` you register via `WithTools`. The CLI is a consumer of this surface; embedded users supply their own.
 3. **Auto-injected tools** - the executor adds `send_message`, `shared_memory_read`, `shared_memory_write`, `submit_result` automatically when the workflow uses messaging, shared memory, or structured output.
 
+## Tool steps
+
+A **tool step** invokes a registered goai tool directly from the workflow YAML, without an LLM call. This is useful when you need a precise, deterministic action - reading a file whose path was discovered by a prior agent, running a shell command with a computed argument - without the overhead or non-determinism of an LLM turn.
+
+Set `tool` to the tool name and optionally supply `toolInput` with input fields:
+
+```yaml
+- id: find-config
+  agent: analyst
+  instructions: Find the path to the main config file and return it.
+
+- id: read-config
+  dependsOn: [find-config]
+  tool: read
+  toolInput:
+    path: $steps["find-config"].content
+
+- id: review
+  dependsOn: [read-config]
+  agent: analyst
+  instructions: Review the config and suggest improvements.
+```
+
+**How it differs from agent steps**: agent steps run an LLM conversation loop that may call multiple tools across multiple turns. A tool step calls exactly one tool once and stores the return string as the step's `content`. No model is involved; no `agent` reference is needed; `result` is always nil.
+
+**CEL in `toolInput`**: any string value in `toolInput` that starts with `$` is evaluated as a CEL expression returning a string. The `$` prefix marks the boundary. CEL variables available: `steps["step-id"].content`, `steps["step-id"].result`, `steps["step-id"].status`. Note the bracket notation - step IDs can contain hyphens, which CEL dot-access cannot handle. To pass a literal value that starts with `$` (e.g. `$HOME`), double it: `$$HOME` is not evaluated and collapses to `$HOME`.
+
+**Mutual exclusion**: `tool` is mutually exclusive with `agent`, `instructions`, `loop`, `include`, `contextFiles`, and `model`. `toolInput` requires `tool` to be set. Retry, timeout, condition, and depends_on work identically to agent steps.
+
+For the full field reference see [Step / tool and toolInput](/yaml/step#tool).
+
 ## Built-in CLI tools
 
 The `zenflow` binary ships with a small CLI-only tool set in `cmd/zenflow/tool/`. They are not part of the zenflow library - only the CLI binary registers them. This split exists because the library has zero dependency on file-system or shell IO; everything that touches the host belongs in the CLI layer.

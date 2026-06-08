@@ -25,6 +25,8 @@ Authoritative source: [`spec/v1/spec.md` §4 and §7](https://github.com/zendev-
 | `condition` | string | no | CEL expression. Step is skipped when false. |
 | `include` | string | no | Sub-workflow reference. Mutually exclusive with several other fields. |
 | `loop` | Loop | no | Loop configuration. See [Loop](./loop). |
+| `tool` | string | no | Name of a registered goai tool to invoke directly. Mutually exclusive with `agent`, `instructions`, `loop`, `include`, `contextFiles`, `model`. See [tool](#tool). |
+| `toolInput` | object | no | Input fields for the named tool. String values starting with `$` are CEL expressions. Requires `tool`. See [toolInput](#toolinput). |
 
 `additionalProperties: false`. Unknown step-level fields are rejected.
 
@@ -275,6 +277,59 @@ steps:
         - id: deploy
           agent: deployer
           instructions: "Deploy this service."
+```
+
+## tool
+
+Name of a registered goai tool to invoke directly for this step. No LLM call is made; the executor calls the tool with the arguments from `toolInput` and uses the tool's return string as the step's `content`. The step's `result` is always nil.
+
+Available built-in CLI tools: `bash`, `read`, `write`, `glob`, `grep`. Custom tools registered with `WithTools` on the orchestrator are also addressable.
+
+A step with `tool` must not carry `agent`, `instructions`, `loop`, `include`, `contextFiles`, or `model`. This mutual exclusion is enforced by the validator.
+
+```yaml
+steps:
+  - id: find-config
+    agent: analyst
+    instructions: Find the path to the main config file and return it.
+
+  - id: read-config
+    dependsOn: [find-config]
+    tool: read
+    toolInput:
+      path: $steps["find-config"].content
+
+  - id: review
+    dependsOn: [read-config]
+    agent: analyst
+    instructions: Review the config and suggest improvements.
+```
+
+`dependsOn`, `condition`, `timeout`, `retries`, and `maxRetries` all work the same way as on agent steps.
+
+## toolInput
+
+Map of input fields passed to the tool named by `tool`. Requires `tool` to be set.
+
+**CEL evaluation**: any string value that starts with `$` is evaluated as a CEL expression returning a string. The `$` prefix is stripped and the remainder is evaluated against the CEL context. Non-string values (numbers, booleans, objects, arrays) are passed through without evaluation. To pass a literal value that starts with `$`, double it (`$$`): the leading `$$` collapses to a single `$` and the value is passed through without CEL evaluation.
+
+CEL variables available in `toolInput`:
+
+| Variable | Type | Description |
+| --- | --- | --- |
+| `steps["step-id"].content` | string | Text content of a completed dependency step. |
+| `steps["step-id"].result` | object | Structured result of a completed dependency step. |
+| `steps["step-id"].status` | string | Status of a completed dependency step. |
+
+Note: `toolInput` uses bracket notation (`steps["step-id"]`) rather than dot notation (`steps.step-id`) because step IDs may contain hyphens, which are not valid CEL identifiers.
+
+```yaml
+- id: read-config
+  dependsOn: [find-config]
+  tool: read
+  toolInput:
+    path: $steps["find-config"].content    # CEL: resolves to the prior step's output text
+    # maxBytes: 65536                      # non-string: passed through as-is
 ```
 
 ## Output model

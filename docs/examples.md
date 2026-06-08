@@ -497,6 +497,41 @@ steps:
 
 What it demonstrates: per-step file attachments. Image and PDF support requires a multimodal model (Gemini, Claude Sonnet). The `fixtures/` directory ships with the example so the workflow runs without additional setup.
 
+## Tool steps
+
+### step-tool
+
+A three-step workflow that chains an agent step to a direct tool invocation and back to an agent step. The middle step uses `tool: read` with a `toolInput` value resolved via CEL from the prior step's output - no LLM call needed for the file read.
+
+```yaml
+# spec/v1/examples/step-tool.yaml  (also in spec/v1/testcases/valid/step-tool.yaml)
+name: step-tool-example
+
+agents:
+  analyst:
+    description: "Analyst who locates and reviews configuration files."
+
+steps:
+  - id: find-config
+    agent: analyst
+    instructions: Find the path to the main config file and return it.
+
+  - id: read-config
+    dependsOn: [find-config]
+    tool: read
+    toolInput:
+      path: $steps["find-config"].content
+
+  - id: review
+    dependsOn: [read-config]
+    agent: analyst
+    instructions: Review the config and suggest improvements.
+```
+
+What it demonstrates: `tool` / `toolInput` step type. The `$` prefix on the `path` value marks it as a CEL expression evaluated against the completed `find-config` step's `content` field. The `read-config` step's own `content` is the raw file text, which the `review` step sees automatically via the standard dependency output-injection mechanism.
+
+Run: `zenflow flow spec/v1/testcases/valid/step-tool.yaml`.
+
 Run: `zenflow flow spec/v1/examples/context-files.yaml`. Embed: [`examples/context-files/main.go`](https://github.com/zendev-sh/zenflow/blob/main/examples/context-files/main.go).
 
 ## See also
