@@ -1618,6 +1618,34 @@ steps:
 	}
 }
 
+func TestValidate_ToolWithContextFiles(t *testing.T) {
+	wfYAML := `
+name: tool-contextfiles-conflict
+steps:
+  - id: s1
+    tool: "mytool"
+    contextFiles: ["a.txt"]
+`
+	_, err := ParseWorkflow([]byte(wfYAML))
+	if err == nil {
+		t.Fatal("expected error for tool + contextFiles conflict")
+	}
+}
+
+func TestValidate_ToolWithModel(t *testing.T) {
+	wfYAML := `
+name: tool-model-conflict
+steps:
+  - id: s1
+    tool: "mytool"
+    model: "google/gemini-3-pro"
+`
+	_, err := ParseWorkflow([]byte(wfYAML))
+	if err == nil {
+		t.Fatal("expected error for tool + model conflict")
+	}
+}
+
 func TestValidate_ToolValid(t *testing.T) {
 	wfYAML := `
 name: tool-valid

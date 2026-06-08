@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"strings"
 	"testing"
 	"time"
 
@@ -124,6 +125,41 @@ func TestRunToolStep_CELInputLiteralPassthrough(t *testing.T) {
 	}
 	if got["msg"] != "plain value" {
 		t.Errorf("msg = %q, want %q", got["msg"], "plain value")
+	}
+}
+
+// TestRunToolStep_DollarEscape verifies that a value starting with "$$" is
+// treated as a literal: the leading "$$" collapses to "$" and the remainder
+// is passed through verbatim with no CEL evaluation.
+func TestRunToolStep_DollarEscape(t *testing.T) {
+	var receivedInput json.RawMessage
+	tool := goai.Tool{
+		Name:        "mytool",
+		Description: "captures input",
+		InputSchema: json.RawMessage(`{"type":"object"}`),
+		Execute: func(_ context.Context, input json.RawMessage) (string, error) {
+			receivedInput = input
+			return "ok", nil
+		},
+	}
+	// "$$HOME" must NOT be evaluated as CEL (which would fail); it must
+	// collapse to the literal "$HOME".
+	wf := newTestWorkflow([]Step{
+		{ID: "s1", Tool: "mytool", ToolInput: map[string]any{"path": "$$HOME"}},
+	}, nil)
+	exec := newToolExecutor([]goai.Tool{tool}, wf)
+
+	sr := exec.runToolStep(t.Context(), "run1", "s1", wf.Steps[0], map[string]*StepResult{}, 0, 1)
+	if sr.Status != spec.StepCompleted {
+		t.Fatalf("status = %q, want %q (error: %v)", sr.Status, spec.StepCompleted, sr.Error)
+	}
+
+	var got map[string]any
+	if err := json.Unmarshal(receivedInput, &got); err != nil {
+		t.Fatalf("unmarshal input: %v", err)
+	}
+	if got["path"] != "$HOME" {
+		t.Errorf("path = %q, want %q", got["path"], "$HOME")
 	}
 }
 
@@ -438,5 +474,55 @@ func TestRunToolStep_Timeout(t *testing.T) {
 	}
 	if !errors.Is(sr.Error, context.DeadlineExceeded) {
 		t.Errorf("error = %v, want DeadlineExceeded", sr.Error)
+	}
+}
+
+// TestRunToolStep_JSONMarshalError covers the json.Marshal failure path.
+// A channel value is not JSON-serialisable, which forces the marshal error branch.
+func TestRunToolStep_JSONMarshalError(t *testing.T) {
+	tool := makeTool("mytool", "does stuff", "result")
+	wf := newTestWorkflow([]Step{
+		{ID: "s1", Tool: "mytool", ToolInput: map[string]any{"ch": make(chan int)}},
+	}, nil)
+	exec := newToolExecutor([]goai.Tool{tool}, wf)
+
+	sr := exec.runToolStep(t.Context(), "run1", "s1", wf.Steps[0], map[string]*StepResult{}, 0, 1)
+	if sr.Status != spec.StepFailed {
+		t.Errorf("status = %q, want %q", sr.Status, spec.StepFailed)
+	}
+	if sr.Error == nil {
+		t.Fatal("expected non-nil error from marshal failure")
+	}
+	if !strings.Contains(sr.Error.Error(), "marshal tool input") {
+		t.Errorf("error should mention 'marshal tool input', got: %v", sr.Error)
+	}
+}
+
+// TestRunToolStep_JSONMarshalError_WithProgress covers the same marshal path with Progress set.
+func TestRunToolStep_JSONMarshalError_WithProgress(t *testing.T) {
+	var events []Event
+	sink := &mockProgressSink{
+		onEvent: func(_ context.Context, e Event) { events = append(events, e) },
+	}
+	tool := makeTool("mytool", "does stuff", "result")
+	wf := newTestWorkflow([]Step{
+		{ID: "s1", Tool: "mytool", ToolInput: map[string]any{"ch": make(chan int)}},
+	}, nil)
+	ex := newToolExecutor([]goai.Tool{tool}, wf)
+	ex.Progress = sink
+
+	sr := ex.runToolStep(t.Context(), "run1", "s1", wf.Steps[0], map[string]*StepResult{}, 0, 1)
+	if sr.Status != spec.StepFailed {
+		t.Errorf("status = %q, want %q", sr.Status, spec.StepFailed)
+	}
+
+	var hasErrorEvent bool
+	for _, e := range events {
+		if e.Type == types.EventError && e.StepID == "s1" {
+			hasErrorEvent = true
+		}
+	}
+	if !hasErrorEvent {
+		t.Error("expected EventError for marshal failure")
 	}
 }

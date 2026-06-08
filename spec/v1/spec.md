@@ -142,9 +142,11 @@ A step may invoke a registered goai tool directly instead of running an LLM agen
 
 Non-string values in `toolInput` (numbers, booleans, objects, arrays) are passed through as-is without CEL evaluation.
 
+**Literal leading `$`**: to pass a string value that genuinely starts with `$` (e.g. `$HOME`, `$5.00`), escape it by doubling the dollar sign. A value beginning with `$$` is not evaluated as CEL; the leading `$$` collapses to a single `$` and the rest is passed through verbatim.
+
 **Available built-in CLI tools**: `bash`, `read`, `write`, `glob`, `grep`. Custom tools registered via `WithTools` on the orchestrator are also addressable.
 
-**Mutual exclusion**: a step with `tool` must not carry `agent`, `instructions`, `loop`, or `include`. `toolInput` requires `tool` to be set. These rules are enforced by the validator, not by the JSON Schema.
+**Mutual exclusion**: a step with `tool` must not carry `agent`, `instructions`, `loop`, `include`, `contextFiles`, or `model`. `toolInput` requires `tool` to be set. These rules are enforced by the validator, not by the JSON Schema.
 
 **Compatible fields**: `dependsOn`, `condition`, `timeout`, `retries`, `maxRetries` all apply to tool steps in the same way as agent steps. The step's `content` output is the tool's return string; `result` is nil (tool steps do not produce structured output).
 
@@ -704,7 +706,7 @@ These rules cannot be expressed in JSON Schema and require custom validation log
 - A step with `include` must not have `agent`, `instructions`, `loop`, `condition`, `contextFiles`, or `model`.
 
 **Tool Mutual Exclusion**:
-- A step with `tool` must not have `agent`, `instructions`, `loop`, or `include`.
+- A step with `tool` must not have `agent`, `instructions`, `loop`, `include`, `contextFiles`, or `model`.
 - A step with `toolInput` must have `tool` set.
 
 **ForEach Mutual Exclusion**:

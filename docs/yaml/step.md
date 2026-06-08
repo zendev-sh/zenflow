@@ -25,7 +25,7 @@ Authoritative source: [`spec/v1/spec.md` §4 and §7](https://github.com/zendev-
 | `condition` | string | no | CEL expression. Step is skipped when false. |
 | `include` | string | no | Sub-workflow reference. Mutually exclusive with several other fields. |
 | `loop` | Loop | no | Loop configuration. See [Loop](./loop). |
-| `tool` | string | no | Name of a registered goai tool to invoke directly. Mutually exclusive with `agent`, `instructions`, `loop`, `include`. See [tool](#tool). |
+| `tool` | string | no | Name of a registered goai tool to invoke directly. Mutually exclusive with `agent`, `instructions`, `loop`, `include`, `contextFiles`, `model`. See [tool](#tool). |
 | `toolInput` | object | no | Input fields for the named tool. String values starting with `$` are CEL expressions. Requires `tool`. See [toolInput](#toolinput). |
 
 `additionalProperties: false`. Unknown step-level fields are rejected.
@@ -285,7 +285,7 @@ Name of a registered goai tool to invoke directly for this step. No LLM call is 
 
 Available built-in CLI tools: `bash`, `read`, `write`, `glob`, `grep`. Custom tools registered with `WithTools` on the orchestrator are also addressable.
 
-A step with `tool` must not carry `agent`, `instructions`, `loop`, or `include`. This mutual exclusion is enforced by the validator.
+A step with `tool` must not carry `agent`, `instructions`, `loop`, `include`, `contextFiles`, or `model`. This mutual exclusion is enforced by the validator.
 
 ```yaml
 steps:
@@ -311,7 +311,7 @@ steps:
 
 Map of input fields passed to the tool named by `tool`. Requires `tool` to be set.
 
-**CEL evaluation**: any string value that starts with `$` is evaluated as a CEL expression returning a string. The `$` prefix is stripped and the remainder is evaluated against the CEL context. Non-string values (numbers, booleans, objects, arrays) are passed through without evaluation.
+**CEL evaluation**: any string value that starts with `$` is evaluated as a CEL expression returning a string. The `$` prefix is stripped and the remainder is evaluated against the CEL context. Non-string values (numbers, booleans, objects, arrays) are passed through without evaluation. To pass a literal value that starts with `$`, double it (`$$`): the leading `$$` collapses to a single `$` and the value is passed through without CEL evaluation.
 
 CEL variables available in `toolInput`:
 

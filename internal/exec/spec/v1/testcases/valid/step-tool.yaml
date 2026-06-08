@@ -14,7 +14,7 @@ input: |
     - id: read-config
       dependsOn: [find-config]
       tool: read
-      tool_input:
+      toolInput:
         path: $steps["find-config"].content
 
     - id: review

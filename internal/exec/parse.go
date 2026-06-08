@@ -322,9 +322,15 @@ func ValidateWorkflow(wf *Workflow) ([]string, error) {
 			if s.Include != "" || s.Loop != nil {
 				return nil, &ValidationError{Message: fmt.Sprintf("step %q: tool is mutually exclusive with include and loop", s.ID)}
 			}
+			// Fields that only make sense for an LLM agent step are silently
+			// ignored by runToolStep; reject them so a misplaced field surfaces
+			// at parse time rather than as a confusing no-op (mirrors include).
+			if len(s.ContextFiles) > 0 || s.Model != "" {
+				return nil, &ValidationError{Message: fmt.Sprintf("step %q: tool step must not set contextFiles or model", s.ID)}
+			}
 		}
 		if s.ToolInput != nil && s.Tool == "" {
-			return nil, &ValidationError{Message: fmt.Sprintf("step %q: tool_input requires tool to be set", s.ID)}
+			return nil, &ValidationError{Message: fmt.Sprintf("step %q: toolInput requires tool to be set", s.ID)}
 		}
 	}
 

@@ -61,7 +61,14 @@ func (e *Executor) runToolStep(ctx context.Context, runID, stepID string, step S
 	resolved := make(map[string]any, len(step.ToolInput))
 	for k, v := range step.ToolInput {
 		sv, ok := v.(string)
-		if ok && strings.HasPrefix(sv, "$") {
+		switch {
+		case ok && strings.HasPrefix(sv, "$$"):
+			// Escaped literal: a leading "$$" collapses to a single "$"
+			// and is passed through verbatim (no CEL evaluation). This is
+			// how a value that genuinely starts with "$" (e.g. "$HOME",
+			// "$5.00") is expressed.
+			resolved[k] = sv[1:]
+		case ok && strings.HasPrefix(sv, "$"):
 			celResult, err := EvaluateCELToString(sv[1:], evalCtx)
 			if err != nil {
 				runErr := fmt.Errorf("tool step %q: CEL input %q: %w", stepID, k, err)
@@ -79,7 +86,7 @@ func (e *Executor) runToolStep(ctx context.Context, runID, stepID string, step S
 				return &StepResult{ID: stepID, Status: spec.StepFailed, Error: runErr, Duration: duration}
 			}
 			resolved[k] = celResult
-		} else {
+		default:
 			resolved[k] = v
 		}
 	}

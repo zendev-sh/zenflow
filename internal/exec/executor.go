@@ -1103,12 +1103,11 @@ func (e *Executor) Run(ctx context.Context) (*WorkflowResult, error) {
 						case step.Tool != "":
 							// Retry loop for tool steps.
 							maxAttempts := step.Retries + 1
-							for attempt := range maxAttempts {
+							for range maxAttempts {
 								sr = e.runToolStep(abortCtx, runID, stepID, step, depResults, stepIndex[stepID], len(order))
 								if sr.Status != spec.StepFailed || abortCtx.Err() != nil {
 									break
 								}
-								_ = attempt
 							}
 						default:
 							sr = e.runStep(abortCtx, runID, stepID, step, stepIndex[stepID], len(order), depResults)

@@ -38,9 +38,9 @@ Set `tool` to the tool name and optionally supply `toolInput` with input fields:
 
 **How it differs from agent steps**: agent steps run an LLM conversation loop that may call multiple tools across multiple turns. A tool step calls exactly one tool once and stores the return string as the step's `content`. No model is involved; no `agent` reference is needed; `result` is always nil.
 
-**CEL in `toolInput`**: any string value in `toolInput` that starts with `$` is evaluated as a CEL expression returning a string. The `$` prefix marks the boundary. CEL variables available: `steps["step-id"].content`, `steps["step-id"].result`, `steps["step-id"].status`. Note the bracket notation - step IDs can contain hyphens, which CEL dot-access cannot handle.
+**CEL in `toolInput`**: any string value in `toolInput` that starts with `$` is evaluated as a CEL expression returning a string. The `$` prefix marks the boundary. CEL variables available: `steps["step-id"].content`, `steps["step-id"].result`, `steps["step-id"].status`. Note the bracket notation - step IDs can contain hyphens, which CEL dot-access cannot handle. To pass a literal value that starts with `$` (e.g. `$HOME`), double it: `$$HOME` is not evaluated and collapses to `$HOME`.
 
-**Mutual exclusion**: `tool` is mutually exclusive with `agent`, `instructions`, `loop`, and `include`. `toolInput` requires `tool` to be set. Retry, timeout, condition, and depends_on work identically to agent steps.
+**Mutual exclusion**: `tool` is mutually exclusive with `agent`, `instructions`, `loop`, `include`, `contextFiles`, and `model`. `toolInput` requires `tool` to be set. Retry, timeout, condition, and depends_on work identically to agent steps.
 
 For the full field reference see [Step / tool and toolInput](/yaml/step#tool).
 

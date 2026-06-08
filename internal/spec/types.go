@@ -148,10 +148,11 @@ type Step struct {
 	Loop         *Loop    `json:"loop,omitempty" yaml:"loop,omitempty"`
 	// Tool, when non-empty, skips LLM execution and invokes the named registered
 	// tool directly. Input fields are provided via ToolInput. Values starting with
-	// $ are evaluated as CEL expressions (returning string) using prior step outputs.
-	// Mutually exclusive with Agent, Instructions, Loop, Include, and Command.
+	// $ are evaluated as CEL expressions (returning string) using prior step outputs;
+	// a literal leading $ is written as $$. Mutually exclusive with Agent,
+	// Instructions, Loop, and Include.
 	Tool      string         `json:"tool,omitempty" yaml:"tool,omitempty"`
-	ToolInput map[string]any `json:"tool_input,omitempty" yaml:"tool_input,omitempty"`
+	ToolInput map[string]any `json:"toolInput,omitempty" yaml:"toolInput,omitempty"`
 }
 
 // Loop defines iteration behavior for a step. Stable.
