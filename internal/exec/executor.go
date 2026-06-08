@@ -50,7 +50,12 @@ type Executor struct {
 	// during effective-model resolution. Set by Orchestrator from the
 	// WithForceModel option; nested executors propagate the same value via
 	// their constructors in executor_loop.go and executor_include.go.
-	ForceModel     string
+	ForceModel string
+	// Tools is the full set of registered goai.Tool values available for
+	// tool steps (step.Tool != ""). Populated from Orchestrator.tools via
+	// runFlowWithID so tool steps can look up a tool by name and invoke it
+	// directly without going through the LLM.
+	Tools          []goai.Tool
 	MaxConcurrency int
 	// SharedMem is the shared memory instance for inter-agent collaboration.
 	// If set, shared memory tools are available and writes are persisted via Storage.
@@ -1094,6 +1099,16 @@ func (e *Executor) Run(ctx context.Context) (*WorkflowResult, error) {
 									break
 								}
 								_ = attempt // reset for retry - loop restarts from iteration 0
+							}
+						case step.Tool != "":
+							// Retry loop for tool steps.
+							maxAttempts := step.Retries + 1
+							for attempt := range maxAttempts {
+								sr = e.runToolStep(abortCtx, runID, stepID, step, depResults, stepIndex[stepID], len(order))
+								if sr.Status != spec.StepFailed || abortCtx.Err() != nil {
+									break
+								}
+								_ = attempt
 							}
 						default:
 							sr = e.runStep(abortCtx, runID, stepID, step, stepIndex[stepID], len(order), depResults)

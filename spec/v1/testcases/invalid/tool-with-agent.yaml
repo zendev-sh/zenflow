@@ -1,0 +1,15 @@
+description: "Tool step must not have agent field"
+input: |
+  name: tool-agent-conflict
+  agents:
+    analyst:
+      description: "Analyst agent"
+  steps:
+    - id: read-config
+      tool: read
+      agent: analyst
+      toolInput:
+        path: /etc/config.yaml
+expected:
+  valid: false
+  error: tool_has_agent

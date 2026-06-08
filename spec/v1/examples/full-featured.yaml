@@ -89,6 +89,13 @@ steps:
     timeout: "15m"
     model: "bedrock/anthropic.claude-sonnet-4-6"
 
+  - id: read_plan
+    tool: read
+    toolInput:
+      path: $steps["plan"].content
+    dependsOn:
+      - plan
+
   - id: deploy_staging
     include: deploy_pipeline
     dependsOn:

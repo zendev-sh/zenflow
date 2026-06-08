@@ -313,6 +313,21 @@ func ValidateWorkflow(wf *Workflow) ([]string, error) {
 		}
 	}
 
+	// 6b. Tool mutual exclusion and validation.
+	for _, s := range wf.Steps {
+		if s.Tool != "" {
+			if s.Agent != "" || s.Instructions != "" {
+				return nil, &ValidationError{Message: fmt.Sprintf("step %q: tool step must not set agent or instructions", s.ID)}
+			}
+			if s.Include != "" || s.Loop != nil {
+				return nil, &ValidationError{Message: fmt.Sprintf("step %q: tool is mutually exclusive with include and loop", s.ID)}
+			}
+		}
+		if s.ToolInput != nil && s.Tool == "" {
+			return nil, &ValidationError{Message: fmt.Sprintf("step %q: tool_input requires tool to be set", s.ID)}
+		}
+	}
+
 	// 7. Loop validation.
 	for _, s := range wf.Steps {
 		if s.Loop == nil {

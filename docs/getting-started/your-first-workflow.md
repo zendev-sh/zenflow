@@ -306,6 +306,29 @@ Every example in the repo ends with `defer orch.Close()`. Here is why.
 
 For short-lived programs like the example above, `defer orch.Close()` in `main` is enough. For long-lived embedders (an HTTP server, a queue worker), call `Close()` when shutting down the surrounding service.
 
+## Tip: tool steps for deterministic actions
+
+When one step needs to do something precise - read a file whose path was returned by the previous agent, run a shell command with a computed argument - use a **tool step** instead of an agent step. A tool step invokes a registered goai tool directly without an LLM call:
+
+```yaml
+- id: find-config
+  agent: analyst
+  instructions: Find the path to the main config file and return it.
+
+- id: read-config
+  dependsOn: [find-config]
+  tool: read
+  toolInput:
+    path: $steps["find-config"].content   # $ prefix: evaluated as CEL
+
+- id: review
+  dependsOn: [read-config]
+  agent: analyst
+  instructions: Review the config and suggest improvements.
+```
+
+String values in `toolInput` starting with `$` are CEL expressions. The `$` is stripped and the remainder is evaluated against the completed step outputs. See [Concepts / Tools](/concepts/tools#tool-steps) for the full picture.
+
 ## Where to next
 
 - **More examples** - 18 of 19 reference workflows have matching Go embeddings under [examples/](https://github.com/zendev-sh/zenflow/tree/main/examples). Read [Examples](../examples.md) for the tour.

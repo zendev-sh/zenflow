@@ -1,0 +1,14 @@
+description: "Tool step must not have loop field"
+input: |
+  name: tool-loop-conflict
+  steps:
+    - id: read-config
+      tool: read
+      toolInput:
+        path: /etc/config.yaml
+      loop:
+        maxIterations: 3
+        until: "content.size() > 0"
+expected:
+  valid: false
+  error: tool_has_loop

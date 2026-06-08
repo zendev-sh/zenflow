@@ -19,3 +19,4 @@ docs/.vitepress/cache/
 # script so the maintainer can `cp hooks/* .git/hooks/` post-export,
 # but never committed (mirrors goai's convention).
 hooks/
+cover.out

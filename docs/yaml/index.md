@@ -60,9 +60,9 @@ Both parse identically. YAML is the recommended format for human-authored workfl
 | --- | --- |
 | Workflow-level fields | [`/yaml/workflow`](./workflow) |
 | Agent definitions | [`/yaml/agent`](./agent) |
-| Step fields | [`/yaml/step`](./step) |
+| Step fields (including `tool` / `toolInput`) | [`/yaml/step`](./step) |
 | Loops (`forEach`, `repeat-until`) | [`/yaml/loop`](./loop) |
-| CEL expressions in `condition` and `forEach` | [`/yaml/cel-reference`](./cel-reference) |
+| CEL expressions in `condition`, `forEach`, and `toolInput` | [`/yaml/cel-reference`](./cel-reference) |
 
 For runtime semantics (DAG scheduling, failure strategies, retries), see the [Concepts](/concepts/) section.
 

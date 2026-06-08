@@ -98,6 +98,7 @@ Add features as you need them:
 - `condition: steps.draft.result.length > 100` - CEL expression; step is `skipped` when false.
 - `loop:` - three flavours: `forEach` (iterate an array from a previous step's output), `repeat-until` (run a sub-DAG until an `untilAgent` returns `done: true` or a `until` CEL expression is true), `outputMode: cumulative | last`.
 - `include: subworkflow.yaml` - compose sub-workflows; their step IDs are namespaced under the parent step.
+- `tool: read` / `toolInput: {path: $steps["prev"].content}` - invoke a registered goai tool directly (no LLM call). String values in `toolInput` starting with `$` are evaluated as CEL expressions. Available CLI tools: `bash`, `read`, `write`, `glob`, `grep`. Mutually exclusive with `agent`, `instructions`, `loop`, and `include`.
 - `resultSchema: { ... }` - auto-injects a `submit_result` tool so the agent emits structured output.
 - `options:` - `maxConcurrency`, `onStepFailure: cascade | skip-dependents | abort`, `timeout`, `stepTimeout`, `isolation: worktree-per-step`, `scheduler: dependency-first | round-robin | least-busy`.
 

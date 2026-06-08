@@ -1,0 +1,14 @@
+description: "Tool step must not have include field"
+input: |
+  name: tool-include-conflict
+  includes:
+    deploy: "workflows/deploy.yaml"
+  steps:
+    - id: run-tool
+      tool: bash
+      toolInput:
+        command: echo hello
+      include: deploy
+expected:
+  valid: false
+  error: tool_has_include
