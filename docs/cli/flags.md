@@ -17,6 +17,13 @@ The `Applies to` column lists the verbs that recognize the flag. Flags not liste
 | `--max-retries N` | integer | provider default | flow, goal, agent | Per-step cap on the agent runner's tool-call retry budget (passed via `goai.WithMaxRetries`). Distinct from `step.retries`, which retries the whole step on failure. When unset, [goai](https://goai.sh)'s built-in retry policy applies. `N >= 0`. `N = 0` disables retries. |
 | `--thinking LEVEL` | enum | `off` | flow, goal, agent | Extended reasoning. Valid values: `off`, `low`, `medium`, `high`. Routed to provider-native keys (Bedrock `reasoningConfig`, Anthropic `thinking`, Google `thinkingConfig`, OpenAI/Azure `reasoning_effort`). Each provider reads only what it understands. |
 
+## MCP servers
+
+| Flag | Type | Default | Applies to | Description |
+| --- | --- | --- | --- | --- |
+| `--mcp-config PATH` | path | `.zenflow/settings.json` | flow, goal, agent | Read [MCP](/integrations/mcp) servers from a Claude-compatible `settings.json` at `PATH`. When unset, the default path is loaded if present (a missing default is a silent no-op; a missing explicit `PATH` is reported). Discovered tools are namespaced `<server>__<tool>` and grantable by bare server name in an agent's `tools:`. The file launches local commands - it is a [trust boundary](/integrations/mcp#security). |
+| `--no-mcp` | bool | off | flow, goal, agent | Skip MCP server loading entirely, even if a config file is present. |
+
 ## Lifecycle and execution
 
 | Flag | Type | Default | Applies to | Description |

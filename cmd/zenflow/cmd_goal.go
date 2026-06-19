@@ -16,7 +16,7 @@ import (
 func cmdGoal() {
 	a := osArgs()
 	if len(a) < 3 {
-		fmt.Fprintln(stderr, "usage: zenflow goal <goal> [<extra-context>] [--model MODEL] [--max-concurrency N] [--max-depth N] [--timeout DURATION] [--workdir DIR] [--json] [--quiet] [--summary-only] [--stream] [--trace] [--thinking LEVEL] [--verbose] [--yolo] [--sandbox] [--allow LIST] [--deny LIST] [--strict]")
+		fmt.Fprintln(stderr, "usage: zenflow goal <goal> [<extra-context>] [--model MODEL] [--max-concurrency N] [--max-depth N] [--timeout DURATION] [--workdir DIR] [--json] [--quiet] [--summary-only] [--stream] [--trace] [--thinking LEVEL] [--mcp-config PATH] [--no-mcp] [--verbose] [--yolo] [--sandbox] [--allow LIST] [--deny LIST] [--strict]")
 		exit(3)
 		return
 	}
@@ -70,6 +70,12 @@ func cmdGoal() {
 	stopTracer := installTracerFunc(flags)
 	defer stopTracer()
 	opts := buildOrchestratorOpts(flags)
+	// Load MCP servers from settings.json and append their tools. The
+	// decomposing coordinator can route the generated workflow's steps to
+	// these tools. Deferred cleanup terminates stdio subprocesses.
+	mcpOpts, mcpCleanup := loadMCPOptions(flags)
+	defer mcpCleanup()
+	opts = append(opts, mcpOpts...)
 	// Wire permission handler (interactive TTY prompts or flag-based pre-approval).
 	opts = append(opts, zenflow.WithPermissions(newCliPermissionHandler(perms, osStdin(), stderr, stdinIsTTY())))
 	// coordinator wiring based on flags.

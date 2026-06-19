@@ -76,6 +76,16 @@ func WithTools(tools ...goai.Tool) Option {
 	return func(o *Orchestrator) { o.tools = tools }
 }
 
+// WithAdditionalTools appends tools to the orchestrator catalog instead of
+// replacing it. Unlike WithTools (which overwrites the whole slice), this
+// composes onto whatever WithTools installed earlier in the option list -
+// the canonical way to layer MCP-discovered tools (see ConnectMCPConfig)
+// or plugin tools on top of a built-in set without rebuilding the slice.
+// Stable.
+func WithAdditionalTools(tools ...goai.Tool) Option {
+	return func(o *Orchestrator) { o.tools = append(o.tools, tools...) }
+}
+
 // WithGoAIOptions passes extra goai options to GenerateText calls.
 // Stable.
 func WithGoAIOptions(opts ...goai.Option) Option {

@@ -266,6 +266,7 @@ export default defineConfig({
           collapsed: false,
           items: [
             { text: 'Overview', link: '/integrations/' },
+            { text: 'MCP Servers', link: '/integrations/mcp' },
             { text: 'CI/CD', link: '/integrations/ci-cd' },
             { text: 'Docker', link: '/integrations/docker' },
             { text: 'Scripting', link: '/integrations/scripting' },

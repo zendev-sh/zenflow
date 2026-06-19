@@ -352,29 +352,34 @@ func (s *agentSpawner) SpawnChild(ctx context.Context, call provider.ToolCall) (
 // FilterTools returns a subset of tools based on allow/disallow lists.
 // If allow is non-empty, only tools whose names appear in allow are returned.
 // Tools whose names appear in disallow are always excluded.
+//
+// An entry also matches as an MCP server group: a bare server name
+// ("firecrawl") selects every tool that server contributed
+// ("firecrawl__scrape", "firecrawl__crawl", ...). Built-in and
+// auto-injected tool names contain no "__" separator, so group matching
+// never affects them.
 func FilterTools(tools []goai.Tool, allow, disallow []string) []goai.Tool {
-	dis := make(map[string]bool, len(disallow))
-	for _, name := range disallow {
-		dis[name] = true
-	}
-
-	var allowSet map[string]bool
-	if len(allow) > 0 {
-		allowSet = make(map[string]bool, len(allow))
-		for _, name := range allow {
-			allowSet[name] = true
-		}
-	}
-
 	result := make([]goai.Tool, 0, len(tools))
 	for _, t := range tools {
-		if dis[t.Name] {
+		if toolNameSelected(t.Name, disallow) {
 			continue
 		}
-		if allowSet != nil && !allowSet[t.Name] {
+		if len(allow) > 0 && !toolNameSelected(t.Name, allow) {
 			continue
 		}
 		result = append(result, t)
 	}
 	return result
+}
+
+// toolNameSelected reports whether toolName is selected by any entry in names,
+// either by exact match or as an MCP server group (entry "srv" matches
+// "srv__tool").
+func toolNameSelected(toolName string, names []string) bool {
+	for _, n := range names {
+		if n == toolName || mcpGroupMatches(toolName, n) {
+			return true
+		}
+	}
+	return false
 }

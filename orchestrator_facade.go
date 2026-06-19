@@ -52,6 +52,7 @@ var New = exec.New
 var (
 	WithModel                     = exec.WithModel
 	WithTools                     = exec.WithTools
+	WithAdditionalTools           = exec.WithAdditionalTools
 	WithGoAIOptions               = exec.WithGoAIOptions
 	WithStorage                   = exec.WithStorage
 	WithPermissions               = exec.WithPermissions

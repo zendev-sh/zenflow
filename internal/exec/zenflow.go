@@ -600,6 +600,14 @@ func (o *Orchestrator) runFlowWithID(ctx context.Context, wf *Workflow, runID st
 	if o.model == nil {
 		return nil, ErrModelRequired
 	}
+	// Reject agents referencing tools the catalog does not provide BEFORE
+	// the first LLM call. RunGoal validates its generated workflow earlier;
+	// direct RunFlow runs validate here so a typo (or an MCP server that
+	// failed to load) surfaces as a clear load-time ToolNotFoundError
+	// instead of silently dropping the tool and confusing the agent.
+	if err := ValidateToolNames(wf, o.tools); err != nil {
+		return nil, err
+	}
 
 	// Start flow trace span at Orchestrator level.
 	if o.tracer != nil {

@@ -74,6 +74,16 @@ Set the credentials for whichever provider you target:
 
 The `--model` flag accepts the `provider/model-id` form. For Azure, deployment-based URLs are auto-resolved when the model id matches a known deployment family.
 
+## MCP tools
+
+zenflow reads a Claude-compatible `.zenflow/settings.json` and exposes every declared [MCP](https://modelcontextprotocol.io) server's tools to agents. All three verbs use it; override with `--mcp-config PATH`, disable with `--no-mcp`.
+
+```json
+{ "mcpServers": { "firecrawl": { "command": "npx", "args": ["-y", "firecrawl-mcp"], "env": { "FIRECRAWL_API_KEY": "${FIRECRAWL_API_KEY}" } } } }
+```
+
+Tools are namespaced `<server>__<tool>`; an agent's `tools:` list grants a whole server by its bare name (`firecrawl`) or one tool by its full name (`firecrawl__scrape`). stdio, HTTP, and SSE transports are supported, with `${VAR}` env expansion.
+
 ## YAML workflow shape
 
 Minimum:

@@ -32,6 +32,8 @@ type cmdFlags struct {
 	showPlan       bool   // show DAG diagram before execution
 	workdir        string // working directory for LLM tool execution (sandbox)
 	thinking       string // reasoning/thinking level: off|low|medium|high (default off)
+	mcpConfig      string // path to MCP settings.json (default .zenflow/settings.json)
+	noMCP          bool   // disable MCP server loading entirely
 }
 
 // parseFlags parses common CLI flags from args (starting after the positional argument).
@@ -153,6 +155,14 @@ func parseFlags(args []string) (cmdFlags, error) {
 				return f, fmt.Errorf("--workdir requires a value")
 			}
 			f.workdir = args[i]
+		case "--mcp-config":
+			i++
+			if i >= len(args) {
+				return f, fmt.Errorf("--mcp-config requires a path")
+			}
+			f.mcpConfig = args[i]
+		case "--no-mcp":
+			f.noMCP = true
 		case "--thinking":
 			i++
 			if i >= len(args) {

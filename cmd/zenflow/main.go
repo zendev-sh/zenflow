@@ -261,6 +261,8 @@ func usage(w io.Writer) {
 	fmt.Fprintln(w, "  --workdir DIR       Sandbox directory for tool execution (chdirs here; defaults to cwd)")
 	fmt.Fprintln(w, "  --trace             Enable OTel tracing (binaries shipped via Homebrew/GoReleaser have OTel built in; for `go install` from source, rebuild with -tags otel; default: stderr exporter; honors OTEL_EXPORTER_OTLP_ENDPOINT)")
 	fmt.Fprintln(w, "  --thinking LEVEL    Extended reasoning: off|low|medium|high (default off)")
+	fmt.Fprintln(w, "  --mcp-config PATH   MCP servers settings.json (default .zenflow/settings.json if present)")
+	fmt.Fprintln(w, "  --no-mcp            Disable MCP server loading")
 	fmt.Fprintln(w, "  --help, -h          Print this help text")
 	fmt.Fprintln(w, "  --version, -v       Print zenflow version")
 	fmt.Fprintln(w, "")

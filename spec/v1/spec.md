@@ -78,7 +78,8 @@ The `tools` and `disallowedTools` fields control which tools an agent can use:
 - If `tools` is absent, tool availability is implementation-defined.
 - Wildcard tool names like `"*"` are not currently expanded -- they are parsed as literal tool identifiers that match nothing. To allow every registered tool, omit the `tools` field entirely.
 - If `tools` is a list of names, only those tools are allowed.
-- `disallowedTools` removes tools from the resolved allowlist.
+- A name that matches an MCP server (see the host's MCP configuration) expands to every tool that server contributed, which the host namespaces `<server>__<tool>`. A single MCP tool is selectable by its full namespaced name.
+- `disallowedTools` removes tools from the resolved allowlist (server-group names apply here too).
 
 The effective tool set is: `(allowlist) - (denylist)`.
 

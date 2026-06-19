@@ -1,13 +1,13 @@
 ---
 layout: home
-title: zenflow - multi-agent orchestration engine
-titleTemplate: Multi-agent orchestration & workflow engine for Go
-description: Multi-agent orchestration engine for Go. Declarative YAML agent workflows with an LLM coordinator, hub-and-spoke messaging, race-safe delivery, and spec-first validation. Single static binary, no runtime.
+title: zenflow - the multi-agent harness
+titleTemplate: Multi-agent orchestration harness & workflow engine for Go
+description: zenflow is a production multi-agent harness for Go. Declarative YAML agent workflows with an LLM coordinator, hub-and-spoke messaging, race-safe delivery, native MCP tools, and spec-first validation. Single static binary, no runtime.
 
 hero:
   name: zenflow
-  text: Let agents flow.
-  tagline: A <a href="/agent-orchestration.html" class="zf-hero-link">multi-agent orchestration</a> engine that turns declarative YAML agent workflows into a running plan. An LLM coordinator routes events through hub-and-spoke mailboxes with race-safe delivery. Runs on any provider goai supports.
+  text: The multi-agent harness.
+  tagline: A <a href="/agent-orchestration.html" class="zf-hero-link">multi-agent orchestration</a> harness that turns declarative YAML agent workflows into a running plan. An LLM coordinator routes events through hub-and-spoke mailboxes with race-safe delivery, agents call native MCP tools, and the whole harness ships as one static binary. Runs on any provider goai supports.
   image:
     light: /zenflow-icon.png
     dark: /zenflow-icon-dark.png
@@ -24,8 +24,8 @@ hero:
       link: https://github.com/zendev-sh/zenflow
 
 features:
-  - title: Declarative YAML agent workflows
-    details: Multi-agent workflows expressed in a small composable spec. Steps, dependencies, parallel fan-out, conditions (CEL), loops, and includes for sub-workflow reuse. The plan ships in a YAML file you can review in a PR.
+  - title: Declarative, spec-first YAML
+    details: Multi-agent workflows in a small composable spec - steps, dependencies, parallel fan-out, conditions (CEL), loops, includes. Every plan ships in a reviewable YAML file and validates against spec/v1/schema.json plus 40+ Go conformance fixtures BEFORE the first LLM call. Cycles, missing deps, unknown agents, malformed CEL - rejected in milliseconds, not after a minute of model burn.
     link: /yaml/
     linkText: YAML reference
   - title: LLM coordinator with hub-and-spoke messaging
@@ -36,16 +36,16 @@ features:
     details: Every message is delivered through a per-agent mailbox with explicit drop reasons. No silent loss, no out-of-order delivery, no leaked goroutines.
     link: /concepts/messaging
     linkText: Messaging model
+  - title: Native MCP tools
+    details: Point the harness at a Claude-compatible settings.json and every Model Context Protocol server's tools become available to your agents - stdio, HTTP, or SSE. No Go code, no recompile. Grant a whole server to an agent by name.
+    link: /integrations/mcp
+    linkText: MCP servers
   - title: Multi-provider verified
     details: Verified against Google gemini-3-pro-preview, AWS Bedrock (claude-sonnet-4-6, minimax-m2.5), and Azure (DeepSeek-V3.2, claude-sonnet-4-6, gpt-5, gpt-5.3-codex). Any model goai supports works.
     link: /concepts/agents
     linkText: How agents work
-  - title: Spec-first
-    details: Workflows validate against spec/v1/schema.json plus a Go validator with 40+ conformance fixtures BEFORE the first LLM call. Cycles, missing dependencies, unknown agents, malformed CEL - all rejected in milliseconds, not after a minute of model burn.
-    link: /yaml/
-    linkText: YAML reference
-  - title: Embed anywhere
-    details: CLI for one-shot runs (zenflow flow, zenflow goal, zenflow agent), or a small Go library surface (zenflow.New, Orchestrator.RunFlow) for embedding inside long-running services. Ships as a single static Go binary - no JVM, no Python interpreter, no Node runtime.
+  - title: Embed the harness anywhere
+    details: CLI for one-shot runs (zenflow flow, zenflow goal, zenflow agent), or a small Go library surface (zenflow.New, Orchestrator.RunFlow) for embedding the harness inside long-running services. Ships as a single static Go binary - no JVM, no Python interpreter, no Node runtime.
     link: /integrations/
     linkText: Integrations
 ---
@@ -65,9 +65,9 @@ A real `zenflow flow spec/v1/examples/full-featured.yaml --model google/gemini-3
 
 ## Why zenflow
 
-zenflow makes two opinionated choices. The workflow is a YAML file you can review in a PR: versionable, diffable, runnable from any language that can shell out to a binary. And every inter-agent message is either delivered to a mailbox or dropped with a typed reason. There is no third option.
+zenflow is an agent harness with two opinionated choices. The workflow is a YAML file you can review in a PR: versionable, diffable, runnable from any language that can shell out to a binary. And every inter-agent message is either delivered to a mailbox or dropped with a typed reason. There is no third option.
 
-zenflow is built for production embedders: systems that run workflows from a queue, persist state to a database, and need an audit trail when something goes sideways. The whole engine is one Go module with a small, stable Orchestrator API.
+The harness is built for production embedders: systems that run workflows from a queue, persist state to a database, and need an audit trail when something goes sideways. Agents reach the outside world through tools - the built-in `read` / `write` / `bash` set, anything you register in Go, and any [MCP server](/integrations/mcp) you declare in a `settings.json`. The whole harness is one Go module with a small, stable Orchestrator API.
 
 ## Three modes, one engine
 
