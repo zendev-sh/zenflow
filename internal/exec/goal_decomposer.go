@@ -359,10 +359,29 @@ func ValidateToolNames(wf *Workflow, tools []goai.Tool) error {
 					Agent: name,
 				}
 			}
-			if !catalog[tool] {
-				return &ToolNotFoundError{Tool: tool, Agent: name}
+			if catalog[tool] {
+				continue
 			}
+			// An MCP server name ("firecrawl") is valid when the catalog
+			// holds at least one tool that server contributed
+			// ("firecrawl__scrape"). This lets an agent grant a whole
+			// server by its bare name without listing every tool.
+			if mcpGroupInCatalog(tool, tools) {
+				continue
+			}
+			return &ToolNotFoundError{Tool: tool, Agent: name}
 		}
 	}
 	return nil
+}
+
+// mcpGroupInCatalog reports whether entry names an MCP server with at least
+// one tool present in the catalog.
+func mcpGroupInCatalog(entry string, tools []goai.Tool) bool {
+	for _, t := range tools {
+		if mcpGroupMatches(t.Name, entry) {
+			return true
+		}
+	}
+	return false
 }

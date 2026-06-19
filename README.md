@@ -4,9 +4,9 @@
 
 <h1 align="center">zenflow</h1>
 
-<p align="center"><em><a href="https://zenflow.sh/agent-orchestration.html">Multi-agent orchestration & workflow engine.</a></em></p>
+<p align="center"><em><a href="https://zenflow.sh/agent-orchestration.html">The multi-agent harness & workflow engine.</a></em></p>
 
-<p align="center">Declarative YAML agent workflows. An LLM coordinator routes events through hub-and-spoke mailboxes with race-safe delivery. One YAML file, one Go binary. Runs on any provider <a href="https://goai.sh">goai</a> supports.</p>
+<p align="center">A production multi-agent harness. Declarative YAML agent workflows; an LLM coordinator routes events through hub-and-spoke mailboxes with race-safe delivery; agents call native MCP tools. One YAML file, one Go binary. Runs on any provider <a href="https://goai.sh">goai</a> supports.</p>
 
 <p align="center">
   <a href="https://codecov.io/gh/zendev-sh/zenflow"><img src="https://codecov.io/gh/zendev-sh/zenflow/branch/main/graph/badge.svg" alt="Codecov"></a>
@@ -49,6 +49,7 @@ A real `zenflow flow spec/v1/examples/full-featured.yaml --model google/gemini-3
 - **Declarative YAML agent workflows.** Multi-agent workflows expressed in a small composable spec: steps, dependencies, parallel fan-out, conditions (CEL), loops (`forEach`, repeat-until via `untilAgent`/`maxIterations`), `includes` for sub-workflow reuse, and **tool steps** (`tool` / `toolInput`) that invoke a registered goai tool directly without an LLM call.
 - **LLM coordinator with hub-and-spoke messaging.** A coordinator agent narrates progress, forwards events between running steps, and finalizes the run. Peer agents never address each other directly.
 - **Race-safe Mailbox + Wake delivery.** Every message is delivered through a per-agent mailbox with explicit drop reasons. No silent loss, no out-of-order delivery, no leaked goroutines.
+- **Native MCP tools.** Point the harness at a Claude-compatible `.zenflow/settings.json` and every [Model Context Protocol](https://modelcontextprotocol.io) server's tools become available to your agents - stdio, HTTP, or SSE. No Go code, no recompile. Reference a whole server by name in an agent's `tools:`. See [MCP servers](https://zenflow.sh/integrations/mcp).
 - **Multi-provider verified.** Verified against Google `gemini-3-pro-preview`, AWS Bedrock (`anthropic.claude-sonnet-4-6`, `minimax.minimax-m2.5`), and Azure (`DeepSeek-V3.2`, `claude-sonnet-4-6`, `gpt-5`, `gpt-5.3-codex`) - any model [goai](https://goai.sh) supports works.
 - **Spec-first.** Workflows validate against [`spec/v1/schema.json`](https://github.com/zendev-sh/zenflow/blob/main/spec/v1/schema.json) plus a Go validator with 40+ conformance fixtures BEFORE the first LLM call. Cycles, missing dependencies, unknown agents, malformed CEL - all rejected in milliseconds, not after a minute of model burn.
 - **Embed anywhere.** CLI for one-shot runs (`zenflow flow`, `zenflow goal`, `zenflow agent`); Go library primitives (`zenflow.New`, `Orchestrator.RunFlow`) for embedding inside long-running services. Ships as a single static Go binary - no JVM, no Python interpreter, no Node runtime. `go install`, `brew install`, or `curl | sh` and you're running.
@@ -183,6 +184,36 @@ zenflow exposes the same engine through three CLI verbs and one Go library surfa
 
 The library form (`zenflow.New(...).RunFlow(ctx, wf)`) is the same engine; the CLI is a thin wrapper that resolves a provider from `--model`, wires the coordinator, and prints results.
 
+## MCP servers
+
+Give agents tools from any [Model Context Protocol](https://modelcontextprotocol.io) server with a Claude-compatible `.zenflow/settings.json` - no Go code, no recompile:
+
+```json
+{
+  "mcpServers": {
+    "firecrawl": {
+      "command": "npx",
+      "args": ["-y", "firecrawl-mcp"],
+      "env": { "FIRECRAWL_API_KEY": "${FIRECRAWL_API_KEY}" }
+    }
+  }
+}
+```
+
+```yaml
+agents:
+  crawler:
+    description: "Crawls pages with firecrawl."
+    tools: ["read", "write", "firecrawl"]   # bare server name = all its tools
+```
+
+```bash
+zenflow flow crawl.yaml --model google/gemini-2.5-flash --verbose
+# zenflow: MCP loaded 8 tool(s) from server(s) [firecrawl]
+```
+
+The CLI reads `.zenflow/settings.json` by default (override with `--mcp-config`, disable with `--no-mcp`); all three verbs use it. stdio, HTTP, and SSE transports are supported, with `${VAR}` env expansion. Discovered tools are namespaced `<server>__<tool>`. Embedders get the same surface via `LoadMCPConfig` / `ConnectMCPConfig` / `WithAdditionalTools`. Full guide: [MCP servers](https://zenflow.sh/integrations/mcp).
+
 ## Documentation
 
 | Section | What's there |
@@ -192,7 +223,7 @@ The library form (`zenflow.New(...).RunFlow(ctx, wf)`) is the same engine; the C
 | [Concepts](https://zenflow.sh/concepts/) | Agents, scheduling, coordinator, messaging, failure handling, isolation, shared memory, observability, loops, conditions, composition, structured output, tools. |
 | [YAML Reference](https://zenflow.sh/yaml/) | Workflow / agent / step / loop schemas + CEL expression reference. |
 | [CLI Reference](https://zenflow.sh/cli/) | Commands, flags, output formats. |
-| [Integrations](https://zenflow.sh/integrations/) | CI/CD, Docker, scripting, observability (OTel / Langfuse / Jaeger / Datadog). |
+| [Integrations](https://zenflow.sh/integrations/) | MCP servers, CI/CD, Docker, scripting, observability (OTel / Langfuse / Jaeger / Datadog). |
 | [Go API](https://zenflow.sh/api/) | Core functions, options (49 `With*` constructors), types, errors. |
 | [Examples](https://zenflow.sh/examples) | 19 worked examples covering every primitive. |
 | [SKILL.md](SKILL.md) | Top-of-funnel context for AI agents that consume zenflow (tool description, env vars, YAML shape, NDJSON event schema, exit codes, decision flow). Follows the AI-skill format convention; reusable by any agent harness. |

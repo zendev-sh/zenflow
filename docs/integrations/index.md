@@ -15,6 +15,7 @@ Pick the surface that matches what you already do:
 
 | You want to... | Reach for | Notes |
 | --- | --- | --- |
+| Give agents tools from an MCP server | [MCP servers](./mcp) | Claude-compatible `settings.json`; stdio / HTTP / SSE. No Go code, no recompile. |
 | Run a workflow on every push or PR | [CI/CD](./ci-cd) | GitHub Actions, GitLab CI, CircleCI examples. The binary is small, no daemon. |
 | Bake zenflow into an image you deploy | [Docker](./docker) | Multi-stage `golang:1.25` build, distroless runtime, Kubernetes Job manifest. |
 | Drive zenflow from a shell, Node, or Python script | [Scripting](./scripting) | NDJSON event stream via `--json`, exit-code semantics, parsing patterns. |

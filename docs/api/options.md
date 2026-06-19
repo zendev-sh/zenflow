@@ -113,6 +113,57 @@ orch := zenflow.New(
 
 For per-call tool restriction (e.g., a sub-agent gets only read-only tools), set `AgentConfig.CallTools` instead of using a separate orchestrator.
 
+### `WithAdditionalTools`
+
+```go
+func WithAdditionalTools(tools ...goai.Tool) Option
+```
+
+Appends tools to the catalog instead of replacing it. `WithTools` overwrites the whole slice; `WithAdditionalTools` layers onto whatever an earlier `WithTools` installed. This is the canonical way to add [MCP](/integrations/mcp)-discovered tools on top of a built-in set without rebuilding the slice.
+
+```go
+orch := zenflow.New(
+    zenflow.WithModel(model),
+    zenflow.WithTools(builtins...),          // base catalog
+    zenflow.WithAdditionalTools(mcpTools...), // layered on top
+)
+```
+
+### MCP configuration
+
+zenflow loads [Model Context Protocol](https://modelcontextprotocol.io) servers from a Claude-compatible `settings.json` and exposes their tools as ordinary `goai.Tool` values.
+
+```go
+func LoadMCPConfig(path string) (*MCPConfig, error)
+func ConnectMCPConfig(ctx context.Context, cfg *MCPConfig, opts ...MCPOption) (*MCPToolset, error)
+
+func WithMCPClientInfo(name, version string) MCPOption
+func WithMCPRequestTimeout(d time.Duration) MCPOption
+func WithMCPStderr(w io.Writer) MCPOption
+```
+
+`LoadMCPConfig` parses the file (a missing file returns an error satisfying `errors.Is(err, os.ErrNotExist)`). `ConnectMCPConfig` connects to every enabled server and returns an `*MCPToolset`; `ts.Tools()` feeds `WithAdditionalTools`, and `ts.Close()` shuts the servers down. A failure connecting to one server does not abort the rest - the toolset carries every server that connected and the error joins the failures.
+
+```go
+cfg, err := zenflow.LoadMCPConfig(".zenflow/settings.json")
+if err != nil && !errors.Is(err, os.ErrNotExist) {
+    return err
+}
+ts, err := zenflow.ConnectMCPConfig(ctx, cfg)
+if err != nil {
+    log.Printf("partial MCP load: %v", err)
+}
+defer ts.Close()
+
+orch := zenflow.New(
+    zenflow.WithModel(model),
+    zenflow.WithTools(builtins...),
+    zenflow.WithAdditionalTools(ts.Tools()...),
+)
+```
+
+See the [MCP servers guide](/integrations/mcp) for the `settings.json` format, transports, env expansion, and tool grouping.
+
 ### `WithMaxTurns`
 
 ```go

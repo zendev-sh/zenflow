@@ -7,11 +7,12 @@ description: Agents in zenflow do work through tools. A tool is a function the L
 
 Agents in zenflow do work through tools. A tool is a function the LLM can call - bash command, file read, HTTP request, anything. Tools turn an LLM from a chat surface into something that touches the world.
 
-Zenflow distinguishes three kinds of tools:
+Zenflow distinguishes four kinds of tools:
 
 1. **Built-in CLI tools** (`bash`, `read`, `write`, `glob`, `grep`) - shipped with the `zenflow` binary, available to YAML-declared agents in CLI runs.
 2. **Library-supplied tools** - any `goai.Tool` you register via `WithTools`. The CLI is a consumer of this surface; embedded users supply their own.
-3. **Auto-injected tools** - the executor adds `send_message`, `shared_memory_read`, `shared_memory_write`, `submit_result` automatically when the workflow uses messaging, shared memory, or structured output.
+3. **MCP tools** - tools discovered from [Model Context Protocol](https://modelcontextprotocol.io) servers declared in `settings.json`. zenflow connects and exposes them natively - no Go code. See [MCP servers](/integrations/mcp).
+4. **Auto-injected tools** - the executor adds `send_message`, `shared_memory_read`, `shared_memory_write`, `submit_result` automatically when the workflow uses messaging, shared memory, or structured output.
 
 ## Tool steps
 
@@ -109,8 +110,9 @@ Each agent's effective tool set is `(allowlist) - (denylist)`:
 - Omit `tools` - every registered tool is available to the agent.
 - `tools: [a, b]` - only `a` and `b`.
 - `disallowedTools: [bash]` - removed from the resolved allowlist.
+- `tools: [firecrawl]` - an MCP **server name** grants every tool that server contributed (`firecrawl__scrape`, `firecrawl__crawl`, ...). Works in both lists. See [MCP servers](/integrations/mcp).
 
-The executor resolves the names against the orchestrator's tool catalogue (the slice you passed to `WithTools`). Names that do not match any registered tool surface as a load-time error.
+The executor resolves the names against the orchestrator's tool catalogue (the slice you passed to `WithTools` / `WithAdditionalTools`). Names that do not match any registered tool - or MCP server group - surface as a load-time error before the first LLM call.
 
 ## Auto-injected tools
 
@@ -157,32 +159,47 @@ Use cases:
 
 The handler runs synchronously in the agent's loop. Keep it fast - a slow handler stalls the LLM.
 
-## MCP tools via goai
+## MCP tools (native)
 
-[Model Context Protocol](https://modelcontextprotocol.io) servers expose tool catalogues over a standard wire format. Goai includes an MCP client that converts MCP tools into `goai.Tool` values. They register with `WithTools` like any other tool:
+[Model Context Protocol](https://modelcontextprotocol.io) servers expose tool catalogues over a standard wire format. zenflow supports MCP natively: point it at a Claude-compatible `settings.json` and every server's tools become available to your agents - no Go code, no recompile.
+
+```json
+// .zenflow/settings.json
+{
+  "mcpServers": {
+    "firecrawl": {
+      "command": "npx",
+      "args": ["-y", "firecrawl-mcp"],
+      "env": { "FIRECRAWL_API_KEY": "${FIRECRAWL_API_KEY}" }
+    }
+  }
+}
+```
+
+```yaml
+agents:
+  crawler:
+    description: "Crawls pages with firecrawl."
+    tools: ["read", "write", "firecrawl"]   # bare server name = all its tools
+```
+
+The CLI reads `.zenflow/settings.json` automatically (override with `--mcp-config`, disable with `--no-mcp`). Discovered tools are namespaced `<server>__<tool>`; an agent can grant a whole server by its bare name or a single tool by its full name.
+
+Embedders get the same surface as a small library API - `LoadMCPConfig`, `ConnectMCPConfig`, and `WithAdditionalTools` (which appends to the catalog rather than replacing it):
 
 ```go
-import "github.com/zendev-sh/goai/mcp"
-
-client := mcp.NewClient("zenflow", "1.0.0")
-if err := client.Connect(ctx); err != nil {
-    return err
-}
-defer client.Close()
-
-result, err := client.ListTools(ctx, nil)
-if err != nil {
-    return err
-}
-mcpTools := mcp.ConvertTools(client, result.Tools)
+cfg, _ := zenflow.LoadMCPConfig(".zenflow/settings.json")
+ts, _ := zenflow.ConnectMCPConfig(ctx, cfg)
+defer ts.Close()
 
 orch := zenflow.New(
     zenflow.WithModel(llm),
-    zenflow.WithTools(mcpTools...),
+    zenflow.WithTools(builtins...),
+    zenflow.WithAdditionalTools(ts.Tools()...),
 )
 ```
 
-The agent calls them by their MCP-declared names. Zenflow does not need to know they came from MCP - they look like any other `goai.Tool`. See [goai MCP docs](https://goai.sh) for full setup and authentication options.
+zenflow does not need to know a tool came from MCP - it looks like any other `goai.Tool`. See the [MCP servers guide](/integrations/mcp) for the full config format (stdio / HTTP / SSE), env expansion, grouping, and lifecycle.
 
 ## Tool execution and side effects
 

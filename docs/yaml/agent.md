@@ -135,6 +135,7 @@ effective = (allowlist) - (denylist)
 - If `tools` is omitted, every tool registered with the orchestrator (via `WithTools`) is available to the agent.
 - `tools: [a, b, c]` means exactly those three.
 - `disallowedTools` removes entries from whatever the allowlist resolved to.
+- An [MCP](/integrations/mcp) **server name** in either list expands to all of that server's tools: `tools: [firecrawl]` grants every `firecrawl__*` tool. A specific MCP tool is grantable by its full `server__tool` name.
 
 ```yaml
 agents:
@@ -145,9 +146,13 @@ agents:
   builder:
     description: "Builder with most tools but no destructive bash."
     disallowedTools: ["bash"]
+
+  crawler:
+    description: "Crawls pages via the firecrawl MCP server."
+    tools: ["read", "write", "firecrawl"]   # 'firecrawl' = every firecrawl tool
 ```
 
-The CLI's default tool registry includes `bash`, `read`, `write`, `glob`, and `grep`. Library callers register their own via `zenflow.WithTools(...)`.
+The CLI's default tool registry includes `bash`, `read`, `write`, `glob`, and `grep`, plus any tools from [MCP servers](/integrations/mcp) declared in `settings.json`. Library callers register their own via `zenflow.WithTools(...)` / `zenflow.WithAdditionalTools(...)`. A tool (or MCP server) name that matches nothing in the catalog is rejected before the first LLM call with a `references unknown tool` error.
 
 ## maxTurns
 

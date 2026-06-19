@@ -138,7 +138,15 @@ func TestRunFlow_Integration(t *testing.T) {
 			{Text: "review done", Usage: provider.Usage{InputTokens: 15, OutputTokens: 8}},
 		},
 	}
-	var tools []goai.Tool
+	// testWorkflowYAML's coder agent references read/write/bash/grep; register
+	// them so flow-path ValidateToolNames passes (the contract: agents may
+	// only reference tools present in the orchestrator catalog).
+	tools := []goai.Tool{
+		makeTool("read", "read", "ok"),
+		makeTool("write", "write", "ok"),
+		makeTool("bash", "bash", "ok"),
+		makeTool("grep", "grep", "ok"),
+	}
 
 	zf := New(
 		WithModel(llm),
@@ -1051,6 +1059,14 @@ func TestRunFlow_EmitsPlanReadyBeforeExecute(t *testing.T) {
 		WithModel(llm),
 		WithProgress(rec),
 		WithDefaultModel("gpt-4o"),
+		// Register the tools testWorkflowYAML's coder references so flow-path
+		// ValidateToolNames passes.
+		WithTools(
+			makeTool("read", "read", "ok"),
+			makeTool("write", "write", "ok"),
+			makeTool("bash", "bash", "ok"),
+			makeTool("grep", "grep", "ok"),
+		),
 	)
 	wf, err := ParseWorkflow([]byte(testWorkflowYAML))
 	if err != nil {

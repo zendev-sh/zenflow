@@ -5,6 +5,28 @@ import (
 	"testing"
 )
 
+// TestParseFlags_MCPFlags covers --mcp-config (value) and --no-mcp (bool).
+func TestParseFlags_MCPFlags(t *testing.T) {
+	f, err := parseFlags([]string{"--mcp-config", "custom/settings.json", "--no-mcp"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if f.mcpConfig != "custom/settings.json" {
+		t.Errorf("mcpConfig = %q, want custom/settings.json", f.mcpConfig)
+	}
+	if !f.noMCP {
+		t.Errorf("noMCP = false, want true")
+	}
+}
+
+// TestParseFlags_MCPConfigRequiresValue covers the missing-value branch.
+func TestParseFlags_MCPConfigRequiresValue(t *testing.T) {
+	_, err := parseFlags([]string{"--mcp-config"})
+	if err == nil || !strings.Contains(err.Error(), "--mcp-config requires a path") {
+		t.Fatalf("err = %v, want --mcp-config requires a path", err)
+	}
+}
+
 // TestParseFlags_KeyEqualsValueForm covers the first-pass
 // normaliser that splits `--key=value` into separate tokens.
 func TestParseFlags_KeyEqualsValueForm(t *testing.T) {
