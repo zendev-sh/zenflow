@@ -35,8 +35,8 @@ github.com/rogpeppe/go-internal v1.14.1 h1:UQB4HGPB6osV0SQTLymcB4TgvyWu6ZyliaW0t
 github.com/rogpeppe/go-internal v1.14.1/go.mod h1:MaRKkUm5W0goXpeCfT7UZI6fk/L7L7so1lCWt35ZSgc=
 github.com/stretchr/testify v1.11.1 h1:7s2iGBzp5EwR7/aIZr8ao5+dra3wiQyKjjFuvgVKu7U=
 github.com/stretchr/testify v1.11.1/go.mod h1:wZwfW3scLgRK+23gO65QZefKpKQRnfz6sD981Nm4B6U=
-github.com/zendev-sh/goai v0.8.1 h1:f+nNG6rW5IRcTaeXG92SPszy5dx0kKoY/4cQX/1t8Ik=
-github.com/zendev-sh/goai v0.8.1/go.mod h1:64KI8qD64Z/z+2bx4g1yjNDPVORWWN58lNWIYye6S80=
+github.com/zendev-sh/goai v0.8.5 h1:5bXsdRj06S2bDHOR6dahifW4bYCfrv3h/3NQZ2hwgVw=
+github.com/zendev-sh/goai v0.8.5/go.mod h1:F0NPGQu0kzKQOQ0/pWYJ4E3J0EY2TBa+uEvqgOPsSaY=
 github.com/zendev-sh/goai/observability/otel v0.8.1 h1:ybcvlhN4wYTj9Lbp9MuS52CTB7GZT7hTxUnpOS6MDRU=
 github.com/zendev-sh/goai/observability/otel v0.8.1/go.mod h1:caCoMqnjLjVDzP01Sxbo9BLGIjjbKHFglWfxmJdtPm8=
 github.com/zendev-sh/zenflow/observability/otel v0.1.4 h1:B9S1e2nRKtjWJIdCwc08VIj+2oaJpMhzdrFtfETj86M=
