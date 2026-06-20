@@ -86,6 +86,11 @@ func ParseWorkflowJSON(data []byte) (*Workflow, error) {
 		return nil, &ValidationError{Message: err.Error()}
 	}
 
+	// Interpolate ${VAR} references before sanitising/validating so the
+	// substituted text is Unicode-checked and counted against size limits
+	// just like inline content (issue #16).
+	expandWorkflowEnv(&wf)
+
 	if err := SanitizeWorkflowUnicode(&wf); err != nil {
 		return nil, err
 	}
@@ -113,6 +118,11 @@ func ParseWorkflow(data []byte) (*Workflow, error) {
 	if err := dec.Decode(&wf); err != nil {
 		return nil, &ValidationError{Message: err.Error()}
 	}
+
+	// Interpolate ${VAR} references before sanitising/validating so the
+	// substituted text is Unicode-checked and counted against size limits
+	// just like inline content (issue #16).
+	expandWorkflowEnv(&wf)
 
 	if err := SanitizeWorkflowUnicode(&wf); err != nil {
 		return nil, err
@@ -507,13 +517,18 @@ func ValidateWorkflow(wf *Workflow) ([]string, error) {
 // non-empty content begins with `@` triggers another resolution) and
 // rejected at depth > MaxNestingDepth.
 func resolveRefs(wf *Workflow, baseDir string) error {
+	// @-ref'd file contents are interpolated too (expandEnvVars), so a
+	// referenced instructions/prompt file may use ${VAR} just like inline
+	// text (issue #16). Inline fields were already expanded in
+	// ParseWorkflow; the ref path itself was expanded there as well, so
+	// `@${DIR}/prompt.md` resolves against the substituted path.
 	for name, agent := range wf.Agents {
 		if strings.HasPrefix(agent.Prompt, "@") {
 			content, err := resolveChainedRef(baseDir, agent.Prompt[1:], 1, map[string]bool{})
 			if err != nil {
 				return &ValidationError{Message: "agent " + name + " prompt: " + err.Error()}
 			}
-			agent.Prompt = content
+			agent.Prompt = expandEnvVars(content)
 			wf.Agents[name] = agent
 		}
 	}
@@ -524,7 +539,7 @@ func resolveRefs(wf *Workflow, baseDir string) error {
 			if err != nil {
 				return &ValidationError{Message: "step " + wf.Steps[i].ID + " instructions: " + err.Error()}
 			}
-			wf.Steps[i].Instructions = content
+			wf.Steps[i].Instructions = expandEnvVars(content)
 		}
 	}
 

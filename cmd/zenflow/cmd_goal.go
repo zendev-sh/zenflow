@@ -16,7 +16,7 @@ import (
 func cmdGoal() {
 	a := osArgs()
 	if len(a) < 3 {
-		fmt.Fprintln(stderr, "usage: zenflow goal <goal> [<extra-context>] [--model MODEL] [--max-concurrency N] [--max-depth N] [--timeout DURATION] [--workdir DIR] [--json] [--quiet] [--summary-only] [--stream] [--trace] [--thinking LEVEL] [--mcp-config PATH] [--no-mcp] [--verbose] [--yolo] [--sandbox] [--allow LIST] [--deny LIST] [--strict]")
+		fmt.Fprintln(stderr, "usage: zenflow goal <goal> [<extra-context>] [--model MODEL] [--max-concurrency N] [--max-depth N] [--timeout DURATION] [--workdir DIR] [--json] [--quiet] [--summary-only] [--stream] [--trace] [--thinking LEVEL] [--mcp-config PATH] [--no-mcp] [--env-file PATH] [--no-dotenv] [--verbose] [--yolo] [--sandbox] [--allow LIST] [--deny LIST] [--strict]")
 		exit(3)
 		return
 	}
@@ -64,6 +64,9 @@ func cmdGoal() {
 		exit(3)
 		return
 	}
+	// Auto-load .env so ${VAR} in the decomposed workflow and MCP config
+	// resolve from the operator's environment (issue #16).
+	loadDotEnv(flags)
 	// Install OTel exporter BEFORE building orchestrator opts so that
 	// zenotel.WithTracing inside buildOrchestratorOpts picks up the
 	// registered global provider. Deferred shutdown flushes buffered spans.

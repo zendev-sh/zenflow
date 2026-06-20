@@ -86,6 +86,8 @@ steps:
     instructions: "@instructions/plan-feature.md"
 ```
 
+`instructions` also supports `${VAR}` / `$VAR` environment-variable interpolation, resolved at load time from the host environment (an unset variable becomes `""`, a literal dollar is `$$`). This applies to inline text and to the contents of an `@`-referenced file. `toolInput` is **not** interpolated -- a leading `$` there is reserved for CEL. See [Spec §9.1](https://github.com/zendev-sh/zenflow/blob/main/spec/v1/spec.md) and [CLI / Flags](/cli/flags#environment-variables) for `.env` auto-loading.
+
 When a step has dependencies, the engine prepends the dependency outputs to the agent context automatically; `instructions` does not need template syntax to reference upstream content. See [Concepts / DAG Scheduling](/concepts/dag-scheduling) for the data-passing rules.
 
 Maximum length: 2000 chars (`MaxDescriptionChars`).

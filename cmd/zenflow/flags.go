@@ -34,6 +34,8 @@ type cmdFlags struct {
 	thinking       string // reasoning/thinking level: off|low|medium|high (default off)
 	mcpConfig      string // path to MCP settings.json (default .zenflow/settings.json)
 	noMCP          bool   // disable MCP server loading entirely
+	envFile        string // path to .env file (default ./.env if present)
+	noDotEnv       bool   // disable .env auto-loading entirely
 }
 
 // parseFlags parses common CLI flags from args (starting after the positional argument).
@@ -163,6 +165,14 @@ func parseFlags(args []string) (cmdFlags, error) {
 			f.mcpConfig = args[i]
 		case "--no-mcp":
 			f.noMCP = true
+		case "--env-file":
+			i++
+			if i >= len(args) {
+				return f, fmt.Errorf("--env-file requires a path")
+			}
+			f.envFile = args[i]
+		case "--no-dotenv":
+			f.noDotEnv = true
 		case "--thinking":
 			i++
 			if i >= len(args) {

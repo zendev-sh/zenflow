@@ -24,6 +24,17 @@ The `Applies to` column lists the verbs that recognize the flag. Flags not liste
 | `--mcp-config PATH` | path | `.zenflow/settings.json` | flow, goal, agent | Read [MCP](/integrations/mcp) servers from a Claude-compatible `settings.json` at `PATH`. When unset, the default path is loaded if present (a missing default is a silent no-op; a missing explicit `PATH` is reported). Discovered tools are namespaced `<server>__<tool>` and grantable by bare server name in an agent's `tools:`. The file launches local commands - it is a [trust boundary](/integrations/mcp#security). |
 | `--no-mcp` | bool | off | flow, goal, agent | Skip MCP server loading entirely, even if a config file is present. |
 
+## Environment variables
+
+Free-text workflow fields (`description`, `agents.*.prompt`, `steps.*.instructions`) support `${VAR}` / `$VAR` interpolation resolved from the process environment at load time (see [Spec §9.1](https://github.com/zendev-sh/zenflow/blob/main/spec/v1/spec.md)). An unset variable expands to `""`; write a literal dollar as `$$`. `toolInput` is excluded ( `$` there is reserved for CEL).
+
+Before a run, the CLI auto-loads a `.env` file from the working directory and applies any variable it declares that is not already exported (an exported value always wins).
+
+| Flag | Type | Default | Applies to | Description |
+| --- | --- | --- | --- | --- |
+| `--env-file PATH` | path | `./.env` | flow, goal, agent | Load env vars from a shell-style `.env` at `PATH` (supports `export `, `#` comments, and quoted values). A missing default is a silent no-op; a missing explicit `PATH` is reported. Like the MCP config, a `.env` is a trust boundary. |
+| `--no-dotenv` | bool | off | flow, goal, agent | Skip `.env` auto-loading entirely. |
+
 ## Lifecycle and execution
 
 | Flag | Type | Default | Applies to | Description |
