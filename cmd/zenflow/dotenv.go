@@ -134,13 +134,13 @@ func isEnvKey(k string) bool {
 	for i := 0; i < len(k); i++ {
 		c := k[i]
 		alpha := c == '_' || (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')
-		if i == 0 {
-			if !alpha {
-				return false
-			}
-			continue
-		}
-		if !alpha && !(c >= '0' && c <= '9') {
+		digit := c >= '0' && c <= '9'
+		switch {
+		case i == 0 && alpha:
+			// leading char must be a letter or underscore
+		case i > 0 && (alpha || digit):
+			// subsequent chars may also be digits
+		default:
 			return false
 		}
 	}
