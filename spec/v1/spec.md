@@ -634,6 +634,31 @@ steps:
       - "docs/api-spec.yaml"
 ```
 
+### 9.1 Environment Variable Interpolation
+
+The free-text fields `description`, `agents.*.prompt`, and `steps.*.instructions` (including instructions of steps nested inside a loop) support `${VAR}` / `$VAR` environment-variable interpolation. References resolve from the host process environment at load time.
+
+| Form | Interpretation |
+|------|----------------|
+| `${RSS_FEED_URL}` | Replaced with the value of `RSS_FEED_URL`. |
+| `$RSS_FEED_URL` | Same; `VAR` matches `[A-Za-z_][A-Za-z0-9_]*`. |
+| `${MISSING}` | An unset variable expands to the empty string. |
+| `$$` | Literal `$`. `$${VAR}` produces the literal text `${VAR}`. |
+| `$5`, `$ `, trailing `$` | Left untouched (not a valid reference). |
+
+Interpolation also applies to the contents of an `@`-referenced file, and to the `@` reference path itself (`"@${DIR}/prompt.md"`).
+
+`toolInput` is **not** interpolated: a leading `$` there is reserved for CEL expressions (§4.1). Use a `description`/`instructions` field, or a CEL expression, to inject dynamic values into a tool step.
+
+Interpolation is a runtime behavior; JSON Schema does not enforce it. Like the `@` convention, parsers perform it during loading. Variables resolve from the environment populated by the host -- the `zenflow` CLI additionally auto-loads a `.env` file from the working directory (disable with `--no-dotenv`, redirect with `--env-file`).
+
+```yaml
+name: crawl-feed
+steps:
+  - id: scrape
+    instructions: "Fetch and summarize the feed at ${RSS_FEED_URL}."
+```
+
 ---
 
 ## 10. Duration Format

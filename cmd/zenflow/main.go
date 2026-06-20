@@ -263,6 +263,8 @@ func usage(w io.Writer) {
 	fmt.Fprintln(w, "  --thinking LEVEL    Extended reasoning: off|low|medium|high (default off)")
 	fmt.Fprintln(w, "  --mcp-config PATH   MCP servers settings.json (default .zenflow/settings.json if present)")
 	fmt.Fprintln(w, "  --no-mcp            Disable MCP server loading")
+	fmt.Fprintln(w, "  --env-file PATH     Env file for ${VAR} interpolation (default ./.env if present)")
+	fmt.Fprintln(w, "  --no-dotenv         Disable .env auto-loading")
 	fmt.Fprintln(w, "  --help, -h          Print this help text")
 	fmt.Fprintln(w, "  --version, -v       Print zenflow version")
 	fmt.Fprintln(w, "")

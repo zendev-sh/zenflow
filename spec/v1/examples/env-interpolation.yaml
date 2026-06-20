@@ -1,0 +1,20 @@
+# Environment Variable Interpolation -- ${VAR} references in free-text
+# fields (description, agent prompts, step instructions) resolve from the
+# host environment at load time. Unset variables expand to "". Write a
+# literal dollar as $$. See spec.md §9.1.
+#
+# Run with: RSS_FEED_URL=https://example.com/feed.xml zenflow flow env-interpolation.yaml
+# The zenflow CLI also auto-loads a .env file from the working directory.
+
+name: env-interpolation
+description: "Summarize the feed at ${RSS_FEED_URL}."
+
+agents:
+  summarizer:
+    description: "Reads a feed and writes a short digest."
+    prompt: "You summarize RSS feeds. The configured source is ${RSS_FEED_URL}."
+
+steps:
+  - id: summarize
+    agent: summarizer
+    instructions: "Fetch ${RSS_FEED_URL}, then write a 3-bullet summary of its latest items."

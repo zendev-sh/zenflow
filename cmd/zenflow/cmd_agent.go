@@ -17,7 +17,7 @@ import (
 func cmdAgent() {
 	a := osArgs()
 	if len(a) < 3 {
-		fmt.Fprintln(stderr, "usage: zenflow agent <prompt> [--model MODEL] [--max-turns N] [--max-depth N] [--workdir DIR] [--json] [--stream] [--thinking LEVEL] [--mcp-config PATH] [--no-mcp] [--verbose] [--yolo] [--sandbox] [--allow LIST] [--deny LIST] [--strict]")
+		fmt.Fprintln(stderr, "usage: zenflow agent <prompt> [--model MODEL] [--max-turns N] [--max-depth N] [--workdir DIR] [--json] [--stream] [--thinking LEVEL] [--mcp-config PATH] [--no-mcp] [--env-file PATH] [--no-dotenv] [--verbose] [--yolo] [--sandbox] [--allow LIST] [--deny LIST] [--strict]")
 		exit(3)
 		return
 	}
@@ -122,6 +122,9 @@ func cmdAgent() {
 		exit(3)
 		return
 	}
+	// Auto-load .env so ${VAR} in MCP config resolves from the operator's
+	// environment (issue #16).
+	loadDotEnv(flags)
 	// Use buildOrchestratorOpts for consistent LLM provider wiring.
 	opts := buildOrchestratorOpts(flags)
 	// Load MCP servers from settings.json and append their tools so the

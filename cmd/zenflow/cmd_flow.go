@@ -15,7 +15,7 @@ import (
 func cmdFlow() {
 	a := osArgs()
 	if len(a) < 3 {
-		fmt.Fprintln(stderr, "usage: zenflow flow <file> [<context>] [--model MODEL] [--timeout DURATION] [--max-concurrency N] [--max-depth N] [--resume RUN_ID] [--workdir DIR] [--json] [--quiet] [--summary-only] [--stream] [--plan] [--trace] [--thinking LEVEL] [--mcp-config PATH] [--no-mcp] [--verbose] [--yolo] [--sandbox] [--allow LIST] [--deny LIST] [--strict]")
+		fmt.Fprintln(stderr, "usage: zenflow flow <file> [<context>] [--model MODEL] [--timeout DURATION] [--max-concurrency N] [--max-depth N] [--resume RUN_ID] [--workdir DIR] [--json] [--quiet] [--summary-only] [--stream] [--plan] [--trace] [--thinking LEVEL] [--mcp-config PATH] [--no-mcp] [--env-file PATH] [--no-dotenv] [--verbose] [--yolo] [--sandbox] [--allow LIST] [--deny LIST] [--strict]")
 		exit(3)
 		return
 	}
@@ -53,6 +53,9 @@ func cmdFlow() {
 		exit(3)
 		return
 	}
+	// Auto-load .env into the process environment so ${VAR} references in
+	// the workflow YAML resolve during LoadWorkflow (issue #16).
+	loadDotEnv(flags)
 	wf, err := zenflow.LoadWorkflow(wfPath)
 	if err != nil {
 		fmt.Fprintf(stderr, "✗ %v\n", err)

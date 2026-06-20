@@ -144,6 +144,18 @@ The sub-workflow file is parsed as a full zenflow document. It can have its own 
 - **Recursive includes.** A sub-workflow can itself contain includes. Includes are hard-capped at depth 5 (`MaxIncludeDepth`). Going deeper returns a `ValidationError`. Sub-workflow expansion (which counts nested loops + includes after expansion) has a separate cap of 20 (`MaxNestingDepth`).
 - **Path resolution.** File paths in `includes` are relative to the **including** workflow file's directory, not the working directory.
 
+## Environment variable interpolation
+
+Alongside `@file` references, the free-text fields `description`, `agents.*.prompt`, and `steps.*.instructions` support `${VAR}` / `$VAR` interpolation resolved from the host environment at load time. This keeps a workflow reusable across environments without templating the YAML by hand:
+
+```yaml
+steps:
+  - id: crawl
+    instructions: "Fetch and summarize ${RSS_FEED_URL}."
+```
+
+Unset variables expand to the empty string; a literal dollar is written `$$` (`$${X}` -> `${X}`). Interpolation also reaches the contents of an `@`-referenced file and the reference path itself (`"@${DIR}/prompt.md"`). `toolInput` is excluded -- a leading `$` there is reserved for CEL expressions. The `zenflow` CLI auto-loads a `.env` file from the working directory (`--no-dotenv` to disable, `--env-file` to redirect); an exported value always wins over the file. See [Spec §9.1](https://github.com/zendev-sh/zenflow/blob/main/spec/v1/spec.md) and [CLI / Flags](/cli/flags#environment-variables).
+
 ## Reference resolution
 
 When a step has `include: foo`:
