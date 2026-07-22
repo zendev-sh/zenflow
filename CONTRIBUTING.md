@@ -133,44 +133,6 @@ levels gate at `-tags e2e` and require API keys.
 
 ## Releasing
 
-This repository ships under a "single-source export" model: internal
-work happens in a private monorepo, and the public mirror at
-`github.com/zendev-sh/zenflow` is the export target. Maintainers run
-`make zenflow-export` to produce a clean staging tree (banned files
-stripped, internal markers scrubbed, hygiene checks enforced) and
-`make zenflow-publish` to push the exported snapshot to the public
-remote.
-
-### Manual review pass after the strip pipeline
-
-The strip pipeline is mechanical: regex-based removal of backlog IDs
-(`Z.X.Y`, `Phase N`, `Round N`, etc.), internal project codenames,
-commit/PR refs, and internal paths. The exact token list lives in
-`scripts/zenflow-export.sh`'s `scrub_sources` function and is the
-source of truth.
-Two patterns require human judgement and so the maintainer reviews
-the diff before running `make zenflow-publish`:
-
-- **Project-name vs identifier-name disambiguation.** The scrub
-  matches the banned tokens only inside `//` comments and `*` doc
-  bodies, so identifier names (`type Round struct`, `func roundN()`)
-  are intentionally left alone. If a comment legitimately discusses a
-  Go identifier whose name overlaps with a banned token, the strip
-  may have introduced an empty parenthetical or a hanging punctuation
-  mark. Review the staging diff at those sites and fix in the source
-  repo (the canonical edit) before re-running the export.
-- **Comments with intermixed semantic + marker context.** The scrub
-  preserves semantic content and excises marker fragments, but a
-  comment that reads `// Tweak per the namespace fix` becomes
-  `// Tweak per's namespace fix` after strip - grammatically valid
-  but semantically confusing. Reword the comment in the source repo.
-
-The recommended cadence is `make zenflow-export` → `make zenflow-diff`
-→ human review → fix anything ugly upstream in the source repo →
-re-export → `make zenflow-publish` only when the diff reads clean.
-
-### Tagging a release
-
 zenflow ships as a multi-module Go repository: the main module is
 `github.com/zendev-sh/zenflow` and there is a sibling submodule
 `github.com/zendev-sh/zenflow/observability/otel` for opt-in OTel
@@ -182,43 +144,31 @@ binaries (Homebrew, GoReleaser releases, GHCR Docker images) are
 built with `-tags otel` so end users get full `--trace` support out
 of the box.
 
-This means the submodule tag is OPTIONAL on the v0.1.0-pre release path -
+This means the submodule tag is OPTIONAL on the release path -
 default `go install` works without it, and only consumers who run
 `go install -tags otel` (or build official binaries from source) need
 it resolvable on the proxy.
 
-First release (`v0.1.0-pre`):
+### Tagging a release
+
+Releases are cut from `main`. Replace `<version>` with the release tag
+(for example `v0.2.0`):
 
 ```bash
-# 1. Export the staging tree:
-make zenflow-export
-
-# 2. (OPTIONAL but recommended) Prep go.mod so source rebuilds with
-#    -tags otel resolve the submodule. Skipping this step still ships
-#    a working release; only `go install -tags otel` from source is
-#    affected, and even then GoReleaser-built distributed binaries
-#    work because the tag/release sequence resolves through the proxy.
-make zenflow-prep-release VERSION=v0.1.0-pre
-cd "$ZENFLOW_CLONE_DIR"
-git add go.mod && git commit -m "chore: drop local replace, bump otel require to v0.1.0-pre"
-
-# 3. Push to public main:
-git push origin main
-
-# 4. (OPTIONAL, only if step 2 was run) Tag the submodule and
-#    regenerate go.sum so `-tags otel` source builds resolve:
-git tag observability/otel/v0.1.0-pre
-git push origin observability/otel/v0.1.0-pre
+# 1. (OPTIONAL but recommended) Tag the submodule first and regenerate
+#    go.sum so `-tags otel` source builds resolve the new version:
+git tag observability/otel/<version>
+git push origin observability/otel/<version>
 go mod tidy
 git add go.sum && git commit -m "chore: regenerate go.sum after submodule tag"
 git push origin main
 
-# 5. Tag the main module v0.1.0-pre on the head commit:
-git tag v0.1.0-pre
-git push origin v0.1.0-pre
+# 2. Tag the main module on the head commit:
+git tag <version>
+git push origin <version>
 ```
 
-GoReleaser fires from the `v0.1.0-pre` push: binaries for macOS, Linux,
+GoReleaser fires from the `<version>` push: binaries for macOS, Linux,
 and Windows (amd64 + arm64) built with `-tags otel`, Homebrew cask
 auto-PR, GHCR Docker images (also `-tags otel`). The docs site
 rebuilds on the main push.

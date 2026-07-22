@@ -9,9 +9,6 @@ docs/.vitepress/cache/
 .idea/
 .vscode/
 
-# Export-script audit log (regenerated each `make zenflow-export`).
-.strip.log
-
 # CLI binary built from ./cmd/zenflow (root output or in-package `go build`).
 /zenflow
 /cmd/zenflow/zenflow
@@ -19,8 +16,6 @@ docs/.vitepress/cache/
 # Go coverage profiles (`go test -coverprofile=...`, e.g. cov.out).
 *.out
 
-# Maintainer-only git hooks. Shipped into the clone tree by the export
-# script so the maintainer can `cp hooks/* .git/hooks/` post-export,
-# but never committed (mirrors goai's convention).
+# Maintainer-only git hooks (never committed; mirrors goai's convention).
 hooks/
 cover.out
