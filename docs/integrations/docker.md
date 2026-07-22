@@ -230,8 +230,6 @@ The public OSS repo ships two Dockerfiles for two distinct use cases:
 - [`Dockerfile`](https://github.com/zendev-sh/zenflow/blob/main/Dockerfile) is the multi-stage source-build recipe. Use this when you `docker build .` from a fresh clone: it compiles `cmd/zenflow` from source against pinned Go and distroless versions, then ships only the binary in the final stage.
 - [`Dockerfile.dist`](https://github.com/zendev-sh/zenflow/blob/main/Dockerfile.dist) is the slim runtime-only recipe GoReleaser consumes when it publishes the official image (`ghcr.io/zendev-sh/zenflow:vX.Y.Z`). It assumes the binary has already been cross-compiled and just wraps it in the distroless base. You almost certainly do NOT want this one for hand builds; reach for it only if you have a separately-built binary you want to package the same way the official image does.
 
-> Note for source-monorepo developers: these Dockerfiles are produced by the OSS release pipeline (`scripts/zenflow-export.sh prep-release`) and only appear in the exported public repo. They are not checked into the source monorepo at `zenflow/`; run the export script to materialize them locally.
-
 For a custom build, clone the repo and use the multi-stage `Dockerfile`:
 
 ```bash
