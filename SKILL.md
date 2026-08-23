@@ -203,11 +203,11 @@ import (
   "context"
 
   "github.com/zendev-sh/zenflow"
-  "github.com/zendev-sh/goai/google"
+  "github.com/zendev-sh/goai/provider/google"
 )
 
 func run(ctx context.Context) error {
-  llm, _ := google.New(ctx, "gemini-3-pro-preview")
+  llm := google.Chat("gemini-2.0-flash", google.WithAPIKey(os.Getenv("GEMINI_API_KEY")))
 
   orch := zenflow.New(
     zenflow.WithModel(llm),

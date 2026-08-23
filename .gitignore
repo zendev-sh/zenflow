@@ -19,3 +19,6 @@ docs/.vitepress/cache/
 # Maintainer-only git hooks (never committed; mirrors goai's convention).
 hooks/
 cover.out
+
+# Generated docs-drift audit reports.
+docs/drift-report/

@@ -63,7 +63,7 @@ zenflow/
 └── spec/v1/
     ├── schema.json             # JSON Schema (workflow validation)
     ├── spec.md                 # Authoritative YAML specification
-    ├── examples/               # 19 reference workflows
+    ├── examples/               # 20 reference workflows
     └── testcases/              # Conformance fixtures
 ```
 

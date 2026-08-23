@@ -457,7 +457,7 @@ zenflow/
   spec/v1/
     schema.json           Workflow JSON Schema
     spec.md               Authoritative YAML specification
-    examples/             19 reference workflows
+    examples/             20 reference workflows
 ```
 
 There is no `adapter/goai/` package - the [goai](https://goai.sh) SDK is consumed directly by `internal/exec/executor.go` and `internal/exec/agent_runner.go` via `github.com/zendev-sh/goai` imports. The Orchestrator API is stable. The internal package layout under `internal/exec/` and the sibling internal packages is implementation detail and can change without notice.

@@ -7,7 +7,7 @@ description: 'zenflow produces two output shapes:'
 
 `zenflow` produces two output shapes:
 
-- **Stdout (human-readable).** The default. Colored, glyphed, one event per line. Source: [`sink/stdout.go`](https://github.com/zendev-sh/zenflow/blob/main/sink/stdout.go).
+- **Stdout (human-readable).** The default. Colored, glyphed, one event per line. Source: [`cmd/zenflow/stdout_sink.go`](https://github.com/zendev-sh/zenflow/blob/main/cmd/zenflow/stdout_sink.go).
 - **NDJSON event stream.** Selected with `--json`. One JSON object per line. Source: [`sink/json.go`](https://github.com/zendev-sh/zenflow/blob/main/sink/json.go).
 
 A third mode, `--stream`, layers token-by-token agent text onto either of the above.

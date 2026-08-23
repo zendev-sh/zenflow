@@ -92,7 +92,7 @@ Some flags affect each other; the CLI's logic in `coordinatorOption` and `buildO
 
 - **`--quiet` beats `--summary-only`.** When both are set, the coordinator is disabled outright and no synthesis is emitted.
 - **`--json` keeps the coordinator on.** JSON consumers get the full event stream (narration, forwards, finalize) so they can build dashboards or pipelines without re-implementing routing in Go. To get JSON without coordinator events, combine with `--quiet`.
-- **`--plan` is honored on `flow` only.** `goal` accepts the flag (the parser does not reject it) but does not render a plan; treat it as a no-op on `goal`. The JSON surface emits a `plan_ready` event the moment the coordinator's decomposition is parsed.
+- **`--plan` is honored on `flow` only.** `goal` rejects the flag (exit code `3`): `--plan is not supported for goal command (use with flow)`. The JSON surface emits a `plan_ready` event the moment the coordinator's decomposition is parsed.
 - **`--workdir` and tool containment.** When `--workdir` is set, the default tool set is anchored to that path. When `--workdir` is unset, the tools are anchored to the current working directory at startup. Library users who want a permissive setup must configure tools explicitly via `zenflow.WithTools(...)`.
 - **`--model` and YAML.** When `--model` is set on `flow`, every `agent.model` and `step.model` field in the loaded YAML is cleared, so the workflow runs entirely under the flag's model. This is intentional: it makes cross-provider testing a one-flag change.
 

@@ -16,9 +16,9 @@ Both families are exposed as public constructors so embedders who build a custom
 
 The default coordinator (built by `NewDefaultCoordRunner`) wires three tools (`forward_to_agent`, `narrate`, `finalize`); a fourth helper, `send_message`, is auto-injected on every step runner that has a MessageRouter AND is not the coordinator itself (detection: presence of `forward_to_agent` in the runner's tool list marks the coordinator). Step runners that already have a `send_message` tool keep their own - no overwrite. This page documents all four for reference.
 
-All four take a `*AgentRunner` argument and return a `goai.Tool`. The runner supplies the wiring: `MessageRouter` for routing, `Progress` for narration, the `finalized` atomic + `finalizeCh` channel for finalize. Missing wiring (e.g. nil `MessageRouter`) surfaces as an explicit tool-result error so the LLM observes a clear failure reason instead of silent loss.
+All four take a `RunnerHandle` argument and return a `goai.Tool`. The runner supplies the wiring: `MessageRouter` for routing, `Progress` for narration, the `finalized` atomic + `finalizeCh` channel for finalize. Missing wiring (e.g. nil `MessageRouter`) surfaces as an explicit tool-result error so the LLM observes a clear failure reason instead of silent loss.
 
-## `ForwardToAgentToolDef(runner *AgentRunner) goai.Tool`
+## `ForwardToAgentToolDef(runner RunnerHandle) goai.Tool`
 
 Returns the `forward_to_agent` tool. Coord LLM calls it to route a message into a running step's mailbox for context injection, follow-up questions, or instructions.
 
@@ -42,7 +42,7 @@ Returns the `forward_to_agent` tool. Coord LLM calls it to route a message into 
 - unknown-step drop only → the result string additionally appends a `buildUnknownStepHint` block: `". Attempted target \"<id>\" is not a registered step. Available step IDs (current snapshot): <list>."` followed by an `ACTION REQUIRED` directive instructing the LLM to either retry with a valid ID or call `narrate` with the same content. Other drop reasons (target-terminal, coord-down, cap-exhaustion) keep the original concise message since the LLM cannot correct those by re-targeting.
 - nil-MessageRouter → Execute error `"forward_to_agent: no router available (coord not wired into a workflow)"` (distinct from `send_message`'s nil-MessageRouter behaviour).
 
-## `SendMessageToolDef(runner *AgentRunner) goai.Tool`
+## `SendMessageToolDef(runner RunnerHandle) goai.Tool`
 
 Returns the `send_message` tool. Auto-injected on every step runner where (a) `MessageRouter != nil` and (b) the runner's tool list does NOT already contain `forward_to_agent` (which marks the coord). If the runner already has a `send_message` tool, the existing one is preserved (no overwrite). The coord's outbound channel is `forward_to_agent` (preventing the coord from messaging itself in a recursion loop).
 
@@ -61,7 +61,7 @@ Step agents use `send_message` to push a message to the workflow coordinator's i
 - no-MessageRouter (e.g. `RunAgent` without a coordinator) → result string `"dropped: no-coordinator"` with a nil Go error - the tool does not fail loudly. This is intentionally different from `forward_to_agent`'s nil-MessageRouter path (which returns an Execute error): `send_message` is callable from steps in any zenflow context, so a missing coord is treated as a runtime routing outcome rather than a coord-side configuration bug.
 - empty / whitespace-only `text` → Execute error `"send_message: text is required and must be non-empty"`.
 
-## `NarrateToolDef(runner *AgentRunner) goai.Tool`
+## `NarrateToolDef(runner RunnerHandle) goai.Tool`
 
 Returns the `narrate` tool. Coord LLM calls it to push a progress event onto `runner.Progress` as `EventCoordinatorNarration`. Independent of the routing path: narrate emissions never enter a mailbox.
 
@@ -82,7 +82,7 @@ Notes:
 - One-line, free-form text. The CLI's stdout sink renders it with the `≋` prefix; JSON sink emits it as a structured event.
 - Repeated rapid-fire calls are not rate-limited at the library layer; operators who need rate-limiting wrap the sink.
 
-## `FinalizeToolDef(runner *AgentRunner) goai.Tool`
+## `FinalizeToolDef(runner RunnerHandle) goai.Tool`
 
 Returns the `finalize` tool. Coord LLM calls it to signal "the workflow is done, here is my synthesis." Sets `runner.finalized` to `true`, stores the optional summary on `runner.finalSummary`, and closes the runner's `Done()` channel so callers blocked on it unblock cleanly.
 

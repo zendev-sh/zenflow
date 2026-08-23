@@ -11,9 +11,9 @@ validate a workflow file.
 | --- | --- | --- |
 | [`schema.json`](schema.json) | JSON Schema (Draft 2020-12) for the workflow document. | Machine-readable validation. Mechanical tools should consume this. |
 | [`spec.md`](spec.md) | Prose specification of every field, semantics, and invariants. | Human-readable contract. Goes beyond what JSON Schema can express (cycle detection rules, CEL evaluation order, namespacing of nested steps). |
-| [`examples/`](examples/) | 18 reference workflows, one per primitive or feature combination. | Runnable demonstrations that the engine treats as conformance examples. |
-| [`testcases/valid/`](testcases/valid/) | 18 minimal-but-valid YAML fixtures. | "Must accept" set for any conforming validator. |
-| [`testcases/invalid/`](testcases/invalid/) | 41 fixtures that exercise every documented error class. | "Must reject" set with the expected error tag. |
+| [`examples/`](examples/) | 20 reference workflows, one per primitive or feature combination. | Runnable demonstrations that the engine treats as conformance examples. |
+| [`testcases/valid/`](testcases/valid/) | 22 minimal-but-valid YAML fixtures. | "Must accept" set for any conforming validator. |
+| [`testcases/invalid/`](testcases/invalid/) | 53 fixtures that exercise every documented error class. | "Must reject" set with the expected error tag. |
 | [`test_schema.sh`](test_schema.sh) | Bash + ajv-cli + python3 harness that runs every fixture against `schema.json`. | CI-friendly validation runner. |
 
 ## Verifying conformance

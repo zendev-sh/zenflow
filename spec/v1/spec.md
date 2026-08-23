@@ -118,7 +118,7 @@ Steps are the nodes of the workflow DAG. Each step represents a task assigned to
 | `condition` | string | No | CEL expression. Step is skipped when false. See [Section 5](#5-conditions). |
 | `include` | string | No | Sub-workflow reference. See [Section 7](#7-includes). |
 | `loop` | Loop | No | Loop configuration. See [Section 6](#6-loops). |
-| `tool` | string | No | Name of a registered goai tool to invoke directly. Available built-in CLI tools: `bash`, `read`, `write`, `glob`, `grep`. Mutually exclusive with `agent`, `instructions`, `loop`, and `include`. See [Section 4.1](#41-tool-steps). |
+| `tool` | string | No | Name of a registered goai tool to invoke directly. Available built-in CLI tools: `bash`, `read`, `write`, `glob`, `grep`. Mutually exclusive with `agent`, `instructions`, `loop`, `include`, `contextFiles`, and `model`. See [Section 4.1](#41-tool-steps). |
 | `toolInput` | object | No | Input fields for the tool named by `tool`. String values starting with `$` are evaluated as CEL expressions. Requires `tool` to be set. See [Section 4.1](#41-tool-steps). |
 
 ### 4.1 Tool Steps

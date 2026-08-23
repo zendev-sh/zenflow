@@ -170,7 +170,7 @@ func main() {
 }
 ```
 
-See [`examples/`](https://github.com/zendev-sh/zenflow/tree/main/examples) for 19 runnable Go embeddings and [`spec/v1/examples/`](https://github.com/zendev-sh/zenflow/tree/main/spec/v1/examples) for the matching YAML.
+See [`examples/`](https://github.com/zendev-sh/zenflow/tree/main/examples) for 18 runnable Go embeddings and [`spec/v1/examples/`](https://github.com/zendev-sh/zenflow/tree/main/spec/v1/examples) for the matching YAML.
 
 ## Three modes
 
@@ -225,7 +225,7 @@ The CLI reads `.zenflow/settings.json` by default (override with `--mcp-config`,
 | [CLI Reference](https://zenflow.sh/cli/) | Commands, flags, output formats. |
 | [Integrations](https://zenflow.sh/integrations/) | MCP servers, CI/CD, Docker, scripting, observability (OTel / Langfuse / Jaeger / Datadog). |
 | [Go API](https://zenflow.sh/api/) | Core functions, options (49 `With*` constructors), types, errors. |
-| [Examples](https://zenflow.sh/examples) | 19 worked examples covering every primitive. |
+| [Examples](https://zenflow.sh/examples) | 18 worked examples covering every primitive. |
 | [SKILL.md](SKILL.md) | Top-of-funnel context for AI agents that consume zenflow (tool description, env vars, YAML shape, NDJSON event schema, exit codes, decision flow). Follows the AI-skill format convention; reusable by any agent harness. |
 
 ## Compared to other multi-agent frameworks

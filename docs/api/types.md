@@ -364,7 +364,7 @@ type AgentHandle struct {
     // ... internal fields ...
 }
 
-func NewAgentHandle(id string) *AgentHandle
+func NewAgentHandle(id string) (*AgentHandle, error)
 func (h *AgentHandle) Done() <-chan AgentResult
 func (h *AgentHandle) Cancel() error
 ```
@@ -375,7 +375,7 @@ Returned by `RunAgentAsync`. The caller drives completion via `Done()` and may f
 - `Done()` - read-only channel, buffered size 1, delivers exactly one terminal `AgentResult` then closes. Multiple reads after close yield the zero value.
 - `Cancel()` - force-terminates. Subsequent `Done()` reads see `AgentResult{Error: AgentError{Sentinel: ErrAgentCancelled}}`. Idempotent.
 
-`NewAgentHandle` is for tests that construct standalone handles outside `RunAgentAsync`. Production code should always go through `RunAgentAsync`. Panics if `id` is empty.
+`NewAgentHandle` is for tests that construct standalone handles outside `RunAgentAsync`. Production code should always go through `RunAgentAsync`. Returns `(nil, ErrInvalidAgentHandleID)` if `id` is empty.
 
 ### `AgentError`
 
@@ -893,7 +893,7 @@ Cross-step key-value store. Each entry is namespaced by writer (e.g., `"research
 ```go
 type FactoryCache struct { /* internal fields */ }
 
-func NewFactoryCache(inner func(sessionID string) *Orchestrator) *FactoryCache
+func NewFactoryCache(inner func(sessionID string) *Orchestrator) (*FactoryCache, error)
 func (c *FactoryCache) For(sessionID string) *Orchestrator
 func (c *FactoryCache) Close(sessionID string) error
 func (c *FactoryCache) CloseAll()
@@ -901,7 +901,7 @@ func (c *FactoryCache) CloseAll()
 
 Session-scoped `*Orchestrator` cache with TTL-based eviction. Memoizes the orchestrator per `sessionID` so repeated calls for the same session reuse a single instance rather than allocating fresh goroutine trees (handle registry, TTL watchdogs) on every invocation.
 
-- `NewFactoryCache(inner)` - wraps the supplied constructor. Panics if `inner == nil`.
+- `NewFactoryCache(inner)` - wraps the supplied constructor. Returns `(nil, ErrNilFactoryInner)` if `inner == nil`.
 - `For(sessionID)` - returns the cached orchestrator for `sessionID`, building it via `inner` on the first call. Returns `nil` if `inner` exceeds the construction timeout.
 - `Close(sessionID)` - calls `Orchestrator.Close()` on the cached instance and removes it from the cache. Idempotent.
 - `CloseAll()` - closes every cached instance; call on server shutdown.
@@ -919,10 +919,9 @@ type ProgressSink interface {
 
 Receives execution events. `OnEvent` is fired for every lifecycle transition (workflow start/end, step start/end, agent turn, tool call, error, etc.); `OnOutput` is fired per streaming token when streaming is on.
 
-Built-in implementations live under `github.com/zendev-sh/zenflow/sink`:
+Built-in implementations: the `github.com/zendev-sh/zenflow/sink` package ships `JSON` and `Buffered`; the human-readable `StdoutSink` lives in the CLI (`cmd/zenflow`, package `main`) and is not importable as a library:
 
-- `sink.NewStdoutSink()` / `sink.NewStdoutSinkTo(w)` - human-readable progress with glyphs and colors.
-- `sink.NewJSONSink()` / `sink.NewJSONSinkTo(w)` - NDJSON, one event per line. The CLI's `--json` mode.
+- `sink.JSON(w)` - NDJSON, one event per line. The CLI's `--json` mode.
 - `sink.Buffered(wrapped, window)` - debounces high-frequency output deltas into one event per window.
 
 ### `Event`
@@ -1083,37 +1082,14 @@ Returning `(nil, nil)` is treated as "not resolvable" - the resume fails with `E
 
 ## Sink helpers
 
-In `github.com/zendev-sh/zenflow/sink`:
-
-### `StdoutSink`
-
-```go
-type StdoutSink struct { /* internal */ }
-type StdoutSinkOption func(*StdoutSink)
-
-func WithStdoutShowPlan(v bool) StdoutSinkOption  // enable DAG rendering on EventPlanReady
-func WithStdoutVerbose(v bool) StdoutSinkOption   // enable agent text and reasoning content
-
-func NewStdoutSink(opts ...StdoutSinkOption) *StdoutSink
-func NewStdoutSinkTo(w io.Writer, opts ...StdoutSinkOption) *StdoutSink
-
-// Deprecated: use WithStdoutShowPlan option in NewStdoutSink. Will be removed before v1.0.
-func (s *StdoutSink) WithShowPlan(enabled bool) *StdoutSink
-// Deprecated: use WithStdoutVerbose option in NewStdoutSink. Will be removed before v1.0.
-func (s *StdoutSink) WithVerbose(enabled bool) *StdoutSink
-```
-
-Human-readable progress: triangle/check glyphs for step start/end, dashed lines for coordinator narration, colored status badges. Pass `WithStdoutShowPlan(true)` to render the DAG on `EventPlanReady`; pass `WithStdoutVerbose(true)` to include agent text and reasoning content.
-
-`SetColorEnabled(v bool)` in the `sink` package overrides the auto-detected color setting. Intended for tests; production code should let the sink detect terminal capabilities automatically.
+The `github.com/zendev-sh/zenflow/sink` package ships the JSON and buffered sinks below. The human-readable `StdoutSink` is CLI-only (`cmd/zenflow/stdout_sink.go`, package `main`) and is not exposed as a library type.
 
 ### `JSONSink`
 
 ```go
 type JSONSink struct { /* internal */ }
 
-func NewJSONSink() *JSONSink              // -> os.Stdout
-func NewJSONSinkTo(w io.Writer) *JSONSink
+func JSON(w io.Writer) *JSONSink
 func (s *JSONSink) Err() error            // first encode error
 ```
 
@@ -1124,7 +1100,7 @@ NDJSON output. One JSON object per line, additive contract (new events / fields 
 ```go
 type BufferedSink struct { /* internal */ }
 
-func Buffered(wrapped ProgressSink, window time.Duration) ProgressSink
+func Buffered(wrapped ProgressSink, window time.Duration) ClosableProgressSink
 func (b *BufferedSink) Close() error
 ```
 

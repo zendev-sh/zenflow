@@ -26,7 +26,7 @@ Pick the surface that matches what you already do:
 Three things hold no matter where you run zenflow:
 
 1. **API keys come through environment variables.** zenflow reads provider env vars (`GEMINI_API_KEY`, `AWS_ACCESS_KEY_ID`, `AZURE_OPENAI_API_KEY`, etc.) the same way [goai](https://goai.sh) does. Keep them in your CI secrets store, your container's `--env-file`, your scheduler's secret mount, etc. Never bake them into the image.
-2. **Exit codes are stable.** `0` = success, `1` = workflow failed (one or more steps in failed/partial state), `2` = invalid CLI usage / parse errors, `3` = configuration errors (missing model, invalid YAML, can't find file), `124` = watchdog timeout. See [the errors reference](../api/errors) for the full mapping.
+2. **Exit codes are stable.** `0` = success, `1` = workflow failed (one or more steps in failed/partial state), `2` = validation/parse error (invalid YAML, schema rejection, coordinator error), `3` = configuration/usage error (missing model, unknown flag, missing positional arg), `124` = watchdog timeout. See [the errors reference](../api/errors) for the full mapping.
 3. **`--json` is the machine surface.** Every CI / scripting integration in this section uses NDJSON output: one JSON event per line on stdout. The shape is documented in [Output Formats](../cli/output-formats); it is additive and stable, so a parser written today keeps working when new event types ship.
 
 ## Embedding via the Go API instead
