@@ -222,7 +222,7 @@ The CLI is a thin wrapper around the library. Everything you ran above is also a
 
 **`zenflow: command not found`** - the install script may not have updated your `PATH`. Re-source your shell rc, or check that `~/.local/bin` is on your `PATH`.
 
-**`Error: GEMINI_API_KEY not set`** - export the key in the same shell before running `zenflow flow`. zenflow does not read `.env` files automatically.
+**`Error: GEMINI_API_KEY not set`** - export the key in the same shell before running `zenflow flow`. zenflow auto-loads `./.env` from the working directory (disable with `--no-dotenv`, override with `--env-file PATH`).
 
 **`no LLM model configured: pass --model MODEL ... or set ZENFLOW_MODEL=PROVIDER/MODEL`** - the CLI needs to know which model to use. Either export `ZENFLOW_MODEL=google/gemini-2.0-flash` (or another `PROVIDER/MODEL`) in the same shell, or pass `--model google/gemini-2.0-flash` on each command.
 

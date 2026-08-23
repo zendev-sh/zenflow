@@ -32,24 +32,11 @@ A nil sink is fine - events are dropped silently.
 
 ## Built-in sinks
 
-The `github.com/zendev-sh/zenflow/sink` package ships three:
+The `github.com/zendev-sh/zenflow/sink` package ships the JSON and buffered sinks below. The human-readable `StdoutSink` is CLI-only (`cmd/zenflow/stdout_sink.go`, package `main`) and is not importable as a library.
 
 ### StdoutSink
 
-Renders events as terminal output. The CLI uses this for the default human-readable mode (`zenflow flow workflow.yaml`).
-
-```go
-import "github.com/zendev-sh/zenflow/sink"
-
-s := sink.NewStdoutSink()
-s.WithVerbose(true)   // also show agent text output
-s.WithShowPlan(true)  // render the DAG before execution
-
-orch := zenflow.New(
-    zenflow.WithModel(llm),
-    zenflow.WithProgress(s),
-)
-```
+Renders events as terminal output. The CLI uses this for the default human-readable mode (`zenflow flow workflow.yaml`). It is wired in `cmd/zenflow/stdout_sink.go`; the `NewStdoutSink` / `NewStdoutSinkTo` constructors and `WithStdoutShowPlan` / `WithStdoutVerbose` options are CLI-internal.
 
 The output uses a small set of glyphs (`▸`, `✓`, `≋`, `⇠`, `⇢`) to distinguish step starts, completions, narration, sends, and drains. No prose explanation of the glyphs is needed - the sink is meant for live tailing, not log analysis.
 
@@ -58,8 +45,8 @@ The output uses a small set of glyphs (`▸`, `✓`, `≋`, `⇠`, `⇢`) to dis
 Renders one JSON line per event. Right for structured logging, CI capture, or piping into another tool.
 
 ```go
-s := sink.NewJSONSink()                 // writes to os.Stdout
-s := sink.NewJSONSinkTo(myWriter)       // custom writer (file, buffer, network)
+s := sink.JSON(os.Stdout)                // writes to os.Stdout
+s := sink.JSON(myWriter)                 // custom writer (file, buffer, network)
 
 orch := zenflow.New(
     zenflow.WithModel(llm),
@@ -73,7 +60,7 @@ The CLI uses this for `--json` mode. Capturing the stream programmatically:
 
 ```go
 var buf bytes.Buffer
-s := sink.NewJSONSinkTo(&buf)
+s := sink.JSON(&buf)
 
 orch := zenflow.New(
     zenflow.WithModel(llm),
@@ -100,7 +87,7 @@ for scanner.Scan() {
 `sink.Buffered(wrapped, window)` wraps another sink and coalesces output deltas within a time window. Useful when the wrapped sink is expensive (e.g. writes to a network log) and you do not need every individual delta.
 
 ```go
-s := sink.Buffered(sink.NewJSONSink(), 100*time.Millisecond)
+s := sink.Buffered(sink.JSON(os.Stdout), 100*time.Millisecond)
 ```
 
 Lifecycle events flush immediately; output deltas are batched up to the window.

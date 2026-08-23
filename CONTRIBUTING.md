@@ -28,11 +28,11 @@ zenflow/
 ├── cmd/zenflow/            # CLI binary
 │   └── tool/               # CLI-only IO tools (bash, read, write, glob, grep)
 ├── sink/                   # Progress sinks (stdout, JSON)
-├── examples/               # 19 Go embedding examples (`//go:build example`)
+├── examples/               # 18 Go embedding examples (`//go:build example`)
 ├── spec/v1/
 │   ├── schema.json         # JSON Schema for workflows
 │   ├── spec.md             # Authoritative YAML specification
-│   ├── examples/           # 19 reference workflows
+│   ├── examples/           # 20 reference workflows
 │   └── testcases/          # Conformance test fixtures
 └── docs/                   # User-facing documentation (VitePress)
 ```

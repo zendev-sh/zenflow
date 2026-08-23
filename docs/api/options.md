@@ -322,9 +322,9 @@ func WithMaxMailboxSize(n int) Option
 
 Bounds the per-step in-memory mailbox queue. When the cap is exceeded, Append rejects the newest message and the router emits `EventMessageDropped{reason: mailbox-full}` via OnDrop.
 
-**Default:** 0 (unbounded).
+**Default:** `DefaultMaxMailboxSize` (10000), installed by `New` when the option is not applied. Pass `WithMaxMailboxSize(0)` to opt out (unbounded).
 
-**When to set:** workflows where a producer can flood a slow consumer. Without a cap, runaway producers can OOM. The default is unbounded for backward compatibility; setting any positive value is a good practice.
+**When to set:** workflows where a producer can flood a slow consumer. Without a cap, runaway producers can OOM. Setting a value below the 10000 default is a good practice for tight coupling.
 
 Only takes effect with the default `InMemoryMailboxStore` - custom stores enforce their own caps.
 
@@ -747,15 +747,14 @@ Installs a `ProgressSink`. zenflow emits one event per lifecycle transition (wor
 
 **Default:** nil (events discarded; no observable progress).
 
-The two built-in sinks live in `zenflow/sink`:
+The JSON sink lives in `zenflow/sink`; the human-readable `StdoutSink` is CLI-only (`cmd/zenflow`, package `main`) and not importable as a library:
 
-- `sink.NewStdoutSink()` - human-readable progress with glyphs and colors.
-- `sink.NewJSONSink()` - NDJSON to stdout, the CLI's `--json` mode.
+- `sink.JSON(os.Stdout)` - NDJSON, the CLI's `--json` mode.
 
 ```go
 orch := zenflow.New(
     zenflow.WithModel(model),
-    zenflow.WithProgress(sink.NewStdoutSink()),
+    zenflow.WithProgress(sink.JSON(os.Stdout)),
 )
 ```
 

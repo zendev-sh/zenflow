@@ -128,4 +128,4 @@ JSON Schema only enforces structural rules. The validator rules (DAG cycles, ref
 - **No YAML anchors, tags, or merge keys.** The spec uses a portable subset.
 - **File references via `@`.** A string starting with `@` in `agents.*.prompt` or `steps.*.instructions` is read from disk relative to the workflow file. `contextFiles` does not use the prefix; its values are always paths.
 - **Keep step IDs greppable.** They appear in logs, JSON events, and error messages. The pattern is `^[a-zA-Z][a-zA-Z0-9_-]*$`.
-- **Co-locate prompts.** Put long-form prompts in `prompts/` next to the workflow file and reference them with `@prompts/...`. The 19 reference workflows in [`spec/v1/examples/`](https://github.com/zendev-sh/zenflow/tree/main/spec/v1/examples) follow this convention.
+- **Co-locate prompts.** Put long-form prompts in `prompts/` next to the workflow file and reference them with `@prompts/...`. The 20 reference workflows in [`spec/v1/examples/`](https://github.com/zendev-sh/zenflow/tree/main/spec/v1/examples) follow this convention.
