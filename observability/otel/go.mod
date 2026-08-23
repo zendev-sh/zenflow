@@ -3,8 +3,8 @@ module github.com/zendev-sh/zenflow/observability/otel
 go 1.25.0
 
 require (
-	github.com/zendev-sh/goai v0.7.6
-	github.com/zendev-sh/goai/observability/otel v0.7.6
+	github.com/zendev-sh/goai v0.9.7
+	github.com/zendev-sh/goai/observability/otel v0.9.7
 	github.com/zendev-sh/zenflow v0.1.3
 	go.opentelemetry.io/otel v1.43.0
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.43.0
@@ -37,4 +37,3 @@ require (
 	google.golang.org/protobuf v1.36.11 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-

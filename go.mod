@@ -4,7 +4,7 @@ go 1.25.0
 
 require (
 	github.com/google/cel-go v0.27.0
-	github.com/zendev-sh/goai v0.8.5
+	github.com/zendev-sh/goai v0.9.7
 	github.com/zendev-sh/zenflow/observability/otel v0.1.4
 	go.uber.org/goleak v1.3.0
 	golang.org/x/text v0.35.0
@@ -21,7 +21,7 @@ require (
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.28.0 // indirect
-	github.com/zendev-sh/goai/observability/otel v0.8.1 // indirect
+	github.com/zendev-sh/goai/observability/otel v0.9.7 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/otel v1.43.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.43.0 // indirect
