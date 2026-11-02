@@ -24,18 +24,20 @@ type cmdFlags struct {
 	maxDepth       int // 0 = use runtime default (3), >0 = override
 	jsonOutput     bool
 	verbose        bool
-	quiet          bool   // suppress coordinator narration, show events only
-	summaryOnly    bool   // skip per-step narration, show summary at end
-	resume         string // run ID to resume from (flow command only)
-	trace          bool   // enable OTel tracing (flow/goal commands)
-	stream         bool   // enable streaming output
-	showPlan       bool   // show DAG diagram before execution
-	workdir        string // working directory for LLM tool execution (sandbox)
-	thinking       string // reasoning/thinking level: off|low|medium|high (default off)
-	mcpConfig      string // path to MCP settings.json (default .zenflow/settings.json)
-	noMCP          bool   // disable MCP server loading entirely
-	envFile        string // path to .env file (default ./.env if present)
-	noDotEnv       bool   // disable .env auto-loading entirely
+	quiet          bool     // suppress coordinator narration, show events only
+	summaryOnly    bool     // skip per-step narration, show summary at end
+	resume         string   // run ID to resume from (flow command only)
+	trace          bool     // enable OTel tracing (flow/goal commands)
+	stream         bool     // enable streaming output
+	showPlan       bool     // show DAG diagram before execution
+	workdir        string   // working directory for LLM tool execution (sandbox)
+	thinking       string   // reasoning/thinking level: off|low|medium|high (default off)
+	mcpConfig      string   // path to MCP settings.json (default .zenflow/settings.json)
+	noMCP          bool     // disable MCP server loading entirely
+	envFile        string   // path to .env file (default ./.env if present)
+	noDotEnv       bool     // disable .env auto-loading entirely
+	systemPrompt   string   // --system-prompt: literal text, or @path to read from a file
+	skillsDirs     []string // --skills: skills directory (repeatable)
 }
 
 // parseFlags parses common CLI flags from args (starting after the positional argument).
@@ -173,6 +175,18 @@ func parseFlags(args []string) (cmdFlags, error) {
 			f.envFile = args[i]
 		case "--no-dotenv":
 			f.noDotEnv = true
+		case "--system-prompt":
+			i++
+			if i >= len(args) {
+				return f, fmt.Errorf("--system-prompt requires a value (literal text or @path)")
+			}
+			f.systemPrompt = args[i]
+		case "--skills":
+			i++
+			if i >= len(args) {
+				return f, fmt.Errorf("--skills requires a directory path")
+			}
+			f.skillsDirs = append(f.skillsDirs, args[i])
 		case "--thinking":
 			i++
 			if i >= len(args) {

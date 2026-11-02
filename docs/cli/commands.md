@@ -13,7 +13,7 @@ description: 'zenflow dispatches on its first positional argument. Five verbs ar
 - [`zenflow goal`](#zenflow-goal) - have the LLM coordinator decompose a goal into a workflow, then run it.
 - [`zenflow agent`](#zenflow-agent) - run a single-agent conversation.
 
-Source of truth for flags and exit codes: [`cmd/zenflow/main.go`](https://github.com/zendev-sh/zenflow/blob/main/cmd/zenflow/main.go).
+Source of truth for dispatch and exit codes: [`cmd/zenflow/main.go`](https://github.com/zendev-sh/zenflow/blob/main/cmd/zenflow/main.go); flag parsing lives in [`cmd/zenflow/flags.go`](https://github.com/zendev-sh/zenflow/blob/main/cmd/zenflow/flags.go) and [`cmd/zenflow/permission.go`](https://github.com/zendev-sh/zenflow/blob/main/cmd/zenflow/permission.go).
 
 ## Exit codes
 
@@ -98,7 +98,7 @@ zenflow flow <file> [<context>] [flags]
 
 ### Description
 
-Loads the workflow and executes the DAG. Auto-resolves the LLM provider from `--model` + env vars; wires the default tool registry (`bash`, `read`, `write`, `glob`, `grep`) sandboxed to `--workdir` (or the current directory if `--workdir` is unset).
+Loads the workflow and executes the DAG. Auto-resolves the LLM provider from `--model` + env vars; wires the default tool registry (`bash`, `read`, `write`, `glob`, `grep`) sandboxed to `--workdir` (or the current directory if `--workdir` is unset). With `--skills`, the registry also includes the `read_skill` tool and the skill index is appended to every agent's system prompt.
 
 Optional `<context>` is a single positional after the file path that gets distributed to every step as flow-level context (delivered via the orchestrator's `WithFlowContext` option). It is convenient when one short string applies to the whole run.
 
@@ -127,6 +127,8 @@ When the run finishes, `zenflow flow` prints a "Final answer" block with either 
 | `--verbose` | bool | off | Show thinking, tool outputs, per-turn token counts. |
 | `--trace` | bool | off | Enable OTel tracing. |
 | `--thinking LEVEL` | enum | `off` | `off`, `low`, `medium`, `high`. |
+| `--system-prompt TEXT\|@FILE` | string | unset | Append operator guidance to every step agent's system prompt. `@FILE` reads it from a file. |
+| `--skills DIR` | path | unset | Load a skills directory (repeatable). Adds the skill index to every agent's system prompt and the `read_skill` tool to the registry. |
 | `--sandbox` | bool | off | Restrict tools to a safe set (`read`, `write`, `grep`, `glob`); blocks `bash` even when `--allow bash` is also set. Implies `--strict`. Mutually exclusive with `--yolo`. |
 | `--yolo` | bool | off | Auto-approve all permission requests; no interactive prompt. Mutually exclusive with `--sandbox`. |
 | `--allow LIST` | string | unset | Comma-separated list of tool names to allow without prompting (e.g., `bash,read`). |
@@ -259,6 +261,8 @@ Several `flow` / `goal` flags do not apply and are rejected: `--quiet`, `--summa
 | `--thinking LEVEL` | enum | `off` | `off`, `low`, `medium`, `high`. |
 | `--max-retries N` | int | provider default | Override [goai](https://goai.sh) retry budget. |
 | `--max-concurrency N` | int | unset | Accepted for shape; not meaningful in single-agent mode. |
+| `--system-prompt TEXT\|@FILE` | string | unset | Operator guidance for the single-agent system prompt. `@FILE` reads it from a file. |
+| `--skills DIR` | path | unset | Load a skills directory (repeatable). Adds the skill index to the system prompt and the `read_skill` tool. |
 | `--sandbox` | bool | off | Restrict tools to a safe set (`read`, `write`, `grep`, `glob`); blocks `bash` even when `--allow bash` is also set. Implies `--strict`. Mutually exclusive with `--yolo`. |
 | `--yolo` | bool | off | Auto-approve all permission requests without prompting. Mutually exclusive with `--sandbox`. |
 | `--allow LIST` | string | unset | Comma-separated allow-list of tool names. |

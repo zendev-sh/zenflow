@@ -31,7 +31,7 @@ The `agents:` block is a map keyed by agent name. The keys are the strings steps
 |-------|------|----------|-------------|
 | `description` | string | Yes | Human-readable role summary. Coordinator and the goal-decomposition LLM read this. |
 | `prompt` | string | No | System prompt. Use `@path/to/file.md` to load from disk (relative to the workflow file). |
-| `model` | string | No | Model identifier. Bare names (`claude-sonnet-4-6`, auto-routed) and provider-prefixed forms (`bedrock/...`, `azure/...`, `google/...`, `vertex/...`) work. The CLI does not accept the `anthropic/` prefix; use `bedrock/anthropic.claude-...` or `azure/claude-...` instead. |
+| `model` | string | No | Model identifier. Bare names (`claude-sonnet-4-6`, auto-routed) and provider-prefixed forms (`google/...`, `bedrock/...`, `azure/...`, `anthropic/...`, `openai/...`, `fptcloud/...`) work. The CLI accepts every prefix in the [provider matrix](#provider-matrix). |
 | `tools` | array of strings | No | Tool allowlist. Omit to allow every registered tool. List explicit names to restrict. Wildcards are not supported. |
 | `disallowedTools` | array of strings | No | Tool denylist applied after the allowlist. |
 | `maxTurns` | integer | no | Maximum tool-call turns the agent may take in one step. Defaults to 50 when omitted. Hitting the cap returns AgentStatusTruncated and the step fails with ErrAgentTurnLimitExceeded. |
@@ -40,6 +40,15 @@ The `agents:` block is a map keyed by agent name. The keys are the strings steps
 | `resultSchema` | object | No | JSON Schema for the agent's structured `result` channel. See [Structured output](/concepts/structured-output). |
 
 The full schema and validation rules live in [YAML reference: Agent](/yaml/agent).
+
+### System prompt
+
+`prompt` is the agent's identity and is injected into the LLM's system slot (`goai.WithSystem`), not the user message. Two operator-level layers can extend it without editing the workflow:
+
+- `WithSystemPromptSuffix(text)` (CLI `--system-prompt`) appends project policy to every agent's system prompt.
+- `WithSkills(skills)` (CLI `--skills DIR`) appends the skill index and registers the `read_skill` tool for on-demand loading.
+
+The agent's own `prompt` remains the base; suffixes are appended after it.
 
 ## Step-level overrides
 
@@ -82,35 +91,37 @@ Use this for quick scripts. Once you need different roles, prompts, or tool subs
 
 zenflow runs on top of [goai](https://goai.sh). Any provider [goai](https://goai.sh) supports works - zenflow does not bind to a specific vendor. The model identifier you put in `model:` is passed through to [goai](https://goai.sh)'s resolver:
 
-| Provider | Identifier examples | [goai](https://goai.sh) entry point |
-|----------|---------------------|------------------|
-| Google | `gemini-3-pro-preview`, `gemini-2.5-pro` | `goai/provider/google` |
-| AWS Bedrock | `anthropic.claude-sonnet-4-6`, `minimax.minimax-m2.5` | `goai/provider/bedrock` |
-| Azure (AI Services) | `DeepSeek-V3.2`, `grok-2`, `Llama-3.1-405B` | `goai/provider/azure` |
-| Azure (OpenAI) | `gpt-5`, `gpt-5.3-codex`, `o3-mini` | `goai/provider/azure` |
-| Azure (Anthropic) | `claude-sonnet-4-6` | `goai/provider/azure` |
-| Vertex AI | `claude-3-5-sonnet@vertex` | `goai/provider/vertex` |
-| Anthropic direct | `claude-sonnet-4-6` (bare names dispatched via library code) | `goai/provider/anthropic` (library only) -- use `zenflow.WithModel(anthropic.Chat("claude-sonnet-4-6"))`. The CLI binary does not auto-route to direct Anthropic; it routes Claude models to Azure/Bedrock. |
-| OpenAI direct | `gpt-4o`, `o3` | `goai/provider/openai` (library only) |
-| OpenRouter | use `zenflow.WithModel(openrouter.Chat(...))` | `goai/provider/openrouter` (library only) |
-| Cerebras | use `zenflow.WithModel(cerebras.Chat(...))` | `goai/provider/cerebras` (library only) |
-| Cloudflare Workers AI | use `zenflow.WithModel(cloudflare.Chat(...))` | `goai/provider/cloudflare` (library only) |
-| Cohere | use `zenflow.WithModel(cohere.Chat(...))` | `goai/provider/cohere` (library only) |
-| DeepInfra | use `zenflow.WithModel(deepinfra.Chat(...))` | `goai/provider/deepinfra` (library only) |
-| DeepSeek | use `zenflow.WithModel(deepseek.Chat(...))` | `goai/provider/deepseek` (library only) |
-| Fireworks | use `zenflow.WithModel(fireworks.Chat(...))` | `goai/provider/fireworks` (library only) |
-| FPT Cloud | use `zenflow.WithModel(fptcloud.Chat(...))` | `goai/provider/fptcloud` (library only) |
-| Groq | use `zenflow.WithModel(groq.Chat(...))` | `goai/provider/groq` (library only) |
-| MiniMax | use `zenflow.WithModel(minimax.Chat(...))` | `goai/provider/minimax` (library only) |
-| Mistral | use `zenflow.WithModel(mistral.Chat(...))` | `goai/provider/mistral` (library only) |
-| NVIDIA NIM | use `zenflow.WithModel(nvidia.Chat(...))` | `goai/provider/nvidia` (library only) |
-| Ollama | use `zenflow.WithModel(ollama.Chat(...))` | `goai/provider/ollama` (library only) |
-| Perplexity | use `zenflow.WithModel(perplexity.Chat(...))` | `goai/provider/perplexity` (library only) |
-| RunPod | use `zenflow.WithModel(runpod.Chat(...))` | `goai/provider/runpod` (library only) |
-| Together AI | use `zenflow.WithModel(together.Chat(...))` | `goai/provider/together` (library only) |
-| vLLM | use `zenflow.WithModel(vllm.Chat(...))` | `goai/provider/vllm` (library only) |
-| xAI | use `zenflow.WithModel(xai.Chat(...))` | `goai/provider/xai` (library only) |
-| OpenAI-compatible (generic) | use `zenflow.WithModel(compat.Chat(...))` | `goai/provider/compat` (library only) |
+| Provider | CLI `--model` prefix | Example model id | API-key env var | [goai](https://goai.sh) entry point |
+|----------|----------------------|------------------|-----------------|------------------|
+| Google | `google/` | `gemini-3-pro-preview`, `gemini-2.5-pro` | `GEMINI_API_KEY` / `GOOGLE_GENERATIVE_AI_API_KEY` | `goai/provider/google` |
+| AWS Bedrock | `bedrock/` | `anthropic.claude-sonnet-4-6`, `minimax.minimax-m2.5` | `AWS_ACCESS_KEY_ID` + `AWS_SECRET_ACCESS_KEY` (or profile) | `goai/provider/bedrock` |
+| Azure (AI Services) | `azure/` | `DeepSeek-V3.2`, `grok-2`, `Llama-3.1-405B` | `AZURE_OPENAI_API_KEY` + `AZURE_RESOURCE_NAME` | `goai/provider/azure` |
+| Azure (OpenAI) | `azure/` | `gpt-5`, `gpt-5.3-codex`, `o3-mini` | `AZURE_OPENAI_API_KEY` + `AZURE_RESOURCE_NAME` | `goai/provider/azure` |
+| Azure (deployment URL) | `azure-deployment/` | `gpt-5`, `claude-sonnet-4-6` | `AZURE_OPENAI_API_KEY` + `AZURE_RESOURCE_NAME` | `goai/provider/azure` |
+| Vertex AI | `vertex/`, `vertex-anthropic/` | `gemini-2.5-pro`, `claude-3-5-sonnet@vertex` | Application Default Credentials | `goai/provider/vertex` |
+| Anthropic direct | `anthropic/` | `claude-sonnet-4-6` | `ANTHROPIC_API_KEY` (+ `ANTHROPIC_BASE_URL`) | `goai/provider/anthropic` |
+| OpenAI direct | `openai/` | `gpt-4o`, `o3` | `OPENAI_API_KEY` (+ `OPENAI_BASE_URL`) | `goai/provider/openai` |
+| OpenRouter | `openrouter/` | `anthropic/claude-3.5-sonnet` | `OPENROUTER_API_KEY` | `goai/provider/openrouter` |
+| Cerebras | `cerebras/` | `llama3.1-70b` | `CEREBRAS_API_KEY` | `goai/provider/cerebras` |
+| Cloudflare Workers AI | `cloudflare/` | `@cf/meta/llama-3.1-8b-instruct` | `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` | `goai/provider/cloudflare` |
+| Cohere | `cohere/` | `command-r-plus` | `COHERE_API_KEY` | `goai/provider/cohere` |
+| DeepInfra | `deepinfra/` | `meta-llama/Llama-3.1-70B-Instruct` | `DEEPINFRA_API_KEY` | `goai/provider/deepinfra` |
+| DeepSeek | `deepseek/` | `deepseek-chat` | `DEEPSEEK_API_KEY` | `goai/provider/deepseek` |
+| Fireworks | `fireworks/` | `accounts/fireworks/models/llama-v3p1-70b-instruct` | `FIREWORKS_API_KEY` | `goai/provider/fireworks` |
+| FPT Cloud | `fptcloud/` | `DeepSeek-V4.1-Flash` | `FPT_API_KEY` (+ `FPT_REGION`, `FPT_BASE_URL`) | `goai/provider/fptcloud` |
+| Groq | `groq/` | `llama-3.3-70b-versatile` | `GROQ_API_KEY` | `goai/provider/groq` |
+| MiniMax | `minimax/` | `MiniMax-M2` | `MINIMAX_API_KEY` | `goai/provider/minimax` |
+| Mistral | `mistral/` | `mistral-large-latest` | `MISTRAL_API_KEY` | `goai/provider/mistral` |
+| NVIDIA NIM | `nvidia/` | `meta/llama-3.1-70b-instruct` | `NVIDIA_API_KEY` | `goai/provider/nvidia` |
+| Ollama | `ollama/` | `llama3.2` | `OLLAMA_BASE_URL` / `OLLAMA_HOST` | `goai/provider/ollama` |
+| Perplexity | `perplexity/` | `sonar-pro` | `PERPLEXITY_API_KEY` | `goai/provider/perplexity` |
+| RunPod | `runpod/` | model id | `RUNPOD_API_KEY` + `RUNPOD_ENDPOINT_ID` | `goai/provider/runpod` |
+| Together AI | `together/` | `meta-llama/Llama-3.3-70B-Instruct-Turbo` | `TOGETHER_AI_API_KEY` / `TOGETHER_API_KEY` | `goai/provider/together` |
+| vLLM | `vllm/` | served model id | `VLLM_BASE_URL` (+ `VLLM_API_KEY`) | `goai/provider/vllm` |
+| xAI | `xai/` | `grok-2` | `XAI_API_KEY` | `goai/provider/xai` |
+| OpenAI-compatible (generic) | `compat/` | server model id | `COMPAT_BASE_URL` (+ `COMPAT_API_KEY`) | `goai/provider/compat` |
+
+Every prefix in the table is accepted by **both** the CLI (`--model <prefix>/<model>`) and the library (`zenflow.WithModel(<pkg>.Chat(...))`). Bare model names (no prefix) are auto-detected from the model name plus the API-key env vars that are set; use an explicit prefix when you need to force a provider (for example `anthropic/claude-sonnet-4-6` rather than letting a bare Claude name auto-route to Azure or Bedrock).
 
 When you build the orchestrator, you pass one `provider.LanguageModel` via `WithModel`. The model your YAML asks for (per-agent `model:` or per-step `model:`) is resolved through the [goai](https://goai.sh) stack to a provider call. Goai handles auth, request shape, streaming, structured tool calls, and retries.
 

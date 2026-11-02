@@ -32,6 +32,7 @@ Construction is plain functional options. Every `With*` option mutates one orche
 | **Sinks & approval** | Progress sink, drop callback, approval handler, permission handler, tracer | `WithProgress`, `WithDropCallback`, `WithApproval`, `WithPermissions`, `WithTracer` |
 | **Coordinator** | The hosted `*AgentRunner` that handles cross-agent messaging when one is installed | `WithCoordinator(runner)` (optional) |
 | **Workflow defaults** | Default model, max-concurrency, max-turns, max-depth, isolation, output transform | `WithDefaultModel`, `WithMaxConcurrency`, `WithMaxTurns`, `WithIsolation`, `WithOutputTransform` |
+| **Agent context** | Operator-level system-prompt suffix and progressive-disclosure skills applied to every agent (steps, coordinator, `RunAgent`) | `WithSystemPromptSuffix`, `WithSkills` |
 
 The orchestrator is **stateless across runs** for the workflow itself: every `RunFlow` call constructs a fresh `Executor`, a fresh `MessageRouter`, and a fresh in-memory `MailboxStore`. What persists across runs is the configuration you set on the orchestrator and, if you wired one, the coordinator runner instance (so the coord LLM keeps its conversation continuity if you opt to share it).
 

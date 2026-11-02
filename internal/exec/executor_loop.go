@@ -640,19 +640,20 @@ func (e *Executor) runRepeatUntilInnerDAG(ctx context.Context, runID, parentStep
 		rootRouter = e.Router
 	}
 	nestedExec := &Executor{
-		Runner:          e.Runner,
-		Storage:         nil, // Inner DAG results aggregated into parent - no orphan storage runs.
-		Progress:        nestedProgress,
-		Workflow:        miniWF,
-		DefaultModel:    e.DefaultModel,
-		ForceModel:      e.ForceModel,
-		MaxConcurrency:  e.MaxConcurrency,
-		Tracer:          e.Tracer,
-		Isolation:       e.Isolation,
-		SharedMem:       e.SharedMem,
-		Coordinator:     e.Coordinator,
-		RootRouter:      rootRouter,
-		namespacePrefix: nestedPrefix,
+		Runner:             e.Runner,
+		Storage:            nil, // Inner DAG results aggregated into parent - no orphan storage runs.
+		Progress:           nestedProgress,
+		Workflow:           miniWF,
+		DefaultModel:       e.DefaultModel,
+		ForceModel:         e.ForceModel,
+		SystemPromptSuffix: e.SystemPromptSuffix,
+		MaxConcurrency:     e.MaxConcurrency,
+		Tracer:             e.Tracer,
+		Isolation:          e.Isolation,
+		SharedMem:          e.SharedMem,
+		Coordinator:        e.Coordinator,
+		RootRouter:         rootRouter,
+		namespacePrefix:    nestedPrefix,
 	}
 
 	result, err := nestedExec.Run(ctx)
@@ -770,19 +771,20 @@ func (e *Executor) runForEachInnerDAG(ctx context.Context, runID, parentStepID s
 		rootRouter = e.Router
 	}
 	nestedExec := &Executor{
-		Runner:          e.Runner,
-		Storage:         nil, // Inner DAG results aggregated into parent - no orphan storage runs.
-		Progress:        nestedProgress,
-		Workflow:        miniWF,
-		DefaultModel:    e.DefaultModel,
-		ForceModel:      e.ForceModel,
-		MaxConcurrency:  e.MaxConcurrency,
-		Tracer:          e.Tracer,
-		Isolation:       e.Isolation,
-		SharedMem:       e.SharedMem,
-		Coordinator:     e.Coordinator,
-		RootRouter:      rootRouter,
-		namespacePrefix: nestedPrefix,
+		Runner:             e.Runner,
+		Storage:            nil, // Inner DAG results aggregated into parent - no orphan storage runs.
+		Progress:           nestedProgress,
+		Workflow:           miniWF,
+		DefaultModel:       e.DefaultModel,
+		ForceModel:         e.ForceModel,
+		SystemPromptSuffix: e.SystemPromptSuffix,
+		MaxConcurrency:     e.MaxConcurrency,
+		Tracer:             e.Tracer,
+		Isolation:          e.Isolation,
+		SharedMem:          e.SharedMem,
+		Coordinator:        e.Coordinator,
+		RootRouter:         rootRouter,
+		namespacePrefix:    nestedPrefix,
 	}
 
 	result, err := nestedExec.Run(ctx)

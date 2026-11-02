@@ -340,7 +340,7 @@ Constructs a pre-configured `*AgentRunner` for use as a workflow coordinator. Th
 - `Mailbox` = fresh `InMemoryMailboxStore`
 - `Wake` = cap-1 buffered channel (required for mailbox-mode delivery)
 - `Tools` = the three default coord tools (`forward_to_agent`, `narrate`, `finalize`), plus any from `WithCoordTools(...)`, minus `narrate` if `SynthesizeOnly()` is set
-- `SystemPrompt` = `DefaultCoordSystemPrompt` (overridable via `WithCoordSystemPrompt` / `WithCoordSystemPromptSuffix`)
+- `SystemPrompt` = `DefaultCoordSystemPrompt` (overridable via `WithCoordSystemPrompt` / `WithCoordSystemPromptSuffix`; an orchestrator-level `WithSystemPromptSuffix` is appended on top when the runner is installed via `WithCoordinator`)
 - `MaxWakeCycles` = 100 (overridable via `WithCoordMaxWakeCycles`)
 
 **The factory does NOT start `runner.Run`.** Caller owns the lifecycle - typical usage starts the runner in a goroutine before calling `RunFlow` and waits for it to exit afterward.
@@ -405,6 +405,54 @@ func (o *Orchestrator) ListAgentHandles(sessionID string) []*AgentHandle
 **ListAgentHandles** returns all live async handles tagged with the supplied `SessionID` (from `AgentConfig.SessionID`). Used by hosting consumers to surface "this session has N background tasks running" without polling.
 
 `RunAgentAsync` returns `ErrOrchestratorClosed` if `Close` has been called.
+
+## Skills and operator system prompt
+
+### `WithSystemPromptSuffix`
+
+```go
+func WithSystemPromptSuffix(text string) Option
+```
+
+Appends `text` to the system prompt of every agent the orchestrator runs: workflow step agents (`AgentConfig.Prompt` stays the base), the coordinator installed via `WithCoordinator`, and standalone `RunAgent` calls. Repeated calls accumulate with a blank line between blocks; an empty or whitespace-only value is a no-op.
+
+### `LoadSkills` / `LoadSkillsDirs` / `WithSkills`
+
+```go
+func LoadSkills(dir string) (*Skills, error)
+func LoadSkillsDirs(dirs ...string) (*Skills, error)
+func WithSkills(s *Skills) Option
+
+type Skill struct {
+    Name        string
+    Description string
+    Path        string
+    Body        string
+}
+
+func (s *Skills) Names() []string
+func (s *Skills) Len() int
+func (s *Skills) IndexBlock() string
+func (s *Skills) Tool() goai.Tool
+```
+
+`LoadSkills` scans a directory for skills using either layout: `<dir>/<slug>/SKILL.md` or `<dir>/<slug>.md`. Optional YAML frontmatter supplies `name` and `description`; without it, the directory/file stem becomes the name and the first body line the description. Subdirectories without a `SKILL.md` and non-markdown files are skipped. An unreadable directory, or a directory containing no skills, returns an error.
+
+`LoadSkillsDirs` merges multiple directories; the first directory wins when two skills share a name.
+
+`WithSkills` installs the collection with **progressive disclosure**: `New` appends the compact `IndexBlock()` (name + description per skill) to the shared system-prompt suffix and registers the `Tool()` (`read_skill`) on the orchestrator catalog. The full skill body is only read when the agent calls `read_skill`, so context usage tracks what the agent actually uses rather than the size of the skills tree. A caller-registered tool named `read_skill` takes precedence over the built-in loader.
+
+```go
+skills, err := zenflow.LoadSkills("./skills")
+if err != nil {
+    return err
+}
+orch := zenflow.New(
+    zenflow.WithModel(model),
+    zenflow.WithSkills(skills),
+    zenflow.WithSystemPromptSuffix("Always cite file:line."),
+)
+```
 
 ## Workflow loading helpers
 

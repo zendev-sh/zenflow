@@ -224,6 +224,7 @@ export default defineConfig({
             { text: 'Orchestrator', link: '/concepts/orchestrator' },
             { text: 'Execution Modes', link: '/concepts/execution-modes' },
             { text: 'Agents', link: '/concepts/agents' },
+            { text: 'Skills', link: '/concepts/skills' },
             { text: 'DAG Scheduling', link: '/concepts/dag-scheduling' },
             { text: 'Coordinator', link: '/concepts/coordinator' },
             { text: 'Messaging', link: '/concepts/messaging' },

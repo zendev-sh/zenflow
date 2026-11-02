@@ -1,0 +1,11 @@
+{
+	admin off
+	auto_https off
+}
+
+:5173 {
+	root * /srv
+	encode gzip
+	try_files {path} {path}.html {path}/index.html
+	file_server
+}

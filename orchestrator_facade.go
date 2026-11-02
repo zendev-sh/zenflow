@@ -94,7 +94,25 @@ var (
 	WithRunID                     = exec.WithRunID
 	WithFlowContext               = exec.WithFlowContext
 	WithGoalContext               = exec.WithGoalContext
+	WithSystemPromptSuffix        = exec.WithSystemPromptSuffix
+	WithSkills                    = exec.WithSkills
 )
+
+// ----- Skills -----
+
+// Skill is re-exported from internal/exec.
+type Skill = exec.Skill
+
+// Skills is re-exported from internal/exec.
+type Skills = exec.Skills
+
+// LoadSkills loads the skills under a directory (progressive
+// disclosure: index in the system prompt, full body via read_skill).
+var LoadSkills = exec.LoadSkills
+
+// LoadSkillsDirs loads and merges multiple skills directories
+// (first directory wins on duplicate names).
+var LoadSkillsDirs = exec.LoadSkillsDirs
 
 // ErrOrchestratorClosed is re-exported from internal/exec.
 var ErrOrchestratorClosed = exec.ErrOrchestratorClosed

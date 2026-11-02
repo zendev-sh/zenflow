@@ -102,7 +102,7 @@ The `Done()` channel close is `sync.Once`-guarded, so repeated `finalize` calls 
 
 ### Loop-exit semantics
 
-- The CLI does NOT honour `finalize` as a workflow-exit signal; the workflow's own DAG completion is authoritative. The CLI's coord loop (`cmd/zenflow/main.go`) is `for { runner.Run; WaitForCoordWake }` and exits only on context cancellation - it does not consult `runner.Finalized()`. `finalize` is advisory; it lets the coord deliver a synthesis and stop without blocking workflow termination.
+- The CLI does NOT honour `finalize` as a workflow-exit signal; the workflow's own DAG completion is authoritative. The coord loop (`zenflow.RunCoordinatorLoop`, wired by the CLI in `cmd/zenflow/orchestrator_opts.go`) is `for { runner.Run; WaitForCoordWake }` and exits only on context cancellation - it does not consult `runner.Finalized()`. `finalize` is advisory; it lets the coord deliver a synthesis and stop without blocking workflow termination.
 - Embedders who DO want the signal can build their own coord loop that selects on `runner.Done()` and exits on close. `runner.FinalSummary()` exposes the same state for poll-driven loops.
 
 ## Composition example

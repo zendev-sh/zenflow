@@ -62,6 +62,20 @@ zenflow agent "Summarise this repo's README" --model azure-deployment/gpt-5
 
 A single agent loop with the configured tool catalog. Most useful for one-shot tasks that don't need multi-step coordination.
 
+### Operator context and skills
+
+All three verbs accept two extra context flags:
+
+```bash
+zenflow agent "review this diff" \
+  --system-prompt @./review-policy.md \
+  --skills ./skills \
+  --model google/gemini-3-pro-preview
+```
+
+- `--system-prompt TEXT|@FILE` appends operator guidance to every agent's system prompt (workflow step agents, the coordinator, and single-agent runs). The workflow's own `agents.<name>.prompt` stays the base. A leading `@` reads the text from a file; `@@` escapes a literal `@`.
+- `--skills DIR` loads a skills directory (repeatable; earlier dirs win on duplicate names). Layout: `<DIR>/<slug>/SKILL.md` or `<DIR>/<slug>.md`, with optional YAML frontmatter (`name`, `description`). Only the skill index is injected into the system prompt; a `read_skill` tool loads a skill's full body on demand.
+
 ## Provider env vars
 
 Set the credentials for whichever provider you target:
@@ -71,6 +85,12 @@ Set the credentials for whichever provider you target:
 | Google Gemini | `GEMINI_API_KEY` | `gemini/gemini-3-pro-preview` |
 | AWS Bedrock | `AWS_ACCESS_KEY_ID` + `AWS_SECRET_ACCESS_KEY` (or AWS profile) | `bedrock/anthropic.claude-sonnet-4-6`, `bedrock/minimax.minimax-m2.5` |
 | Azure (AI Services / OpenAI / Anthropic) | `AZURE_OPENAI_API_KEY` + `AZURE_RESOURCE_NAME` | `azure-deployment/gpt-5`, `azure-deployment/claude-sonnet-4-6` |
+| FPT Smart Cloud | `FPT_API_KEY` (+ optional `FPT_REGION`) | `fptcloud/DeepSeek-V4.1-Flash` |
+| Anthropic direct | `ANTHROPIC_API_KEY` | `anthropic/claude-sonnet-4-6` |
+| OpenAI direct | `OPENAI_API_KEY` | `openai/gpt-4o` |
+| OpenRouter | `OPENROUTER_API_KEY` | `openrouter/anthropic/claude-3.5-sonnet` |
+
+The same `--model <prefix>/<model>` form works for every provider goai supports (`deepseek`, `groq`, `mistral`, `together`, `fireworks`, `ollama`, `vllm`, `compat`, …). See the [provider matrix](docs/concepts/agents.md#provider-matrix) for the full list.
 
 The `--model` flag accepts the `provider/model-id` form. For Azure, deployment-based URLs are auto-resolved when the model id matches a known deployment family.
 

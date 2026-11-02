@@ -50,6 +50,7 @@ A real `zenflow flow spec/v1/examples/full-featured.yaml --model google/gemini-3
 - **LLM coordinator with hub-and-spoke messaging.** A coordinator agent narrates progress, forwards events between running steps, and finalizes the run. Peer agents never address each other directly.
 - **Race-safe Mailbox + Wake delivery.** Every message is delivered through a per-agent mailbox with explicit drop reasons. No silent loss, no out-of-order delivery, no leaked goroutines.
 - **Native MCP tools.** Point the harness at a Claude-compatible `.zenflow/settings.json` and every [Model Context Protocol](https://modelcontextprotocol.io) server's tools become available to your agents - stdio, HTTP, or SSE. No Go code, no recompile. Reference a whole server by name in an agent's `tools:`. See [MCP servers](https://zenflow.sh/integrations/mcp).
+- **Operator context and skills.** Append project policy to every agent with `--system-prompt` / `WithSystemPromptSuffix`, and load reusable instructions with `--skills DIR` / `WithSkills`. Skills use progressive disclosure: only the name + description index enters the system prompt, and a `read_skill` tool loads the full body on demand. See [Skills](https://zenflow.sh/api/core-functions#loadskills-loadskillsdirs-withskills).
 - **Multi-provider verified.** Verified against Google `gemini-3-pro-preview`, AWS Bedrock (`anthropic.claude-sonnet-4-6`, `minimax.minimax-m2.5`), and Azure (`DeepSeek-V3.2`, `claude-sonnet-4-6`, `gpt-5`, `gpt-5.3-codex`) - any model [goai](https://goai.sh) supports works.
 - **Spec-first.** Workflows validate against [`spec/v1/schema.json`](https://github.com/zendev-sh/zenflow/blob/main/spec/v1/schema.json) plus a Go validator with 40+ conformance fixtures BEFORE the first LLM call. Cycles, missing dependencies, unknown agents, malformed CEL - all rejected in milliseconds, not after a minute of model burn.
 - **Embed anywhere.** CLI for one-shot runs (`zenflow flow`, `zenflow goal`, `zenflow agent`); Go library primitives (`zenflow.New`, `Orchestrator.RunFlow`) for embedding inside long-running services. Ships as a single static Go binary - no JVM, no Python interpreter, no Node runtime. `go install`, `brew install`, or `curl | sh` and you're running.
@@ -182,7 +183,7 @@ zenflow exposes the same engine through three CLI verbs and one Go library surfa
 | `zenflow goal "build a thing"` | Asks the coordinator to plan and run a workflow on the fly. | The plan must adapt to user input or interim results. |
 | `zenflow agent "<prompt>"` | Single-agent chat with optional tool loop. | One-shot agent calls; reuses zenflow's lifecycle hooks and provider routing. |
 
-The library form (`zenflow.New(...).RunFlow(ctx, wf)`) is the same engine; the CLI is a thin wrapper that resolves a provider from `--model`, wires the coordinator, and prints results.
+The library form (`zenflow.New(...).RunFlow(ctx, wf)`) is the same engine; the CLI is a thin wrapper that resolves a provider from `--model`, wires the coordinator, and prints results. All three verbs accept `--system-prompt TEXT|@FILE` and `--skills DIR` to apply operator-level context to every agent.
 
 ## MCP servers
 
@@ -224,7 +225,7 @@ The CLI reads `.zenflow/settings.json` by default (override with `--mcp-config`,
 | [YAML Reference](https://zenflow.sh/yaml/) | Workflow / agent / step / loop schemas + CEL expression reference. |
 | [CLI Reference](https://zenflow.sh/cli/) | Commands, flags, output formats. |
 | [Integrations](https://zenflow.sh/integrations/) | MCP servers, CI/CD, Docker, scripting, observability (OTel / Langfuse / Jaeger / Datadog). |
-| [Go API](https://zenflow.sh/api/) | Core functions, options (49 `With*` constructors), types, errors. |
+| [Go API](https://zenflow.sh/api/) | Core functions, the `With*` option set, types, errors. |
 | [Examples](https://zenflow.sh/examples) | 18 worked examples covering every primitive. |
 | [SKILL.md](SKILL.md) | Top-of-funnel context for AI agents that consume zenflow (tool description, env vars, YAML shape, NDJSON event schema, exit codes, decision flow). Follows the AI-skill format convention; reusable by any agent harness. |
 

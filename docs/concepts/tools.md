@@ -132,6 +132,10 @@ The coordinator is auto-installed on the CLI path; library users opt in via `Wit
 
 Added when `WithSharedMemory(sm)` is set on the orchestrator. Lets agents read and write the namespaced key/value store. See [Shared memory](/concepts/shared-memory).
 
+### `read_skill`
+
+Added to the orchestrator catalog when skills are installed via `WithSkills(skills)` (CLI: `--skills DIR`). The tool takes a skill `name` and returns that skill's full markdown body. Only the compact index (name + description) is placed in the system prompt up front; the body is loaded on demand. See [Skills](/api/core-functions#loadskills-loadskillsdirs-withskills). A caller-registered `read_skill` tool takes precedence over the built-in loader.
+
 ## Permission gate
 
 `WithPermissions(handler)` installs a hook that runs before every tool call:

@@ -15,7 +15,7 @@ import (
 func cmdFlow() {
 	a := osArgs()
 	if len(a) < 3 {
-		fmt.Fprintln(stderr, "usage: zenflow flow <file> [<context>] [--model MODEL] [--timeout DURATION] [--max-concurrency N] [--max-depth N] [--resume RUN_ID] [--workdir DIR] [--json] [--quiet] [--summary-only] [--stream] [--plan] [--trace] [--thinking LEVEL] [--mcp-config PATH] [--no-mcp] [--env-file PATH] [--no-dotenv] [--verbose] [--yolo] [--sandbox] [--allow LIST] [--deny LIST] [--strict]")
+		fmt.Fprintln(stderr, "usage: zenflow flow <file> [<context>] [--model MODEL] [--timeout DURATION] [--max-concurrency N] [--max-depth N] [--resume RUN_ID] [--workdir DIR] [--json] [--quiet] [--summary-only] [--stream] [--plan] [--trace] [--thinking LEVEL] [--mcp-config PATH] [--no-mcp] [--env-file PATH] [--no-dotenv] [--system-prompt TEXT|@FILE] [--skills DIR] [--verbose] [--yolo] [--sandbox] [--allow LIST] [--deny LIST] [--strict]")
 		exit(3)
 		return
 	}
@@ -72,6 +72,15 @@ func cmdFlow() {
 	// diagram here too - that double-renders. JSON sink users get the
 	// workflow as a structured event instead.
 	opts := buildOrchestratorOpts(flags)
+	// --system-prompt / --skills: operator-level system prompt suffix
+	// and progressive-disclosure skill collection.
+	promptOpts, err := promptAndSkillsOptions(flags)
+	if err != nil {
+		fmt.Fprintln(stderr, err)
+		exit(3)
+		return
+	}
+	opts = append(opts, promptOpts...)
 	// Load MCP servers from settings.json and append their tools. Deferred
 	// cleanup terminates stdio subprocesses when the run completes.
 	mcpOpts, mcpCleanup := loadMCPOptions(flags)

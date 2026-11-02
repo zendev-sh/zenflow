@@ -127,6 +127,34 @@ Defines a named agent's role, model, and tool access. Two halves to the struct:
 
 `Tools` and `DisallowedTools` are workflow-only fields - they are read by the executor when filtering tools for a workflow-declared agent, and ignored on the `RunAgent` path (use `CallTools` there).
 
+### `Skill`
+
+```go
+type Skill struct {
+    Name        string
+    Description string
+    Path        string
+    Body        string
+}
+```
+
+One skill loaded from a skills directory. `Name` is the identifier the `read_skill` tool accepts; `Description` is the one-line summary shown in the system-prompt index; `Path` is the absolute markdown path; `Body` is the full markdown body with YAML frontmatter stripped. Loaded via [`LoadSkills` / `LoadSkillsDirs`](/api/core-functions#loadskills-loadskillsdirs-withskills).
+
+### `Skills`
+
+```go
+type Skills struct {
+    // unexported: loaded skills + lookup map + pre-rendered index
+}
+
+func (s *Skills) Names() []string
+func (s *Skills) Len() int
+func (s *Skills) IndexBlock() string
+func (s *Skills) Tool() goai.Tool
+```
+
+An immutable skill collection installed on the orchestrator via `WithSkills`. `IndexBlock` returns the markdown block appended to every agent's system prompt; `Tool` returns the `read_skill` `goai.Tool` (zero value when the collection is empty). Installed skills are never serialized into workflow YAML.
+
 ### `WorkflowOptions`
 
 ```go

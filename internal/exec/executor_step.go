@@ -370,7 +370,7 @@ func (e *Executor) runStep(ctx context.Context, runID, stepID string, step Step,
 		// matrix (gemini-3-pro-preview, bedrock anthropic.claude-sonnet-4-6,
 		// bedrock minimax.minimax-m2.5, azure DeepSeek-V3.2, azure
 		// claude-sonnet-4-6, azure gpt-5, azure gpt-5.3-codex).
-		systemPrompt: agent.Prompt,
+		systemPrompt: joinSystemPrompt(agent.Prompt, e.SystemPromptSuffix),
 	}
 
 	// VA-6: record the USER-SUPPLIED workflow model string for this

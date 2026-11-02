@@ -265,6 +265,8 @@ func usage(w io.Writer) {
 	fmt.Fprintln(w, "  --no-mcp            Disable MCP server loading")
 	fmt.Fprintln(w, "  --env-file PATH     Env file for ${VAR} interpolation (default ./.env if present)")
 	fmt.Fprintln(w, "  --no-dotenv         Disable .env auto-loading")
+	fmt.Fprintln(w, "  --system-prompt T   Append T to every agent's system prompt (use @path to read from a file; @@ escapes a literal leading @)")
+	fmt.Fprintln(w, "  --skills DIR        Load skills from DIR (progressive disclosure; repeatable, first DIR wins on duplicates)")
 	fmt.Fprintln(w, "  --help, -h          Print this help text")
 	fmt.Fprintln(w, "  --version, -v       Print zenflow version")
 	fmt.Fprintln(w, "")

@@ -77,7 +77,7 @@ zenflow goal "ship the launch"      # let the coordinator plan a workflow on the
 zenflow agent "review the diff"     # single-agent chat with optional tool loop
 ```
 
-The library form (`zenflow.New(...).RunFlow(ctx, wf)`) is the same engine. The CLI is a thin wrapper that resolves a provider from `--model`, wires the coordinator, and prints results.
+The library form (`zenflow.New(...).RunFlow(ctx, wf)`) is the same engine. The CLI is a thin wrapper that resolves a provider from `--model`, wires the coordinator, and prints results. All three verbs accept `--system-prompt TEXT|@FILE` and `--skills DIR` to apply operator-level context and on-demand skill instructions to every agent.
 
 ## A two-minute taste
 
@@ -120,7 +120,7 @@ The two debaters run in parallel. The coordinator forwards each side's arguments
 - [Your first workflow](/getting-started/your-first-workflow) - embed zenflow in a Go binary, end to end.
 - [Agent Orchestration](/agent-orchestration.html) - the runtime topology infographic with labeled message flow.
 - [Architecture](/architecture) - the DAG executor, coordinator, MessageRouter, Mailbox, delivery engine.
-- [Examples](/examples) - 19 reference workflows; 18 ship with Go embeddings.
+- [Examples](/examples) - 20 reference workflows; 18 ship with Go embeddings.
 - [Compare](/compare) - vs CrewAI, AutoGen, LangGraph, langchaingo.
 
 </div>

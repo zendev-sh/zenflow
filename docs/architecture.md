@@ -106,6 +106,12 @@ Each iteration's steps get namespaced IDs (`loop-stages.0.worker`, `loop-stages[
 
 A step's `condition` is a CEL expression evaluated against the context produced by upstream steps. When false, the step is skipped (not failed). The CEL surface is intentionally small: previous step outputs, shared memory entries, and a few built-in helpers.
 
+### Prompt assembly and skills
+
+Each step's system slot is the agent's `prompt` (from `agents.<name>.prompt`), injected via `goai.WithSystem`. The user message is assembled from the step's `instructions`, dependency results, and optional flow context. Operator-level text installed with `WithSystemPromptSuffix` (CLI `--system-prompt`) is appended to the system slot for every step, the coordinator, and standalone agents.
+
+Skills loaded with `WithSkills` (CLI `--skills`) extend the same system slot with a compact index of skill names and descriptions, and register a `read_skill` tool on the catalog. The full skill body is only returned when the agent calls that tool - progressive disclosure keeps the base prompt small regardless of how many skills are mounted.
+
 ## The coordinator
 
 The coordinator is itself an `AgentRunner` - the same primitive that drives every workflow step. What makes it special is the toolset and the wake loop.

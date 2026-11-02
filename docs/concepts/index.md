@@ -28,6 +28,7 @@ For the YAML surface, see [YAML Reference](/yaml/). For the Go API, see [Go API]
 ### Agents and tools
 
 - [Agents](/concepts/agents) - named LLM configurations referenced from steps.
+- [Skills](/concepts/skills) - progressive-disclosure instruction bundles loaded on demand via `read_skill`.
 - [Tools](/concepts/tools) - functions the LLM can call to do real work.
 - [Shared Memory](/concepts/shared-memory) - namespaced key-value store that lives for the run.
 - [Step Isolation](/concepts/step-isolation) - what steps share by default and how to sandbox them.

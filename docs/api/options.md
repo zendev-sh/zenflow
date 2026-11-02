@@ -129,6 +129,52 @@ orch := zenflow.New(
 )
 ```
 
+### `WithSystemPromptSuffix`
+
+```go
+func WithSystemPromptSuffix(text string) Option
+```
+
+Appends operator-level guidance to the system prompt of every agent the orchestrator runs: per-step workflow agents, the coordinator runner installed via `WithCoordinator`, and standalone `RunAgent` calls. The suffix is appended after the workflow-declared agent prompt, so it extends rather than replaces the role. Repeated calls accumulate with a blank line between blocks; an empty or whitespace-only value is a no-op.
+
+```go
+orch := zenflow.New(
+    zenflow.WithModel(model),
+    zenflow.WithSystemPromptSuffix("Always cite file:line for code claims."),
+)
+```
+
+### Skills
+
+```go
+func LoadSkills(dir string) (*Skills, error)
+func LoadSkillsDirs(dirs ...string) (*Skills, error)
+func WithSkills(s *Skills) Option
+
+type Skill struct { Name, Description, Path, Body string }
+func (s *Skills) Names() []string
+func (s *Skills) Len() int
+func (s *Skills) IndexBlock() string
+func (s *Skills) Tool() goai.Tool
+```
+
+`LoadSkills` scans a skills directory using either layout: one subdirectory per skill (`<dir>/<slug>/SKILL.md`) or flat markdown files (`<dir>/<slug>.md`). Optional YAML frontmatter supplies `name` and `description`; otherwise the directory/file stem becomes the name and the first body line the description. `LoadSkillsDirs` merges several directories, first directory winning on duplicate names.
+
+`WithSkills` uses **progressive disclosure**: only the compact index (name + description) is appended to the system prompt, and a `read_skill` tool is registered so the agent loads a skill's full body on demand. This keeps context usage proportional to the skills actually used. A caller-registered tool named `read_skill` takes precedence over the built-in loader.
+
+```go
+skills, err := zenflow.LoadSkills("./skills")
+if err != nil {
+    return err
+}
+orch := zenflow.New(
+    zenflow.WithModel(model),
+    zenflow.WithSkills(skills),
+)
+```
+
+From the CLI the same feature is available as `--system-prompt TEXT|@FILE` and `--skills DIR` (repeatable) on `flow`, `goal`, and `agent`.
+
 ### MCP configuration
 
 zenflow loads [Model Context Protocol](https://modelcontextprotocol.io) servers from a Claude-compatible `settings.json` and exposes their tools as ordinary `goai.Tool` values.
