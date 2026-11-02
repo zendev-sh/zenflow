@@ -1,11 +1,11 @@
 ---
 title: Examples
-description: zenflow ships 19 reference workflows under spec/v1/examples/ and matching Go embeddings under examples/. This page walks through them grouped by...
+description: zenflow ships 20 reference workflows under spec/v1/examples/ and matching Go embeddings under examples/. This page walks through them grouped by...
 ---
 
 # Examples
 
-zenflow ships 19 reference workflows under [`spec/v1/examples/`](https://github.com/zendev-sh/zenflow/tree/main/spec/v1/examples) with matching Go embeddings under [`examples/`](https://github.com/zendev-sh/zenflow/tree/main/examples) (18 of 19; retries-and-sampling is YAML only). This page walks through them grouped by what they demonstrate.
+zenflow ships 20 reference workflows under [`spec/v1/examples/`](https://github.com/zendev-sh/zenflow/tree/main/spec/v1/examples) with matching Go embeddings under [`examples/`](https://github.com/zendev-sh/zenflow/tree/main/examples) (18 of 20; retries-and-sampling and env-interpolation are YAML only). This page walks through them grouped by what they demonstrate.
 
 Every example has the same shape:
 
@@ -496,6 +496,79 @@ steps:
 ```
 
 What it demonstrates: per-step file attachments. Image and PDF support requires a multimodal model (Gemini, Claude Sonnet). The `fixtures/` directory ships with the example so the workflow runs without additional setup.
+
+## Environment interpolation
+
+`spec/v1/examples/env-interpolation.yaml` shows `${VAR}` references in free-text fields (`description`, agent `prompt`, step `instructions`). They resolve from the environment at load time; an unset variable expands to `""`, and `$$` writes a literal dollar. The CLI auto-loads `./.env` first.
+
+```yaml
+name: env-interpolation
+description: "Summarize the feed at ${RSS_FEED_URL}."
+agents:
+  summarizer:
+    description: "Reads a feed and writes a short digest."
+    prompt: "You summarize RSS feeds. The configured source is ${RSS_FEED_URL}."
+steps:
+  - id: summarize
+    agent: summarizer
+    instructions: "Fetch ${RSS_FEED_URL}, then write a 3-bullet summary."
+```
+
+Run: `RSS_FEED_URL=https://example.com/feed.xml zenflow flow spec/v1/examples/env-interpolation.yaml`.
+
+## Operator context and skills
+
+`--system-prompt` and `--skills` are **CLI-level** features: they apply to any workflow and do not add YAML fields. Use them when project policy or reusable procedures should reach every agent without editing each `agents.<name>.prompt`.
+
+```yaml
+# spec/v1/examples/minimal.yaml works unchanged
+name: minimal
+steps:
+  - id: greet
+    instructions: "Review the current diff against the team policy."
+```
+
+```text
+skills/
+└── code-review/
+    └── SKILL.md
+```
+
+```markdown
+---
+name: code-review
+description: Review a diff for correctness, security, and missing tests.
+---
+# Code Review
+
+Report findings as `file:line - severity - issue`.
+```
+
+```bash
+zenflow flow spec/v1/examples/minimal.yaml \
+  --model fptcloud/DeepSeek-V4.1-Flash \
+  --system-prompt @./review-policy.md \
+  --skills ./skills \
+  --allow read_skill
+```
+
+The system prompt becomes the agent's own `prompt` (none here, so the operator text is the base), then `--system-prompt`, then the skill index. The agent calls `read_skill("code-review")` to load the body on demand. Repeat `--skills` to layer directories; the first directory wins on duplicate names.
+
+Go embedding:
+
+```go
+skills, err := zenflow.LoadSkills("./skills")
+if err != nil {
+    return err
+}
+orch := zenflow.New(
+    zenflow.WithModel(model),
+    zenflow.WithSkills(skills),
+    zenflow.WithSystemPromptSuffix("Always cite file:line."),
+)
+```
+
+What it demonstrates: progressive disclosure. Only the name/description index is in the system prompt; full skill bodies are read lazily. Under `--strict` (or `--sandbox`) add `--allow read_skill`, otherwise the permission gate denies the tool and the agent cannot load a body. See [Skills](/concepts/skills) for the full layout, frontmatter, and prompt-ordering rules.
 
 ## Tool steps
 

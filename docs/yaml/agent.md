@@ -152,7 +152,7 @@ agents:
     tools: ["read", "write", "firecrawl"]   # 'firecrawl' = every firecrawl tool
 ```
 
-The CLI's default tool registry includes `bash`, `read`, `write`, `glob`, and `grep`, plus any tools from [MCP servers](/integrations/mcp) declared in `settings.json`. Library callers register their own via `zenflow.WithTools(...)` / `zenflow.WithAdditionalTools(...)`. A tool (or MCP server) name that matches nothing in the catalog is rejected before the first LLM call with a `references unknown tool` error.
+The CLI's default tool registry includes `bash`, `read`, `write`, `glob`, and `grep`, plus any tools from [MCP servers](/integrations/mcp) declared in `settings.json`. When `--skills DIR` is set, the registry also includes `read_skill`, and the agents' system prompts include the skill index. Library callers register their own via `zenflow.WithTools(...)` / `zenflow.WithAdditionalTools(...)` / `zenflow.WithSkills(...)`. A tool (or MCP server) name that matches nothing in the catalog is rejected before the first LLM call with a `references unknown tool` error.
 
 ## maxTurns
 

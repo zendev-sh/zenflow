@@ -1,11 +1,11 @@
 ---
 title: Flags
-description: 'Every flag accepted by the zenflow CLI, grouped by purpose. Source of truth: cmd/zenflow/main.go.'
+description: 'Every flag accepted by the zenflow CLI, grouped by purpose. Source of truth: cmd/zenflow/flags.go and cmd/zenflow/permission.go.'
 ---
 
 # Flags
 
-Every flag accepted by the `zenflow` CLI, grouped by purpose. Source of truth: [`cmd/zenflow/main.go`](https://github.com/zendev-sh/zenflow/blob/main/cmd/zenflow/main.go).
+Every flag accepted by the `zenflow` CLI, grouped by purpose. Source of truth: [`cmd/zenflow/flags.go`](https://github.com/zendev-sh/zenflow/blob/main/cmd/zenflow/flags.go) and [`cmd/zenflow/permission.go`](https://github.com/zendev-sh/zenflow/blob/main/cmd/zenflow/permission.go).
 
 The `Applies to` column lists the verbs that recognize the flag. Flags not listed against a verb are rejected by that verb's parser with exit code `3`.
 
@@ -34,6 +34,15 @@ Before a run, the CLI auto-loads a `.env` file from the working directory and ap
 | --- | --- | --- | --- | --- |
 | `--env-file PATH` | path | `./.env` | flow, goal, agent | Load env vars from a shell-style `.env` at `PATH` (supports `export `, `#` comments, and quoted values). A missing default is a silent no-op; a missing explicit `PATH` is reported. Like the MCP config, a `.env` is a trust boundary. |
 | `--no-dotenv` | bool | off | flow, goal, agent | Skip `.env` auto-loading entirely. |
+
+## Agent context and skills
+
+| Flag | Type | Default | Applies to | Description |
+| --- | --- | --- | --- | --- |
+| `--system-prompt TEXT\|@FILE` | string | unset | flow, goal, agent | Append operator-level guidance to the system prompt of every agent: per-step workflow agents, the coordinator, and single-agent runs. The workflow's own `agents.<name>.prompt` stays the base; this text is appended after it. A leading `@` reads the text from a file (`@./policy.md`); write `@@` to start a literal value with `@`. Repeat the flag to accumulate blocks separated by a blank line. |
+| `--skills DIR` | path | unset | flow, goal, agent | Load a skills directory. Repeatable; earlier directories win when two skills share a name. Layout: `<DIR>/<slug>/SKILL.md` or `<DIR>/<slug>.md`, with optional YAML frontmatter (`name`, `description`). Progressive disclosure: only the skill index (name + description) is appended to the system prompt, and a `read_skill` tool loads a skill's full body on demand. A missing or empty directory is a configuration error (exit `3`). |
+
+`--system-prompt` and `--skills` are validated before the first LLM call. The skills index is appended after the explicit `--system-prompt` text.
 
 ## Lifecycle and execution
 
@@ -96,7 +105,7 @@ Some flags affect each other; the CLI's logic in `coordinatorOption` and `buildO
 - **`--workdir` and tool containment.** When `--workdir` is set, the default tool set is anchored to that path. When `--workdir` is unset, the tools are anchored to the current working directory at startup. Library users who want a permissive setup must configure tools explicitly via `zenflow.WithTools(...)`.
 - **`--model` and YAML.** When `--model` is set on `flow`, every `agent.model` and `step.model` field in the loaded YAML is cleared, so the workflow runs entirely under the flag's model. This is intentional: it makes cross-provider testing a one-flag change.
 
-## Environment variables
+## Provider environment variables
 
 These complement (but never override) explicit flags:
 
@@ -106,8 +115,10 @@ These complement (but never override) explicit flags:
 | `GEMINI_API_KEY` / `GOOGLE_GENERATIVE_AI_API_KEY` | Credentials for Google direct API. Either name is accepted. |
 | `AWS_ACCESS_KEY_ID` (and the rest of the AWS standard set) | Credentials for AWS Bedrock. |
 | `AZURE_OPENAI_API_KEY` / `AZURE_RESOURCE_NAME` | Credentials and resource name for Azure OpenAI / Azure AI Services. |
+| `FPT_API_KEY` (+ optional `FPT_REGION` = `global` \| `jp`, `FPT_BASE_URL`) | Credentials for the FPT Smart Cloud AI Marketplace (`fptcloud/<model>`). |
+| `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `DEEPSEEK_API_KEY`, `GROQ_API_KEY`, `MISTRAL_API_KEY`, `OPENROUTER_API_KEY`, … | Credentials for the other provider prefixes. See the [provider matrix](/concepts/agents#provider-matrix) for every prefix and its env var. |
 
-If no provider env var is set and `--model` cannot be resolved, the CLI exits `3` with `"LLM provider not configured (use as library with WithModel)"`.
+Any provider in the [provider matrix](/concepts/agents#provider-matrix) can be selected with `--model <prefix>/<model>`; the CLI reads that provider's standard API-key env var. If no provider env var is set and `--model` cannot be resolved, the CLI exits `3` with `"LLM provider not configured (use as library with WithModel)"`.
 
 ## See also
 

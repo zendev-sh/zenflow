@@ -1,6 +1,7 @@
 package exec
 
 import (
+	"strings"
 	"time"
 
 	"github.com/zendev-sh/goai"
@@ -84,6 +85,40 @@ func WithTools(tools ...goai.Tool) Option {
 // Stable.
 func WithAdditionalTools(tools ...goai.Tool) Option {
 	return func(o *Orchestrator) { o.tools = append(o.tools, tools...) }
+}
+
+// WithSystemPromptSuffix appends text to the system prompt of every
+// agent the orchestrator runs: per-step workflow agents, the coordinator
+// runner installed via WithCoordinator, and standalone RunAgent calls.
+// The suffix is appended after the agent's own prompt, so it can add
+// operator-level policy, conventions, or context without replacing the
+// workflow-declared role. Repeated calls accumulate with a blank line
+// between blocks. Empty string is a no-op. Stable.
+func WithSystemPromptSuffix(text string) Option {
+	return func(o *Orchestrator) {
+		text = strings.TrimSpace(text)
+		if text == "" {
+			return
+		}
+		if o.systemPromptSuffix == "" {
+			o.systemPromptSuffix = text
+			return
+		}
+		o.systemPromptSuffix += "\n\n" + text
+	}
+}
+
+// WithSkills installs a progressive-disclosure skill collection loaded
+// via LoadSkills / LoadSkillsDirs. The skill index (name + description)
+// is appended to every agent's system prompt, and a read_skill tool is
+// added to the orchestrator catalog so an agent can pull a skill's full
+// instructions on demand. A nil collection is a no-op. Stable.
+func WithSkills(s *Skills) Option {
+	return func(o *Orchestrator) {
+		if s != nil {
+			o.skills = s
+		}
+	}
 }
 
 // WithGoAIOptions passes extra goai options to GenerateText calls.

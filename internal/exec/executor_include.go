@@ -189,21 +189,22 @@ func (e *Executor) runIncludeStep(ctx context.Context, runID, stepID string, ste
 	// Create nested executor for the sub-workflow.
 	// Propagate all executor fields so sub-workflows have tracing, isolation, etc.
 	nestedExec := &Executor{
-		Runner:           e.Runner,
-		Storage:          nil, // Inner results aggregated into parent - no orphan storage runs.
-		Progress:         nestedProgress,
-		Workflow:         subWF,
-		DefaultModel:     e.DefaultModel,
-		ForceModel:       e.ForceModel,
-		MaxConcurrency:   e.MaxConcurrency,
-		Tracer:           e.Tracer,
-		Isolation:        e.Isolation,
-		SharedMem:        e.SharedMem,
-		Coordinator:      e.Coordinator,
-		IncludeDepth:     e.IncludeDepth + 1,
-		ParentDepResults: parentDeps,
-		RootRouter:       rootRouter,
-		namespacePrefix:  nestedPrefix,
+		Runner:             e.Runner,
+		Storage:            nil, // Inner results aggregated into parent - no orphan storage runs.
+		Progress:           nestedProgress,
+		Workflow:           subWF,
+		DefaultModel:       e.DefaultModel,
+		ForceModel:         e.ForceModel,
+		SystemPromptSuffix: e.SystemPromptSuffix,
+		MaxConcurrency:     e.MaxConcurrency,
+		Tracer:             e.Tracer,
+		Isolation:          e.Isolation,
+		SharedMem:          e.SharedMem,
+		Coordinator:        e.Coordinator,
+		IncludeDepth:       e.IncludeDepth + 1,
+		ParentDepResults:   parentDeps,
+		RootRouter:         rootRouter,
+		namespacePrefix:    nestedPrefix,
 	}
 
 	// Retry loop for sub-workflow.

@@ -16,7 +16,7 @@ import (
 func cmdGoal() {
 	a := osArgs()
 	if len(a) < 3 {
-		fmt.Fprintln(stderr, "usage: zenflow goal <goal> [<extra-context>] [--model MODEL] [--max-concurrency N] [--max-depth N] [--timeout DURATION] [--workdir DIR] [--json] [--quiet] [--summary-only] [--stream] [--trace] [--thinking LEVEL] [--mcp-config PATH] [--no-mcp] [--env-file PATH] [--no-dotenv] [--verbose] [--yolo] [--sandbox] [--allow LIST] [--deny LIST] [--strict]")
+		fmt.Fprintln(stderr, "usage: zenflow goal <goal> [<extra-context>] [--model MODEL] [--max-concurrency N] [--max-depth N] [--timeout DURATION] [--workdir DIR] [--json] [--quiet] [--summary-only] [--stream] [--trace] [--thinking LEVEL] [--mcp-config PATH] [--no-mcp] [--env-file PATH] [--no-dotenv] [--system-prompt TEXT|@FILE] [--skills DIR] [--verbose] [--yolo] [--sandbox] [--allow LIST] [--deny LIST] [--strict]")
 		exit(3)
 		return
 	}
@@ -73,6 +73,15 @@ func cmdGoal() {
 	stopTracer := installTracerFunc(flags)
 	defer stopTracer()
 	opts := buildOrchestratorOpts(flags)
+	// --system-prompt / --skills: operator-level system prompt suffix
+	// and progressive-disclosure skill collection.
+	promptOpts, err := promptAndSkillsOptions(flags)
+	if err != nil {
+		fmt.Fprintln(stderr, err)
+		exit(3)
+		return
+	}
+	opts = append(opts, promptOpts...)
 	// Load MCP servers from settings.json and append their tools. The
 	// decomposing coordinator can route the generated workflow's steps to
 	// these tools. Deferred cleanup terminates stdio subprocesses.

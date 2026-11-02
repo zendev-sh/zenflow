@@ -331,7 +331,7 @@ String values in `toolInput` starting with `$` are CEL expressions. The `$` is s
 
 ## Where to next
 
-- **More examples** - 18 of 19 reference workflows have matching Go embeddings under [examples/](https://github.com/zendev-sh/zenflow/tree/main/examples). Read [Examples](../examples.md) for the tour.
+- **More examples** - 18 of 20 reference workflows have matching Go embeddings under [examples/](https://github.com/zendev-sh/zenflow/tree/main/examples). Read [Examples](../examples.md) for the tour.
 - **Architecture** - the [Architecture page](../architecture.md) walks through the executor, coordinator, MessageRouter, Mailbox, and the internal delivery engine in detail.
 - **Options** - the orchestrator has 49 `With*` options for tuning concurrency, mailbox bounds, transcript caps, observability, and more. See the [Go API reference](/api/options).
 - **Provider matrix** - the workflow you just wrote runs unchanged on Bedrock, Azure, OpenAI-compatible endpoints, and any other provider [goai](https://goai.sh) supports. See [Provider matrix](/concepts/agents).

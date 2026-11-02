@@ -22,3 +22,8 @@ cover.out
 
 # Generated docs-drift audit reports.
 docs/drift-report/
+
+# Local preview build fingerprint (app-preview skill).
+.vibeflow-preview.hash
+
+.env*

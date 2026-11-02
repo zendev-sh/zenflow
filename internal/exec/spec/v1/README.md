@@ -1,19 +1,21 @@
 # zenflow Workflow Specification v1
 
-This directory holds the authoritative source for the zenflow YAML
-workflow format. It is the contract between workflow authors, the
-zenflow executor, and any third-party tool that needs to read or
-validate a workflow file.
+This directory mirrors the authoritative v1 specification kept at
+[`../../../../spec/v1/`](../../../../spec/v1/). It is vendored here as the
+in-package fixture set for the executor's schema/conformance tests; the
+root [`spec/v1/`](../../../../spec/v1/) remains the contract between
+workflow authors, the zenflow executor, and any third-party tool that
+needs to read or validate a workflow file.
 
 ## Layout
 
 | Path | What | Source of truth for |
 | --- | --- | --- |
 | [`schema.json`](schema.json) | JSON Schema (Draft 2020-12) for the workflow document. | Machine-readable validation. Mechanical tools should consume this. |
-| [`spec.md`](spec.md) | Prose specification of every field, semantics, and invariants. | Human-readable contract. Goes beyond what JSON Schema can express (cycle detection rules, CEL evaluation order, namespacing of nested steps). |
-| [`examples/`](examples/) | 18 reference workflows, one per primitive or feature combination. | Runnable demonstrations that the engine treats as conformance examples. |
-| [`testcases/valid/`](testcases/valid/) | 18 minimal-but-valid YAML fixtures. | "Must accept" set for any conforming validator. |
-| [`testcases/invalid/`](testcases/invalid/) | 41 fixtures that exercise every documented error class. | "Must reject" set with the expected error tag. |
+| [`spec.md`](../../../../spec/v1/spec.md) | Prose specification of every field, semantics, and invariants. | Human-readable contract. Goes beyond what JSON Schema can express (cycle detection rules, CEL evaluation order, namespacing of nested steps). |
+| [`examples/`](examples/) | 20 reference workflows, one per primitive or feature combination. | Runnable demonstrations that the engine treats as conformance examples. |
+| [`testcases/valid/`](testcases/valid/) | 21 minimal-but-valid YAML fixtures. | "Must accept" set for any conforming validator. |
+| [`testcases/invalid/`](testcases/invalid/) | 49 fixtures that exercise every documented error class. | "Must reject" set with the expected error tag. |
 | [`test_schema.sh`](test_schema.sh) | Bash + ajv-cli + python3 harness that runs every fixture against `schema.json`. | CI-friendly validation runner. |
 
 ## Verifying conformance
@@ -21,7 +23,7 @@ validate a workflow file.
 Run the schema test harness from this directory:
 
 ```bash
-cd spec/v1 && bash test_schema.sh
+cd internal/exec/spec/v1 && bash test_schema.sh
 ```
 
 The script extracts each fixture's input, validates it via
@@ -50,11 +52,11 @@ file, and at least one `testcases/valid/` fixture together.
 
 - **Authoring a workflow:** start with [`examples/minimal.yaml`](examples/minimal.yaml)
   and [`examples/simple-chain.yaml`](examples/simple-chain.yaml),
-  then read the relevant section of [`spec.md`](spec.md).
+  then read the relevant section of [`spec.md`](../../../../spec/v1/spec.md).
 - **Implementing a parser:** consume [`schema.json`](schema.json)
   for structural validation, then consult `spec.md` for the
   semantic rules (CEL evaluation, namespace resolution, retry
   semantics) that JSON Schema cannot encode.
 - **Adding a feature to the spec:** see the "Adding a new feature
   to the YAML spec" checklist in
-  [`../../CONTRIBUTING.md`](../../CONTRIBUTING.md).
+  [`../../../../CONTRIBUTING.md`](../../../../CONTRIBUTING.md).

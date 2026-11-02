@@ -67,6 +67,18 @@ type Orchestrator struct {
 	streaming      bool
 	verbose        bool
 
+	// systemPromptSuffix is appended to every agent's system prompt
+	// (per-step runners on the flow path, the coordinator runner, and
+	// the standalone RunAgent runner). Set via WithSystemPromptSuffix;
+	// the skills index block is merged into it by New.
+	systemPromptSuffix string
+
+	// skills is the optional progressive-disclosure skill collection
+	// installed via WithSkills. New merges its index block into
+	// systemPromptSuffix and registers its read_skill tool on the
+	// orchestrator tool catalog.
+	skills *Skills
+
 	// Day-1 Options API surface. All zero values = "use compile-time
 	// defaults" so unconfigured callers retain default behavior.
 	maxWakeCycles          int             // AgentRunner per-step cap; 0 = defaultMaxWakeCycles
@@ -182,6 +194,18 @@ func New(opts ...Option) *Orchestrator {
 	if !o.maxMailboxSizeSet {
 		o.maxMailboxSize = DefaultMaxMailboxSize
 	}
+	// Progressive-disclosure skills: fold the index block into the shared
+	// system-prompt suffix and register the read_skill tool on the
+	// catalog. An explicitly registered tool with the same name wins so
+	// callers can override the built-in loader.
+	if o.skills != nil {
+		if block := o.skills.IndexBlock(); block != "" {
+			o.systemPromptSuffix = joinSystemPrompt(o.systemPromptSuffix, block)
+		}
+		if skillTool := o.skills.Tool(); skillTool.Name != "" && !hasToolNamed(o.tools, skillTool.Name) {
+			o.tools = append(o.tools, skillTool)
+		}
+	}
 	// Synchronously wire the coord runner's Router + Progress
 	// dependencies BEFORE returning. The consumer spawns the coord Run
 	// goroutine immediately after newOrch and before RunFlow; that
@@ -199,8 +223,37 @@ func New(opts ...Option) *Orchestrator {
 		if o.coordinator.progress == nil {
 			o.coordinator.progress = o.progress
 		}
+		// Apply the operator-level system-prompt suffix (including the
+		// skills index) to the coordinator runner as well, so coordinator
+		// behaviour respects the same policy as the step agents.
+		o.coordinator.systemPrompt = joinSystemPrompt(o.coordinator.systemPrompt, o.systemPromptSuffix)
 	}
 	return o
+}
+
+// joinSystemPrompt concatenates two system-prompt blocks with a blank
+// line between them, ignoring empty sides.
+func joinSystemPrompt(base, extra string) string {
+	base = strings.TrimSpace(base)
+	extra = strings.TrimSpace(extra)
+	switch {
+	case base == "":
+		return extra
+	case extra == "":
+		return base
+	default:
+		return base + "\n\n" + extra
+	}
+}
+
+// hasToolNamed reports whether tools contains a tool with the given name.
+func hasToolNamed(tools []goai.Tool, name string) bool {
+	for _, t := range tools {
+		if t.Name == name {
+			return true
+		}
+	}
+	return false
 }
 
 // Progress returns the orchestrator's configured ProgressSink, or nil
@@ -437,6 +490,12 @@ func (o *Orchestrator) runAgent(ctx context.Context, cfg AgentConfig, ms *agentM
 		WithRunnerMailbox(mailbox),
 		WithRunnerWake(wake),
 		WithRunnerRouter(router),
+	}
+	// Operator-level system prompt (WithSystemPromptSuffix + skills
+	// index). The RunAgent path has no workflow-declared agent prompt, so
+	// this becomes the runner's system slot directly.
+	if o.systemPromptSuffix != "" {
+		runnerOpts = append(runnerOpts, WithRunnerSystemPrompt(o.systemPromptSuffix))
 	}
 	// Persist the standalone agent's transcript so a finished agent can
 	// be resurrected: the consumer loads (runID, primaryStepID) from
@@ -1056,6 +1115,7 @@ func (o *Orchestrator) applyExecutorOptions(exec *Executor) {
 	if exec == nil {
 		return
 	}
+	exec.SystemPromptSuffix = o.systemPromptSuffix
 	exec.MaxWakeCycles = o.maxWakeCycles
 	exec.HoldTimeout = o.holdTimeout
 	exec.DropCallback = o.dropCallback

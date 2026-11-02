@@ -16,6 +16,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/zendev-sh/goai"
@@ -129,6 +130,50 @@ func buildOrchestratorOpts(flags cmdFlags) []zenflow.Option {
 	// Coordinator installation is the flow/goal caller's responsibility
 	// via coordinatorOption.
 	return opts
+}
+
+// promptAndSkillsOptions turns the --system-prompt and --skills flags
+// into orchestrator options. Errors (unreadable @file, missing or empty
+// skills directory) are returned so the caller can exit 3 with a clear
+// message instead of silently running without the requested context.
+func promptAndSkillsOptions(flags cmdFlags) ([]zenflow.Option, error) {
+	var opts []zenflow.Option
+	if flags.systemPrompt != "" {
+		text, err := readSystemPromptValue(flags.systemPrompt)
+		if err != nil {
+			return nil, err
+		}
+		if strings.TrimSpace(text) != "" {
+			opts = append(opts, zenflow.WithSystemPromptSuffix(text))
+		}
+	}
+	if len(flags.skillsDirs) > 0 {
+		skills, err := zenflow.LoadSkillsDirs(flags.skillsDirs...)
+		if err != nil {
+			return nil, err
+		}
+		opts = append(opts, zenflow.WithSkills(skills))
+	}
+	return opts, nil
+}
+
+// readSystemPromptValue resolves the --system-prompt value. A leading
+// "@" means "read the file named by the rest of the value"; anything
+// else is literal text. A literal value that itself starts with "@" can
+// be escaped as "@@...".
+func readSystemPromptValue(raw string) (string, error) {
+	if strings.HasPrefix(raw, "@@") {
+		return raw[1:], nil
+	}
+	if !strings.HasPrefix(raw, "@") {
+		return raw, nil
+	}
+	path := strings.TrimPrefix(raw, "@")
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return "", fmt.Errorf("--system-prompt: read %q: %w", path, err)
+	}
+	return string(data), nil
 }
 
 // withDefaultExporterFunc is injectable for testing: it wraps the

@@ -57,4 +57,4 @@ file, and at least one `testcases/valid/` fixture together.
   semantics) that JSON Schema cannot encode.
 - **Adding a feature to the spec:** see the "Adding a new feature
   to the YAML spec" checklist in
-  [`../../../CONTRIBUTING.md`](../../../CONTRIBUTING.md).
+  [`../../CONTRIBUTING.md`](../../CONTRIBUTING.md).

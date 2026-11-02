@@ -65,6 +65,8 @@ These flags work across `flow`, `goal`, and `agent` (with a few command-specific
 | `--resume RUN_ID` | string | unset | Resume from a checkpoint (`flow` only). |
 | `--trace` | bool | off | Enable OpenTelemetry tracing. |
 | `--thinking LEVEL` | enum | `off` | Extended reasoning: `off`, `low`, `medium`, `high`. |
+| `--system-prompt TEXT\|@FILE` | string | unset | Append operator guidance to every agent's system prompt (`@FILE` reads a file). |
+| `--skills DIR` | path | unset | Load a skills directory (repeatable); adds the skill index and the `read_skill` tool. |
 
 `zenflow agent` adds `--max-turns N` for the conversation turn cap.
 

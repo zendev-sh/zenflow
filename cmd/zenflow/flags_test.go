@@ -1,6 +1,8 @@
 package main
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -508,4 +510,111 @@ func TestCmd_HelpFlagDispatch(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestParseFlags_SystemPromptAndSkills covers the operator context flags.
+func TestParseFlags_SystemPromptAndSkills(t *testing.T) {
+	f, err := parseFlags([]string{"--system-prompt", "be terse", "--skills", "a", "--skills", "b"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if f.systemPrompt != "be terse" {
+		t.Errorf("systemPrompt = %q, want be terse", f.systemPrompt)
+	}
+	if len(f.skillsDirs) != 2 || f.skillsDirs[0] != "a" || f.skillsDirs[1] != "b" {
+		t.Errorf("skillsDirs = %v, want [a b]", f.skillsDirs)
+	}
+}
+
+func TestParseFlags_SystemPromptRequiresValue(t *testing.T) {
+	_, err := parseFlags([]string{"--system-prompt"})
+	if err == nil || !strings.Contains(err.Error(), "--system-prompt requires a value") {
+		t.Fatalf("err = %v, want --system-prompt requires a value", err)
+	}
+}
+
+func TestParseFlags_SkillsRequiresValue(t *testing.T) {
+	_, err := parseFlags([]string{"--skills"})
+	if err == nil || !strings.Contains(err.Error(), "--skills requires a directory path") {
+		t.Fatalf("err = %v, want --skills requires a directory path", err)
+	}
+}
+
+func TestReadSystemPromptValue(t *testing.T) {
+	literal, err := readSystemPromptValue("be terse")
+	if err != nil || literal != "be terse" {
+		t.Fatalf("literal = %q, err %v", literal, err)
+	}
+	escaped, err := readSystemPromptValue("@@literal")
+	if err != nil || escaped != "@literal" {
+		t.Fatalf("escaped = %q, err %v", escaped, err)
+	}
+
+	path := filepath.Join(t.TempDir(), "sys.md")
+	if err := os.WriteFile(path, []byte("from file"), 0o644); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+	fromFile, err := readSystemPromptValue("@" + path)
+	if err != nil || fromFile != "from file" {
+		t.Fatalf("fromFile = %q, err %v", fromFile, err)
+	}
+
+	if _, err := readSystemPromptValue("@/does/not/exist"); err == nil {
+		t.Fatal("expected error for missing file")
+	}
+}
+
+func TestPromptAndSkillsOptions(t *testing.T) {
+	t.Run("literal", func(t *testing.T) {
+		opts, err := promptAndSkillsOptions(cmdFlags{systemPrompt: "be terse"})
+		if err != nil || len(opts) != 1 {
+			t.Fatalf("opts=%d err=%v, want 1/nil", len(opts), err)
+		}
+	})
+	t.Run("whitespace only", func(t *testing.T) {
+		opts, err := promptAndSkillsOptions(cmdFlags{systemPrompt: "   "})
+		if err != nil || len(opts) != 0 {
+			t.Fatalf("opts=%d err=%v, want 0/nil", len(opts), err)
+		}
+	})
+	t.Run("at file", func(t *testing.T) {
+		path := filepath.Join(t.TempDir(), "sys.md")
+		if err := os.WriteFile(path, []byte("from file"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		opts, err := promptAndSkillsOptions(cmdFlags{systemPrompt: "@" + path})
+		if err != nil || len(opts) != 1 {
+			t.Fatalf("opts=%d err=%v, want 1/nil", len(opts), err)
+		}
+	})
+	t.Run("missing prompt file", func(t *testing.T) {
+		if _, err := promptAndSkillsOptions(cmdFlags{systemPrompt: "@/nope"}); err == nil {
+			t.Fatal("expected error")
+		}
+	})
+	t.Run("skills", func(t *testing.T) {
+		dir := t.TempDir()
+		if err := os.WriteFile(filepath.Join(dir, "s.md"), []byte("---\nname: s\n---\nbody"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		opts, err := promptAndSkillsOptions(cmdFlags{skillsDirs: []string{dir}})
+		if err != nil || len(opts) != 1 {
+			t.Fatalf("opts=%d err=%v, want 1/nil", len(opts), err)
+		}
+	})
+	t.Run("missing skills dir", func(t *testing.T) {
+		if _, err := promptAndSkillsOptions(cmdFlags{skillsDirs: []string{"/nope"}}); err == nil {
+			t.Fatal("expected error")
+		}
+	})
+	t.Run("both", func(t *testing.T) {
+		dir := t.TempDir()
+		if err := os.WriteFile(filepath.Join(dir, "s.md"), []byte("body"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		opts, err := promptAndSkillsOptions(cmdFlags{systemPrompt: "x", skillsDirs: []string{dir}})
+		if err != nil || len(opts) != 2 {
+			t.Fatalf("opts=%d err=%v, want 2/nil", len(opts), err)
+		}
+	})
 }

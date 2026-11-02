@@ -46,6 +46,12 @@ type Executor struct {
 	Progress     ProgressSink
 	Workflow     *Workflow
 	DefaultModel string
+	// SystemPromptSuffix is appended to every per-step agent's system
+	// prompt (AgentConfig.Prompt). Set by the Orchestrator from
+	// WithSystemPromptSuffix / the skills index; nested executors
+	// (loop/include) propagate the same value so operators' policy
+	// applies uniformly.
+	SystemPromptSuffix string
 	// ForceModel, when non-empty, overrides Step.Model and AgentConfig.Model
 	// during effective-model resolution. Set by Orchestrator from the
 	// WithForceModel option; nested executors propagate the same value via

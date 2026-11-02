@@ -121,6 +121,8 @@ coord := zenflow.NewDefaultCoordRunner(
 
 `WithCoordSystemPromptSuffix` is the right tool for "keep the tested baseline, add a few project-specific lines". Replace the prompt entirely only if you have a strong reason - the default contains addressing rules that prevent unknown-step drops.
 
+When the coordinator is installed on an orchestrator via `WithCoordinator`, an orchestrator-level `WithSystemPromptSuffix` (CLI `--system-prompt`) and the skills index from `WithSkills` (CLI `--skills`) are appended to the coordinator's prompt too, so operator policy applies uniformly to the coordinator and every step agent.
+
 `WithCoordContextProvider` is the per-wake context hook. The callback fires once before the first LLM call and once on every wake-driven re-entry; its returned string is appended as a fresh user-role message wrapped in `<dynamic-context>...</dynamic-context>` so the coord LLM can distinguish ambient state from in-band conversation. Empty / whitespace-only returns are skipped. Use it for chat-driven UX that needs ambient context refreshed each wake (currently-open files, repo metadata, session topic) without re-engineering the system prompt.
 
 ## Worked example: messaging-demo

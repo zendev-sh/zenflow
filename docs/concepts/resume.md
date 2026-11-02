@@ -111,7 +111,7 @@ orch := zenflow.New(
 )
 ```
 
-The CLI binary's `resolveModel(providerName, modelID string) provider.LanguageModel` in `cmd/zenflow/main.go` is the reference implementation; it dispatches across every provider zenflow ships with and is a good starting point to copy into a library consumer.
+The CLI binary's `resolveModel(providerName, modelID string) provider.LanguageModel` in `cmd/zenflow/provider.go` is the reference implementation; it dispatches across every provider zenflow ships with and is a good starting point to copy into a library consumer.
 
 Without a resolver, mismatch fails loudly with `ErrModelResolverMissing`. Resolution failures inside the resolver surface as `DropReasonResolverError`.
 

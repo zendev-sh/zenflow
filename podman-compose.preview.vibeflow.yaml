@@ -1,0 +1,10 @@
+services:
+  docs:
+    image: caddy:2-alpine
+    command: ["caddy", "run", "--config", "/etc/caddy/Caddyfile", "--adapter", "caddyfile"]
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./docs/.vitepress/dist:/srv:ro
+      - ./Caddyfile.preview.vibeflow:/etc/caddy/Caddyfile:ro
+    restart: unless-stopped

@@ -17,7 +17,7 @@ import (
 func cmdAgent() {
 	a := osArgs()
 	if len(a) < 3 {
-		fmt.Fprintln(stderr, "usage: zenflow agent <prompt> [--model MODEL] [--max-turns N] [--max-depth N] [--workdir DIR] [--json] [--stream] [--thinking LEVEL] [--mcp-config PATH] [--no-mcp] [--env-file PATH] [--no-dotenv] [--verbose] [--yolo] [--sandbox] [--allow LIST] [--deny LIST] [--strict]")
+		fmt.Fprintln(stderr, "usage: zenflow agent <prompt> [--model MODEL] [--max-turns N] [--max-depth N] [--workdir DIR] [--json] [--stream] [--thinking LEVEL] [--mcp-config PATH] [--no-mcp] [--env-file PATH] [--no-dotenv] [--system-prompt TEXT|@FILE] [--skills DIR] [--verbose] [--yolo] [--sandbox] [--allow LIST] [--deny LIST] [--strict]")
 		exit(3)
 		return
 	}
@@ -127,6 +127,15 @@ func cmdAgent() {
 	loadDotEnv(flags)
 	// Use buildOrchestratorOpts for consistent LLM provider wiring.
 	opts := buildOrchestratorOpts(flags)
+	// --system-prompt / --skills: operator-level system prompt suffix
+	// and progressive-disclosure skill collection.
+	promptOpts, err := promptAndSkillsOptions(flags)
+	if err != nil {
+		fmt.Fprintln(stderr, err)
+		exit(3)
+		return
+	}
+	opts = append(opts, promptOpts...)
 	// Load MCP servers from settings.json and append their tools so the
 	// single agent can call them. Deferred cleanup terminates subprocesses.
 	mcpOpts, mcpCleanup := loadMCPOptions(flags)

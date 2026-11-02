@@ -32,14 +32,14 @@ zenflow/
 ├── transcript_facade.go        # Re-exports for internal/resume/ public API
 ├── coord_facade.go             # Re-exports for internal/coord/ tool factories
 ├── agent_facade.go             # Re-exports for internal/exec/ AgentRunner ecosystem (AgentRunner, AgentResult, 22 WithRunner*, AgentHandle, sentinels)
-├── orchestrator_facade.go      # Re-exports for internal/exec/ Orchestrator + 49 With* + Executor + Storage backends + parsers + coord factory + JSON coordinator + ~60 utility symbols
+├── orchestrator_facade.go      # Re-exports for internal/exec/ Orchestrator + the With* option set (incl. WithSystemPromptSuffix / WithSkills) + Executor + Storage backends + parsers + coord factory + JSON coordinator + ~60 utility symbols
 ├── internal/
 │   ├── types/                  # Event, EventType, MessageKind, Output, ProgressSink, PermissionHandler/Request (leaf, no deps on root)
 │   ├── spec/                   # Workflow / Step / Run / StepResult / AgentConfig / Duration types + Storage / Tracer / StepIsolation / ApprovalHandler / ModelResolver interface contracts + parser & validator helpers
 │   ├── router/                 # MessageRouter, MailboxStore, deliveryEngine (race-safe send/wake)
 │   ├── resume/                 # TranscriptStore, InMemoryTranscriptStore
 │   ├── coord/                  # RunnerHandle interface + 4 coord goai.Tool factories (forward_to_agent, send_message, narrate, finalize)
-│   └── exec/                   # AgentRunner + Executor + Orchestrator + JSON coordinator + RunFlow/RunGoal/RunAgent + ResumeFlow + 49 With* options + Storage backends (MemoryStorage, FileStorage) + SharedMemory + parsers + validators + scheduler + CEL evaluator + portability lints + isolation default + lifecycle + prompt assembly + 16 source files moved from root
+│   └── exec/                   # AgentRunner + Executor + Orchestrator + JSON coordinator + RunFlow/RunGoal/RunAgent + ResumeFlow + the With* option set + Storage backends (MemoryStorage, FileStorage) + SharedMemory + parsers + validators + scheduler + CEL evaluator + portability lints + isolation default + lifecycle + prompt assembly + progressive-disclosure skills (skills.go: LoadSkills / read_skill / WithSkills) + 16 source files moved from root
 ├── cmd/zenflow/
 │   ├── main.go                 # CLI entrypoint
 │   ├── flags.go                # Shared flag parser

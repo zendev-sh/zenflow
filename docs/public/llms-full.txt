@@ -373,7 +373,7 @@ The CLI is a thin wrapper around the library. Everything you ran above is also a
 
 **`zenflow: command not found`** - the install script may not have updated your `PATH`. Re-source your shell rc, or check that `~/.local/bin` is on your `PATH`.
 
-**`Error: GEMINI_API_KEY not set`** - export the key in the same shell before running `zenflow flow`. zenflow does not read `.env` files automatically.
+**`Error: GEMINI_API_KEY not set`** - export the key in the same shell before running `zenflow flow`. zenflow auto-loads `./.env` from the working directory (disable with `--no-dotenv`, override with `--env-file PATH`).
 
 **`no LLM model configured: pass --model MODEL ... or set ZENFLOW_MODEL=PROVIDER/MODEL`** - the CLI needs to know which model to use. Either export `ZENFLOW_MODEL=google/gemini-2.0-flash` (or another `PROVIDER/MODEL`) in the same shell, or pass `--model google/gemini-2.0-flash` on each command.
 
@@ -687,9 +687,32 @@ Every example in the repo ends with `defer orch.Close()`. Here is why.
 
 For short-lived programs like the example above, `defer orch.Close()` in `main` is enough. For long-lived embedders (an HTTP server, a queue worker), call `Close()` when shutting down the surrounding service.
 
+## Tip: tool steps for deterministic actions
+
+When one step needs to do something precise - read a file whose path was returned by the previous agent, run a shell command with a computed argument - use a **tool step** instead of an agent step. A tool step invokes a registered goai tool directly without an LLM call:
+
+```yaml
+- id: find-config
+  agent: analyst
+  instructions: Find the path to the main config file and return it.
+
+- id: read-config
+  dependsOn: [find-config]
+  tool: read
+  toolInput:
+    path: $steps["find-config"].content   # $ prefix: evaluated as CEL
+
+- id: review
+  dependsOn: [read-config]
+  agent: analyst
+  instructions: Review the config and suggest improvements.
+```
+
+String values in `toolInput` starting with `$` are CEL expressions. The `$` is stripped and the remainder is evaluated against the completed step outputs. See [Concepts / Tools](/concepts/tools#tool-steps) for the full picture.
+
 ## Where to next
 
-- **More examples** - 18 of 19 reference workflows have matching Go embeddings under [examples/](https://github.com/zendev-sh/zenflow/tree/main/examples). Read [Examples](../examples.md) for the tour.
+- **More examples** - 18 of 20 reference workflows have matching Go embeddings under [examples/](https://github.com/zendev-sh/zenflow/tree/main/examples). Read [Examples](../examples.md) for the tour.
 - **Architecture** - the [Architecture page](../architecture.md) walks through the executor, coordinator, MessageRouter, Mailbox, and the internal delivery engine in detail.
 - **Options** - the orchestrator has 49 `With*` options for tuning concurrency, mailbox bounds, transcript caps, observability, and more. See the [Go API reference](/api/options).
 - **Provider matrix** - the workflow you just wrote runs unchanged on Bedrock, Azure, OpenAI-compatible endpoints, and any other provider [goai](https://goai.sh) supports. See [Provider matrix](/concepts/agents).
@@ -799,6 +822,12 @@ Each iteration's steps get namespaced IDs (`loop-stages.0.worker`, `loop-stages[
 ### Conditions
 
 A step's `condition` is a CEL expression evaluated against the context produced by upstream steps. When false, the step is skipped (not failed). The CEL surface is intentionally small: previous step outputs, shared memory entries, and a few built-in helpers.
+
+### Prompt assembly and skills
+
+Each step's system slot is the agent's `prompt` (from `agents.<name>.prompt`), injected via `goai.WithSystem`. The user message is assembled from the step's `instructions`, dependency results, and optional flow context. Operator-level text installed with `WithSystemPromptSuffix` (CLI `--system-prompt`) is appended to the system slot for every step, the coordinator, and standalone agents.
+
+Skills loaded with `WithSkills` (CLI `--skills`) extend the same system slot with a compact index of skill names and descriptions, and register a `read_skill` tool on the catalog. The full skill body is only returned when the agent calls that tool - progressive disclosure keeps the base prompt small regardless of how many skills are mounted.
 
 ## The coordinator
 
@@ -1151,7 +1180,7 @@ zenflow/
   spec/v1/
     schema.json           Workflow JSON Schema
     spec.md               Authoritative YAML specification
-    examples/             19 reference workflows
+    examples/             20 reference workflows
 ```
 
 There is no `adapter/goai/` package - the [goai](https://goai.sh) SDK is consumed directly by `internal/exec/executor.go` and `internal/exec/agent_runner.go` via `github.com/zendev-sh/goai` imports. The Orchestrator API is stable. The internal package layout under `internal/exec/` and the sibling internal packages is implementation detail and can change without notice.
@@ -1187,7 +1216,7 @@ The `agents:` block is a map keyed by agent name. The keys are the strings steps
 |-------|------|----------|-------------|
 | `description` | string | Yes | Human-readable role summary. Coordinator and the goal-decomposition LLM read this. |
 | `prompt` | string | No | System prompt. Use `@path/to/file.md` to load from disk (relative to the workflow file). |
-| `model` | string | No | Model identifier. Bare names (`claude-sonnet-4-6`, auto-routed) and provider-prefixed forms (`bedrock/...`, `azure/...`, `google/...`, `vertex/...`) work. The CLI does not accept the `anthropic/` prefix; use `bedrock/anthropic.claude-...` or `azure/claude-...` instead. |
+| `model` | string | No | Model identifier. Bare names (`claude-sonnet-4-6`, auto-routed) and provider-prefixed forms (`google/...`, `bedrock/...`, `azure/...`, `anthropic/...`, `openai/...`, `fptcloud/...`) work. The CLI accepts every prefix in the [provider matrix](#provider-matrix). |
 | `tools` | array of strings | No | Tool allowlist. Omit to allow every registered tool. List explicit names to restrict. Wildcards are not supported. |
 | `disallowedTools` | array of strings | No | Tool denylist applied after the allowlist. |
 | `maxTurns` | integer | no | Maximum tool-call turns the agent may take in one step. Defaults to 50 when omitted. Hitting the cap returns AgentStatusTruncated and the step fails with ErrAgentTurnLimitExceeded. |
@@ -1196,6 +1225,15 @@ The `agents:` block is a map keyed by agent name. The keys are the strings steps
 | `resultSchema` | object | No | JSON Schema for the agent's structured `result` channel. See [Structured output](/concepts/structured-output). |
 
 The full schema and validation rules live in [YAML reference: Agent](/yaml/agent).
+
+### System prompt
+
+`prompt` is the agent's identity and is injected into the LLM's system slot (`goai.WithSystem`), not the user message. Two operator-level layers can extend it without editing the workflow:
+
+- `WithSystemPromptSuffix(text)` (CLI `--system-prompt`) appends project policy to every agent's system prompt.
+- `WithSkills(skills)` (CLI `--skills DIR`) appends the skill index and registers the `read_skill` tool for on-demand loading.
+
+The agent's own `prompt` remains the base; suffixes are appended after it.
 
 ## Step-level overrides
 
@@ -1238,35 +1276,37 @@ Use this for quick scripts. Once you need different roles, prompts, or tool subs
 
 zenflow runs on top of [goai](https://goai.sh). Any provider [goai](https://goai.sh) supports works - zenflow does not bind to a specific vendor. The model identifier you put in `model:` is passed through to [goai](https://goai.sh)'s resolver:
 
-| Provider | Identifier examples | [goai](https://goai.sh) entry point |
-|----------|---------------------|------------------|
-| Google | `gemini-3-pro-preview`, `gemini-2.5-pro` | `goai/provider/google` |
-| AWS Bedrock | `anthropic.claude-sonnet-4-6`, `minimax.minimax-m2.5` | `goai/provider/bedrock` |
-| Azure (AI Services) | `DeepSeek-V3.2`, `grok-2`, `Llama-3.1-405B` | `goai/provider/azure` |
-| Azure (OpenAI) | `gpt-5`, `gpt-5.3-codex`, `o3-mini` | `goai/provider/azure` |
-| Azure (Anthropic) | `claude-sonnet-4-6` | `goai/provider/azure` |
-| Vertex AI | `claude-3-5-sonnet@vertex` | `goai/provider/vertex` |
-| Anthropic direct | `claude-sonnet-4-6` (bare names dispatched via library code) | `goai/provider/anthropic` (library only) -- use `zenflow.WithModel(anthropic.Chat("claude-sonnet-4-6"))`. The CLI binary does not auto-route to direct Anthropic; it routes Claude models to Azure/Bedrock. |
-| OpenAI direct | `gpt-4o`, `o3` | `goai/provider/openai` (library only) |
-| OpenRouter | use `zenflow.WithModel(openrouter.Chat(...))` | `goai/provider/openrouter` (library only) |
-| Cerebras | use `zenflow.WithModel(cerebras.Chat(...))` | `goai/provider/cerebras` (library only) |
-| Cloudflare Workers AI | use `zenflow.WithModel(cloudflare.Chat(...))` | `goai/provider/cloudflare` (library only) |
-| Cohere | use `zenflow.WithModel(cohere.Chat(...))` | `goai/provider/cohere` (library only) |
-| DeepInfra | use `zenflow.WithModel(deepinfra.Chat(...))` | `goai/provider/deepinfra` (library only) |
-| DeepSeek | use `zenflow.WithModel(deepseek.Chat(...))` | `goai/provider/deepseek` (library only) |
-| Fireworks | use `zenflow.WithModel(fireworks.Chat(...))` | `goai/provider/fireworks` (library only) |
-| FPT Cloud | use `zenflow.WithModel(fptcloud.Chat(...))` | `goai/provider/fptcloud` (library only) |
-| Groq | use `zenflow.WithModel(groq.Chat(...))` | `goai/provider/groq` (library only) |
-| MiniMax | use `zenflow.WithModel(minimax.Chat(...))` | `goai/provider/minimax` (library only) |
-| Mistral | use `zenflow.WithModel(mistral.Chat(...))` | `goai/provider/mistral` (library only) |
-| NVIDIA NIM | use `zenflow.WithModel(nvidia.Chat(...))` | `goai/provider/nvidia` (library only) |
-| Ollama | use `zenflow.WithModel(ollama.Chat(...))` | `goai/provider/ollama` (library only) |
-| Perplexity | use `zenflow.WithModel(perplexity.Chat(...))` | `goai/provider/perplexity` (library only) |
-| RunPod | use `zenflow.WithModel(runpod.Chat(...))` | `goai/provider/runpod` (library only) |
-| Together AI | use `zenflow.WithModel(together.Chat(...))` | `goai/provider/together` (library only) |
-| vLLM | use `zenflow.WithModel(vllm.Chat(...))` | `goai/provider/vllm` (library only) |
-| xAI | use `zenflow.WithModel(xai.Chat(...))` | `goai/provider/xai` (library only) |
-| OpenAI-compatible (generic) | use `zenflow.WithModel(compat.Chat(...))` | `goai/provider/compat` (library only) |
+| Provider | CLI `--model` prefix | Example model id | API-key env var | [goai](https://goai.sh) entry point |
+|----------|----------------------|------------------|-----------------|------------------|
+| Google | `google/` | `gemini-3-pro-preview`, `gemini-2.5-pro` | `GEMINI_API_KEY` / `GOOGLE_GENERATIVE_AI_API_KEY` | `goai/provider/google` |
+| AWS Bedrock | `bedrock/` | `anthropic.claude-sonnet-4-6`, `minimax.minimax-m2.5` | `AWS_ACCESS_KEY_ID` + `AWS_SECRET_ACCESS_KEY` (or profile) | `goai/provider/bedrock` |
+| Azure (AI Services) | `azure/` | `DeepSeek-V3.2`, `grok-2`, `Llama-3.1-405B` | `AZURE_OPENAI_API_KEY` + `AZURE_RESOURCE_NAME` | `goai/provider/azure` |
+| Azure (OpenAI) | `azure/` | `gpt-5`, `gpt-5.3-codex`, `o3-mini` | `AZURE_OPENAI_API_KEY` + `AZURE_RESOURCE_NAME` | `goai/provider/azure` |
+| Azure (deployment URL) | `azure-deployment/` | `gpt-5`, `claude-sonnet-4-6` | `AZURE_OPENAI_API_KEY` + `AZURE_RESOURCE_NAME` | `goai/provider/azure` |
+| Vertex AI | `vertex/`, `vertex-anthropic/` | `gemini-2.5-pro`, `claude-3-5-sonnet@vertex` | Application Default Credentials | `goai/provider/vertex` |
+| Anthropic direct | `anthropic/` | `claude-sonnet-4-6` | `ANTHROPIC_API_KEY` (+ `ANTHROPIC_BASE_URL`) | `goai/provider/anthropic` |
+| OpenAI direct | `openai/` | `gpt-4o`, `o3` | `OPENAI_API_KEY` (+ `OPENAI_BASE_URL`) | `goai/provider/openai` |
+| OpenRouter | `openrouter/` | `anthropic/claude-3.5-sonnet` | `OPENROUTER_API_KEY` | `goai/provider/openrouter` |
+| Cerebras | `cerebras/` | `llama3.1-70b` | `CEREBRAS_API_KEY` | `goai/provider/cerebras` |
+| Cloudflare Workers AI | `cloudflare/` | `@cf/meta/llama-3.1-8b-instruct` | `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` | `goai/provider/cloudflare` |
+| Cohere | `cohere/` | `command-r-plus` | `COHERE_API_KEY` | `goai/provider/cohere` |
+| DeepInfra | `deepinfra/` | `meta-llama/Llama-3.1-70B-Instruct` | `DEEPINFRA_API_KEY` | `goai/provider/deepinfra` |
+| DeepSeek | `deepseek/` | `deepseek-chat` | `DEEPSEEK_API_KEY` | `goai/provider/deepseek` |
+| Fireworks | `fireworks/` | `accounts/fireworks/models/llama-v3p1-70b-instruct` | `FIREWORKS_API_KEY` | `goai/provider/fireworks` |
+| FPT Cloud | `fptcloud/` | `DeepSeek-V4.1-Flash` | `FPT_API_KEY` (+ `FPT_REGION`, `FPT_BASE_URL`) | `goai/provider/fptcloud` |
+| Groq | `groq/` | `llama-3.3-70b-versatile` | `GROQ_API_KEY` | `goai/provider/groq` |
+| MiniMax | `minimax/` | `MiniMax-M2` | `MINIMAX_API_KEY` | `goai/provider/minimax` |
+| Mistral | `mistral/` | `mistral-large-latest` | `MISTRAL_API_KEY` | `goai/provider/mistral` |
+| NVIDIA NIM | `nvidia/` | `meta/llama-3.1-70b-instruct` | `NVIDIA_API_KEY` | `goai/provider/nvidia` |
+| Ollama | `ollama/` | `llama3.2` | `OLLAMA_BASE_URL` / `OLLAMA_HOST` | `goai/provider/ollama` |
+| Perplexity | `perplexity/` | `sonar-pro` | `PERPLEXITY_API_KEY` | `goai/provider/perplexity` |
+| RunPod | `runpod/` | model id | `RUNPOD_API_KEY` + `RUNPOD_ENDPOINT_ID` | `goai/provider/runpod` |
+| Together AI | `together/` | `meta-llama/Llama-3.3-70B-Instruct-Turbo` | `TOGETHER_AI_API_KEY` / `TOGETHER_API_KEY` | `goai/provider/together` |
+| vLLM | `vllm/` | served model id | `VLLM_BASE_URL` (+ `VLLM_API_KEY`) | `goai/provider/vllm` |
+| xAI | `xai/` | `grok-2` | `XAI_API_KEY` | `goai/provider/xai` |
+| OpenAI-compatible (generic) | `compat/` | server model id | `COMPAT_BASE_URL` (+ `COMPAT_API_KEY`) | `goai/provider/compat` |
+
+Every prefix in the table is accepted by **both** the CLI (`--model <prefix>/<model>`) and the library (`zenflow.WithModel(<pkg>.Chat(...))`). Bare model names (no prefix) are auto-detected from the model name plus the API-key env vars that are set; use an explicit prefix when you need to force a provider (for example `anthropic/claude-sonnet-4-6` rather than letting a bare Claude name auto-route to Azure or Bedrock).
 
 When you build the orchestrator, you pass one `provider.LanguageModel` via `WithModel`. The model your YAML asks for (per-agent `model:` or per-step `model:`) is resolved through the [goai](https://goai.sh) stack to a provider call. Goai handles auth, request shape, streaming, structured tool calls, and retries.
 
@@ -1438,6 +1478,18 @@ The sub-workflow file is parsed as a full zenflow document. It can have its own 
 - **Step ID namespacing.** Sub-workflow step IDs are prefixed: `{parent-step-id}.{inner-step-id}`. The deploy sub-workflow's step `run-tests` becomes `deploy-staging.run-tests` in the staging include and `deploy-production.run-tests` in the production include.
 - **Recursive includes.** A sub-workflow can itself contain includes. Includes are hard-capped at depth 5 (`MaxIncludeDepth`). Going deeper returns a `ValidationError`. Sub-workflow expansion (which counts nested loops + includes after expansion) has a separate cap of 20 (`MaxNestingDepth`).
 - **Path resolution.** File paths in `includes` are relative to the **including** workflow file's directory, not the working directory.
+
+## Environment variable interpolation
+
+Alongside `@file` references, the free-text fields `description`, `agents.*.prompt`, and `steps.*.instructions` support `${VAR}` / `$VAR` interpolation resolved from the host environment at load time. This keeps a workflow reusable across environments without templating the YAML by hand:
+
+```yaml
+steps:
+  - id: crawl
+    instructions: "Fetch and summarize ${RSS_FEED_URL}."
+```
+
+Unset variables expand to the empty string; a literal dollar is written `$$` (`$${X}` -> `${X}`). Interpolation also reaches the contents of an `@`-referenced file and the reference path itself (`"@${DIR}/prompt.md"`). `toolInput` is excluded -- a leading `$` there is reserved for CEL expressions. The `zenflow` CLI auto-loads a `.env` file from the working directory (`--no-dotenv` to disable, `--env-file` to redirect); an exported value always wins over the file. See [Spec §9.1](https://github.com/zendev-sh/zenflow/blob/main/spec/v1/spec.md) and [CLI / Flags](/cli/flags#environment-variables).
 
 ## Reference resolution
 
@@ -1828,6 +1880,8 @@ coord := zenflow.NewDefaultCoordRunner(
 ```
 
 `WithCoordSystemPromptSuffix` is the right tool for "keep the tested baseline, add a few project-specific lines". Replace the prompt entirely only if you have a strong reason - the default contains addressing rules that prevent unknown-step drops.
+
+When the coordinator is installed on an orchestrator via `WithCoordinator`, an orchestrator-level `WithSystemPromptSuffix` (CLI `--system-prompt`) and the skills index from `WithSkills` (CLI `--skills`) are appended to the coordinator's prompt too, so operator policy applies uniformly to the coordinator and every step agent.
 
 `WithCoordContextProvider` is the per-wake context hook. The callback fires once before the first LLM call and once on every wake-driven re-entry; its returned string is appended as a fresh user-role message wrapped in `<dynamic-context>...</dynamic-context>` so the coord LLM can distinguish ambient state from in-band conversation. Empty / whitespace-only returns are skipped. Use it for chat-driven UX that needs ambient context refreshed each wake (currently-open files, repo metadata, session topic) without re-engineering the system prompt.
 
@@ -2577,6 +2631,7 @@ For the YAML surface, see [YAML Reference](/yaml/). For the Go API, see [Go API]
 ### Agents and tools
 
 - [Agents](/concepts/agents) - named LLM configurations referenced from steps.
+- [Skills](/concepts/skills) - progressive-disclosure instruction bundles loaded on demand via `read_skill`.
 - [Tools](/concepts/tools) - functions the LLM can call to do real work.
 - [Shared Memory](/concepts/shared-memory) - namespaced key-value store that lives for the run.
 - [Step Isolation](/concepts/step-isolation) - what steps share by default and how to sandbox them.
@@ -3102,24 +3157,11 @@ A nil sink is fine - events are dropped silently.
 
 ## Built-in sinks
 
-The `github.com/zendev-sh/zenflow/sink` package ships three:
+The `github.com/zendev-sh/zenflow/sink` package ships the JSON and buffered sinks below. The human-readable `StdoutSink` is CLI-only (`cmd/zenflow/stdout_sink.go`, package `main`) and is not importable as a library.
 
 ### StdoutSink
 
-Renders events as terminal output. The CLI uses this for the default human-readable mode (`zenflow flow workflow.yaml`).
-
-```go
-import "github.com/zendev-sh/zenflow/sink"
-
-s := sink.NewStdoutSink()
-s.WithVerbose(true)   // also show agent text output
-s.WithShowPlan(true)  // render the DAG before execution
-
-orch := zenflow.New(
-    zenflow.WithModel(llm),
-    zenflow.WithProgress(s),
-)
-```
+Renders events as terminal output. The CLI uses this for the default human-readable mode (`zenflow flow workflow.yaml`). It is wired in `cmd/zenflow/stdout_sink.go`; the `NewStdoutSink` / `NewStdoutSinkTo` constructors and `WithStdoutShowPlan` / `WithStdoutVerbose` options are CLI-internal.
 
 The output uses a small set of glyphs (`▸`, `✓`, `≋`, `⇠`, `⇢`) to distinguish step starts, completions, narration, sends, and drains. No prose explanation of the glyphs is needed - the sink is meant for live tailing, not log analysis.
 
@@ -3128,8 +3170,8 @@ The output uses a small set of glyphs (`▸`, `✓`, `≋`, `⇠`, `⇢`) to dis
 Renders one JSON line per event. Right for structured logging, CI capture, or piping into another tool.
 
 ```go
-s := sink.NewJSONSink()                 // writes to os.Stdout
-s := sink.NewJSONSinkTo(myWriter)       // custom writer (file, buffer, network)
+s := sink.JSON(os.Stdout)                // writes to os.Stdout
+s := sink.JSON(myWriter)                 // custom writer (file, buffer, network)
 
 orch := zenflow.New(
     zenflow.WithModel(llm),
@@ -3143,7 +3185,7 @@ The CLI uses this for `--json` mode. Capturing the stream programmatically:
 
 ```go
 var buf bytes.Buffer
-s := sink.NewJSONSinkTo(&buf)
+s := sink.JSON(&buf)
 
 orch := zenflow.New(
     zenflow.WithModel(llm),
@@ -3170,7 +3212,7 @@ for scanner.Scan() {
 `sink.Buffered(wrapped, window)` wraps another sink and coalesces output deltas within a time window. Useful when the wrapped sink is expensive (e.g. writes to a network log) and you do not need every individual delta.
 
 ```go
-s := sink.Buffered(sink.NewJSONSink(), 100*time.Millisecond)
+s := sink.Buffered(sink.JSON(os.Stdout), 100*time.Millisecond)
 ```
 
 Lifecycle events flush immediately; output deltas are batched up to the window.
@@ -3401,6 +3443,7 @@ Construction is plain functional options. Every `With*` option mutates one orche
 | **Sinks & approval** | Progress sink, drop callback, approval handler, permission handler, tracer | `WithProgress`, `WithDropCallback`, `WithApproval`, `WithPermissions`, `WithTracer` |
 | **Coordinator** | The hosted `*AgentRunner` that handles cross-agent messaging when one is installed | `WithCoordinator(runner)` (optional) |
 | **Workflow defaults** | Default model, max-concurrency, max-turns, max-depth, isolation, output transform | `WithDefaultModel`, `WithMaxConcurrency`, `WithMaxTurns`, `WithIsolation`, `WithOutputTransform` |
+| **Agent context** | Operator-level system-prompt suffix and progressive-disclosure skills applied to every agent (steps, coordinator, `RunAgent`) | `WithSystemPromptSuffix`, `WithSkills` |
 
 The orchestrator is **stateless across runs** for the workflow itself: every `RunFlow` call constructs a fresh `Executor`, a fresh `MessageRouter`, and a fresh in-memory `MailboxStore`. What persists across runs is the configuration you set on the orchestrator and, if you wired one, the coordinator runner instance (so the coord LLM keeps its conversation continuity if you opt to share it).
 
@@ -3653,7 +3696,7 @@ orch := zenflow.New(
 )
 ```
 
-The CLI binary's `resolveModel(providerName, modelID string) provider.LanguageModel` in `cmd/zenflow/main.go` is the reference implementation; it dispatches across every provider zenflow ships with and is a good starting point to copy into a library consumer.
+The CLI binary's `resolveModel(providerName, modelID string) provider.LanguageModel` in `cmd/zenflow/provider.go` is the reference implementation; it dispatches across every provider zenflow ships with and is a good starting point to copy into a library consumer.
 
 Without a resolver, mismatch fails loudly with `ErrModelResolverMissing`. Resolution failures inside the resolver surface as `DropReasonResolverError`.
 
@@ -3818,6 +3861,129 @@ steps:
 - [Tools](/concepts/tools) - the auto-injected `shared_memory_*` tools
 - [Resume](/concepts/resume) - how shared memory is restored on resume
 - [API: Options](/api/options) - `WithSharedMemory`
+
+=== docs/concepts/skills.md ===
+
+
+# Skills
+
+A **skill** is a reusable instruction bundle - a `SKILL.md` file (or a flat `.md` file) that teaches an agent a procedure: how to review a diff, run a release, follow a house style. Skills are mounted once and shared by every agent in a run, so project knowledge does not have to be copied into each `agents.<name>.prompt`.
+
+Loading is **progressive**: the system prompt gets only a compact index (skill name + description). The full body is returned by the `read_skill` tool when the agent decides it needs it. Context usage therefore tracks the skills actually used, not the size of the skills tree.
+
+## Directory layout
+
+Both layouts work, and can be mixed in one directory:
+
+```text
+skills/
+├── code-review/
+│   └── SKILL.md          # directory form
+├── release-checklist.md  # flat form
+└── notes/                # no SKILL.md -> skipped
+```
+
+`LoadSkills` scans the top level of the directory:
+
+- A **subdirectory** is a skill when it contains a `SKILL.md`; the rest of that subdirectory is ignored by the loader (the body may still reference files next to it).
+- A **flat `.md` file** at the top level is a skill.
+- Other files and subdirectories without a `SKILL.md` are skipped.
+
+An unreadable directory, or a directory containing no skills, is an error - the CLI exits `3` before the first LLM call.
+
+## Frontmatter
+
+Frontmatter is optional. When present it supplies the index entry:
+
+```markdown
+---
+name: code-review
+description: Review a diff for correctness, security, and missing tests.
+---
+# Code Review
+
+Read the diff, then report findings as `file:line - severity - issue`.
+```
+
+- `name` fails back to the directory name (for `<slug>/SKILL.md`) or the file stem (for `<slug>.md`).
+- `description` falls back to the first non-empty body line (heading markers stripped).
+- Malformed frontmatter is ignored: the whole file is treated as the body, and the fallback name/description apply.
+
+Names are matched case-insensitively by `read_skill`. When several directories are layered, the **first** directory wins on a duplicate name, so put the project-specific directory before a shared one.
+
+## CLI
+
+`--skills DIR` is accepted by `flow`, `goal`, and `agent`. Repeat it to layer directories:
+
+```bash
+zenflow flow review.yaml \
+  --model fptcloud/DeepSeek-V4.1-Flash \
+  --system-prompt @./review-policy.md \
+  --skills ./skills \
+  --skills ../shared-skills
+```
+
+The flag is CLI-only: there is no `skills:` field in workflow YAML. The same run from a library embedding uses [`WithSkills`](#go-api).
+
+Because `read_skill` is an ordinary tool, the permission gate applies. On a non-interactive terminal, allow it explicitly:
+
+```bash
+zenflow agent "review the diff" --skills ./skills --strict --allow read_skill
+```
+
+`--sandbox` can also allow it by adding it on top of the safe set: `--sandbox --allow read_skill`. Without an allow entry, strict mode (and therefore sandbox mode) denies the tool, and the agent cannot load any skill body.
+
+## Go API
+
+```go
+skills, err := zenflow.LoadSkills("./skills")
+if err != nil {
+    return err
+}
+
+orch := zenflow.New(
+    zenflow.WithModel(model),
+    zenflow.WithSkills(skills),
+    zenflow.WithSystemPromptSuffix("Always cite file:line."),
+)
+defer orch.Close()
+```
+
+- `LoadSkills(dir)` loads one directory; `LoadSkillsDirs(dirs...)` merges several (first wins).
+- `WithSkills(s)` installs the collection on the orchestrator: `New` registers the `read_skill` tool on the catalog and appends `s.IndexBlock()` to the shared system-prompt suffix.
+- `Skills.Names()`, `Skills.Len()`, `Skills.IndexBlock()`, and `Skills.Tool()` expose the collection for callers that want to build their own prompt or tool wiring.
+
+## Prompt ordering
+
+For every step agent the system slot is built as:
+
+1. `agents.<name>.prompt` - the workflow-declared role (the base).
+2. `--system-prompt` / `WithSystemPromptSuffix` - operator policy, appended after the base.
+3. The skills index - appended after the operator policy.
+
+The coordinator installed via `WithCoordinator` receives the same operator policy and skills index, so coordinator behaviour follows the same rules as the step agents. Standalone `RunAgent` calls receive them too; with no workflow-declared agent prompt, the operator policy becomes the system slot directly.
+
+## Interaction with tool filtering
+
+The `read_skill` tool is added to the orchestrator catalog, not to every agent unconditionally. An agent that declares a `tools:` allowlist only sees the tools it lists - include `read_skill` there:
+
+```yaml
+agents:
+  reviewer:
+    description: Reviews the change.
+    tools: ["read", "grep", "read_skill"]
+```
+
+An agent with no `tools:` field gets every registered tool, including `read_skill`. A caller that registers its own tool named `read_skill` keeps it: the built-in loader does not overwrite an existing entry.
+
+Tool steps (`tool: read` with `toolInput`) do not run an LLM, so they never use skills.
+
+## See also
+
+- [Agents](/concepts/agents) - where the base system prompt comes from.
+- [Tools](/concepts/tools) - the catalog and the permission gate.
+- [Go API: options](/api/options) - `WithSystemPromptSuffix`, `WithSkills`, and the full option set.
+- [CLI flags](/cli/flags#agent-context-and-skills) - `--system-prompt` and `--skills`.
 
 === docs/concepts/step-isolation.md ===
 
@@ -4110,11 +4276,43 @@ The cost is one extra schema-aware tool per agent. Given that most flows already
 
 Agents in zenflow do work through tools. A tool is a function the LLM can call - bash command, file read, HTTP request, anything. Tools turn an LLM from a chat surface into something that touches the world.
 
-Zenflow distinguishes three kinds of tools:
+Zenflow distinguishes four kinds of tools:
 
 1. **Built-in CLI tools** (`bash`, `read`, `write`, `glob`, `grep`) - shipped with the `zenflow` binary, available to YAML-declared agents in CLI runs.
 2. **Library-supplied tools** - any `goai.Tool` you register via `WithTools`. The CLI is a consumer of this surface; embedded users supply their own.
-3. **Auto-injected tools** - the executor adds `send_message`, `shared_memory_read`, `shared_memory_write`, `submit_result` automatically when the workflow uses messaging, shared memory, or structured output.
+3. **MCP tools** - tools discovered from [Model Context Protocol](https://modelcontextprotocol.io) servers declared in `settings.json`. zenflow connects and exposes them natively - no Go code. See [MCP servers](/integrations/mcp).
+4. **Auto-injected tools** - the executor adds `send_message`, `shared_memory_read`, `shared_memory_write`, `submit_result` automatically when the workflow uses messaging, shared memory, or structured output.
+
+## Tool steps
+
+A **tool step** invokes a registered goai tool directly from the workflow YAML, without an LLM call. This is useful when you need a precise, deterministic action - reading a file whose path was discovered by a prior agent, running a shell command with a computed argument - without the overhead or non-determinism of an LLM turn.
+
+Set `tool` to the tool name and optionally supply `toolInput` with input fields:
+
+```yaml
+- id: find-config
+  agent: analyst
+  instructions: Find the path to the main config file and return it.
+
+- id: read-config
+  dependsOn: [find-config]
+  tool: read
+  toolInput:
+    path: $steps["find-config"].content
+
+- id: review
+  dependsOn: [read-config]
+  agent: analyst
+  instructions: Review the config and suggest improvements.
+```
+
+**How it differs from agent steps**: agent steps run an LLM conversation loop that may call multiple tools across multiple turns. A tool step calls exactly one tool once and stores the return string as the step's `content`. No model is involved; no `agent` reference is needed; `result` is always nil.
+
+**CEL in `toolInput`**: any string value in `toolInput` that starts with `$` is evaluated as a CEL expression returning a string. The `$` prefix marks the boundary. CEL variables available: `steps["step-id"].content`, `steps["step-id"].result`, `steps["step-id"].status`. Note the bracket notation - step IDs can contain hyphens, which CEL dot-access cannot handle. To pass a literal value that starts with `$` (e.g. `$HOME`), double it: `$$HOME` is not evaluated and collapses to `$HOME`.
+
+**Mutual exclusion**: `tool` is mutually exclusive with `agent`, `instructions`, `loop`, `include`, `contextFiles`, and `model`. `toolInput` requires `tool` to be set. Retry, timeout, condition, and depends_on work identically to agent steps.
+
+For the full field reference see [Step / tool and toolInput](/yaml/step#tool).
 
 ## Built-in CLI tools
 
@@ -4181,8 +4379,9 @@ Each agent's effective tool set is `(allowlist) - (denylist)`:
 - Omit `tools` - every registered tool is available to the agent.
 - `tools: [a, b]` - only `a` and `b`.
 - `disallowedTools: [bash]` - removed from the resolved allowlist.
+- `tools: [firecrawl]` - an MCP **server name** grants every tool that server contributed (`firecrawl__scrape`, `firecrawl__crawl`, ...). Works in both lists. See [MCP servers](/integrations/mcp).
 
-The executor resolves the names against the orchestrator's tool catalogue (the slice you passed to `WithTools`). Names that do not match any registered tool surface as a load-time error.
+The executor resolves the names against the orchestrator's tool catalogue (the slice you passed to `WithTools` / `WithAdditionalTools`). Names that do not match any registered tool - or MCP server group - surface as a load-time error before the first LLM call.
 
 ## Auto-injected tools
 
@@ -4201,6 +4400,10 @@ The coordinator is auto-installed on the CLI path; library users opt in via `Wit
 ### `shared_memory_read` / `shared_memory_write`
 
 Added when `WithSharedMemory(sm)` is set on the orchestrator. Lets agents read and write the namespaced key/value store. See [Shared memory](/concepts/shared-memory).
+
+### `read_skill`
+
+Added to the orchestrator catalog when skills are installed via `WithSkills(skills)` (CLI: `--skills DIR`). The tool takes a skill `name` and returns that skill's full markdown body. Only the compact index (name + description) is placed in the system prompt up front; the body is loaded on demand. See [Skills](/api/core-functions#loadskills-loadskillsdirs-withskills). A caller-registered `read_skill` tool takes precedence over the built-in loader.
 
 ## Permission gate
 
@@ -4229,32 +4432,47 @@ Use cases:
 
 The handler runs synchronously in the agent's loop. Keep it fast - a slow handler stalls the LLM.
 
-## MCP tools via goai
+## MCP tools (native)
 
-[Model Context Protocol](https://modelcontextprotocol.io) servers expose tool catalogues over a standard wire format. Goai includes an MCP client that converts MCP tools into `goai.Tool` values. They register with `WithTools` like any other tool:
+[Model Context Protocol](https://modelcontextprotocol.io) servers expose tool catalogues over a standard wire format. zenflow supports MCP natively: point it at a Claude-compatible `settings.json` and every server's tools become available to your agents - no Go code, no recompile.
+
+```json
+// .zenflow/settings.json
+{
+  "mcpServers": {
+    "firecrawl": {
+      "command": "npx",
+      "args": ["-y", "firecrawl-mcp"],
+      "env": { "FIRECRAWL_API_KEY": "${FIRECRAWL_API_KEY}" }
+    }
+  }
+}
+```
+
+```yaml
+agents:
+  crawler:
+    description: "Crawls pages with firecrawl."
+    tools: ["read", "write", "firecrawl"]   # bare server name = all its tools
+```
+
+The CLI reads `.zenflow/settings.json` automatically (override with `--mcp-config`, disable with `--no-mcp`). Discovered tools are namespaced `<server>__<tool>`; an agent can grant a whole server by its bare name or a single tool by its full name.
+
+Embedders get the same surface as a small library API - `LoadMCPConfig`, `ConnectMCPConfig`, and `WithAdditionalTools` (which appends to the catalog rather than replacing it):
 
 ```go
-import "github.com/zendev-sh/goai/mcp"
-
-client := mcp.NewClient("zenflow", "1.0.0")
-if err := client.Connect(ctx); err != nil {
-    return err
-}
-defer client.Close()
-
-result, err := client.ListTools(ctx, nil)
-if err != nil {
-    return err
-}
-mcpTools := mcp.ConvertTools(client, result.Tools)
+cfg, _ := zenflow.LoadMCPConfig(".zenflow/settings.json")
+ts, _ := zenflow.ConnectMCPConfig(ctx, cfg)
+defer ts.Close()
 
 orch := zenflow.New(
     zenflow.WithModel(llm),
-    zenflow.WithTools(mcpTools...),
+    zenflow.WithTools(builtins...),
+    zenflow.WithAdditionalTools(ts.Tools()...),
 )
 ```
 
-The agent calls them by their MCP-declared names. Zenflow does not need to know they came from MCP - they look like any other `goai.Tool`. See [goai MCP docs](https://goai.sh) for full setup and authentication options.
+zenflow does not need to know a tool came from MCP - it looks like any other `goai.Tool`. See the [MCP servers guide](/integrations/mcp) for the full config format (stdio / HTTP / SSE), env expansion, grouping, and lifecycle.
 
 ## Tool execution and side effects
 
@@ -4296,7 +4514,7 @@ Errors from `Execute` (returning a non-nil `error`) surface to the LLM as a synt
 - [`zenflow goal`](#zenflow-goal) - have the LLM coordinator decompose a goal into a workflow, then run it.
 - [`zenflow agent`](#zenflow-agent) - run a single-agent conversation.
 
-Source of truth for flags and exit codes: [`cmd/zenflow/main.go`](https://github.com/zendev-sh/zenflow/blob/main/cmd/zenflow/main.go).
+Source of truth for dispatch and exit codes: [`cmd/zenflow/main.go`](https://github.com/zendev-sh/zenflow/blob/main/cmd/zenflow/main.go); flag parsing lives in [`cmd/zenflow/flags.go`](https://github.com/zendev-sh/zenflow/blob/main/cmd/zenflow/flags.go) and [`cmd/zenflow/permission.go`](https://github.com/zendev-sh/zenflow/blob/main/cmd/zenflow/permission.go).
 
 ## Exit codes
 
@@ -4381,7 +4599,7 @@ zenflow flow <file> [<context>] [flags]
 
 ### Description
 
-Loads the workflow and executes the DAG. Auto-resolves the LLM provider from `--model` + env vars; wires the default tool registry (`bash`, `read`, `write`, `glob`, `grep`) sandboxed to `--workdir` (or the current directory if `--workdir` is unset).
+Loads the workflow and executes the DAG. Auto-resolves the LLM provider from `--model` + env vars; wires the default tool registry (`bash`, `read`, `write`, `glob`, `grep`) sandboxed to `--workdir` (or the current directory if `--workdir` is unset). With `--skills`, the registry also includes the `read_skill` tool and the skill index is appended to every agent's system prompt.
 
 Optional `<context>` is a single positional after the file path that gets distributed to every step as flow-level context (delivered via the orchestrator's `WithFlowContext` option). It is convenient when one short string applies to the whole run.
 
@@ -4410,6 +4628,8 @@ When the run finishes, `zenflow flow` prints a "Final answer" block with either 
 | `--verbose` | bool | off | Show thinking, tool outputs, per-turn token counts. |
 | `--trace` | bool | off | Enable OTel tracing. |
 | `--thinking LEVEL` | enum | `off` | `off`, `low`, `medium`, `high`. |
+| `--system-prompt TEXT\|@FILE` | string | unset | Append operator guidance to every step agent's system prompt. `@FILE` reads it from a file. |
+| `--skills DIR` | path | unset | Load a skills directory (repeatable). Adds the skill index to every agent's system prompt and the `read_skill` tool to the registry. |
 | `--sandbox` | bool | off | Restrict tools to a safe set (`read`, `write`, `grep`, `glob`); blocks `bash` even when `--allow bash` is also set. Implies `--strict`. Mutually exclusive with `--yolo`. |
 | `--yolo` | bool | off | Auto-approve all permission requests; no interactive prompt. Mutually exclusive with `--sandbox`. |
 | `--allow LIST` | string | unset | Comma-separated list of tool names to allow without prompting (e.g., `bash,read`). |
@@ -4542,6 +4762,8 @@ Several `flow` / `goal` flags do not apply and are rejected: `--quiet`, `--summa
 | `--thinking LEVEL` | enum | `off` | `off`, `low`, `medium`, `high`. |
 | `--max-retries N` | int | provider default | Override [goai](https://goai.sh) retry budget. |
 | `--max-concurrency N` | int | unset | Accepted for shape; not meaningful in single-agent mode. |
+| `--system-prompt TEXT\|@FILE` | string | unset | Operator guidance for the single-agent system prompt. `@FILE` reads it from a file. |
+| `--skills DIR` | path | unset | Load a skills directory (repeatable). Adds the skill index to the system prompt and the `read_skill` tool. |
 | `--sandbox` | bool | off | Restrict tools to a safe set (`read`, `write`, `grep`, `glob`); blocks `bash` even when `--allow bash` is also set. Implies `--strict`. Mutually exclusive with `--yolo`. |
 | `--yolo` | bool | off | Auto-approve all permission requests without prompting. Mutually exclusive with `--sandbox`. |
 | `--allow LIST` | string | unset | Comma-separated allow-list of tool names. |
@@ -4604,7 +4826,7 @@ If `--timeout` is set, the watchdog enforces a hard deadline of `timeout + 30s`.
 
 # Flags
 
-Every flag accepted by the `zenflow` CLI, grouped by purpose. Source of truth: [`cmd/zenflow/main.go`](https://github.com/zendev-sh/zenflow/blob/main/cmd/zenflow/main.go).
+Every flag accepted by the `zenflow` CLI, grouped by purpose. Source of truth: [`cmd/zenflow/flags.go`](https://github.com/zendev-sh/zenflow/blob/main/cmd/zenflow/flags.go) and [`cmd/zenflow/permission.go`](https://github.com/zendev-sh/zenflow/blob/main/cmd/zenflow/permission.go).
 
 The `Applies to` column lists the verbs that recognize the flag. Flags not listed against a verb are rejected by that verb's parser with exit code `3`.
 
@@ -4615,6 +4837,33 @@ The `Applies to` column lists the verbs that recognize the flag. Flags not liste
 | `--model MODEL` | string | `$ZENFLOW_MODEL` | flow, goal, agent | LLM identifier. Accepts `provider/model` (`google/gemini-2.5-flash`, `bedrock/anthropic.claude-sonnet-4-6`, `azure/DeepSeek-V3.2`, `azure-deployment/gpt-5`) or a bare name (auto-detected from env). When set on `flow`, this overrides every `agent.model` and `step.model` in the loaded YAML. |
 | `--max-retries N` | integer | provider default | flow, goal, agent | Per-step cap on the agent runner's tool-call retry budget (passed via `goai.WithMaxRetries`). Distinct from `step.retries`, which retries the whole step on failure. When unset, [goai](https://goai.sh)'s built-in retry policy applies. `N >= 0`. `N = 0` disables retries. |
 | `--thinking LEVEL` | enum | `off` | flow, goal, agent | Extended reasoning. Valid values: `off`, `low`, `medium`, `high`. Routed to provider-native keys (Bedrock `reasoningConfig`, Anthropic `thinking`, Google `thinkingConfig`, OpenAI/Azure `reasoning_effort`). Each provider reads only what it understands. |
+
+## MCP servers
+
+| Flag | Type | Default | Applies to | Description |
+| --- | --- | --- | --- | --- |
+| `--mcp-config PATH` | path | `.zenflow/settings.json` | flow, goal, agent | Read [MCP](/integrations/mcp) servers from a Claude-compatible `settings.json` at `PATH`. When unset, the default path is loaded if present (a missing default is a silent no-op; a missing explicit `PATH` is reported). Discovered tools are namespaced `<server>__<tool>` and grantable by bare server name in an agent's `tools:`. The file launches local commands - it is a [trust boundary](/integrations/mcp#security). |
+| `--no-mcp` | bool | off | flow, goal, agent | Skip MCP server loading entirely, even if a config file is present. |
+
+## Environment variables
+
+Free-text workflow fields (`description`, `agents.*.prompt`, `steps.*.instructions`) support `${VAR}` / `$VAR` interpolation resolved from the process environment at load time (see [Spec §9.1](https://github.com/zendev-sh/zenflow/blob/main/spec/v1/spec.md)). An unset variable expands to `""`; write a literal dollar as `$$`. `toolInput` is excluded ( `$` there is reserved for CEL).
+
+Before a run, the CLI auto-loads a `.env` file from the working directory and applies any variable it declares that is not already exported (an exported value always wins).
+
+| Flag | Type | Default | Applies to | Description |
+| --- | --- | --- | --- | --- |
+| `--env-file PATH` | path | `./.env` | flow, goal, agent | Load env vars from a shell-style `.env` at `PATH` (supports `export `, `#` comments, and quoted values). A missing default is a silent no-op; a missing explicit `PATH` is reported. Like the MCP config, a `.env` is a trust boundary. |
+| `--no-dotenv` | bool | off | flow, goal, agent | Skip `.env` auto-loading entirely. |
+
+## Agent context and skills
+
+| Flag | Type | Default | Applies to | Description |
+| --- | --- | --- | --- | --- |
+| `--system-prompt TEXT\|@FILE` | string | unset | flow, goal, agent | Append operator-level guidance to the system prompt of every agent: per-step workflow agents, the coordinator, and single-agent runs. The workflow's own `agents.<name>.prompt` stays the base; this text is appended after it. A leading `@` reads the text from a file (`@./policy.md`); write `@@` to start a literal value with `@`. Repeat the flag to accumulate blocks separated by a blank line. |
+| `--skills DIR` | path | unset | flow, goal, agent | Load a skills directory. Repeatable; earlier directories win when two skills share a name. Layout: `<DIR>/<slug>/SKILL.md` or `<DIR>/<slug>.md`, with optional YAML frontmatter (`name`, `description`). Progressive disclosure: only the skill index (name + description) is appended to the system prompt, and a `read_skill` tool loads a skill's full body on demand. A missing or empty directory is a configuration error (exit `3`). |
+
+`--system-prompt` and `--skills` are validated before the first LLM call. The skills index is appended after the explicit `--system-prompt` text.
 
 ## Lifecycle and execution
 
@@ -4673,11 +4922,11 @@ Some flags affect each other; the CLI's logic in `coordinatorOption` and `buildO
 
 - **`--quiet` beats `--summary-only`.** When both are set, the coordinator is disabled outright and no synthesis is emitted.
 - **`--json` keeps the coordinator on.** JSON consumers get the full event stream (narration, forwards, finalize) so they can build dashboards or pipelines without re-implementing routing in Go. To get JSON without coordinator events, combine with `--quiet`.
-- **`--plan` is honored on `flow` only.** `goal` accepts the flag (the parser does not reject it) but does not render a plan; treat it as a no-op on `goal`. The JSON surface emits a `plan_ready` event the moment the coordinator's decomposition is parsed.
+- **`--plan` is honored on `flow` only.** `goal` rejects the flag (exit code `3`): `--plan is not supported for goal command (use with flow)`. The JSON surface emits a `plan_ready` event the moment the coordinator's decomposition is parsed.
 - **`--workdir` and tool containment.** When `--workdir` is set, the default tool set is anchored to that path. When `--workdir` is unset, the tools are anchored to the current working directory at startup. Library users who want a permissive setup must configure tools explicitly via `zenflow.WithTools(...)`.
 - **`--model` and YAML.** When `--model` is set on `flow`, every `agent.model` and `step.model` field in the loaded YAML is cleared, so the workflow runs entirely under the flag's model. This is intentional: it makes cross-provider testing a one-flag change.
 
-## Environment variables
+## Provider environment variables
 
 These complement (but never override) explicit flags:
 
@@ -4687,8 +4936,10 @@ These complement (but never override) explicit flags:
 | `GEMINI_API_KEY` / `GOOGLE_GENERATIVE_AI_API_KEY` | Credentials for Google direct API. Either name is accepted. |
 | `AWS_ACCESS_KEY_ID` (and the rest of the AWS standard set) | Credentials for AWS Bedrock. |
 | `AZURE_OPENAI_API_KEY` / `AZURE_RESOURCE_NAME` | Credentials and resource name for Azure OpenAI / Azure AI Services. |
+| `FPT_API_KEY` (+ optional `FPT_REGION` = `global` \| `jp`, `FPT_BASE_URL`) | Credentials for the FPT Smart Cloud AI Marketplace (`fptcloud/<model>`). |
+| `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `DEEPSEEK_API_KEY`, `GROQ_API_KEY`, `MISTRAL_API_KEY`, `OPENROUTER_API_KEY`, … | Credentials for the other provider prefixes. See the [provider matrix](/concepts/agents#provider-matrix) for every prefix and its env var. |
 
-If no provider env var is set and `--model` cannot be resolved, the CLI exits `3` with `"LLM provider not configured (use as library with WithModel)"`.
+Any provider in the [provider matrix](/concepts/agents#provider-matrix) can be selected with `--model <prefix>/<model>`; the CLI reads that provider's standard API-key env var. If no provider env var is set and `--model` cannot be resolved, the CLI exits `3` with `"LLM provider not configured (use as library with WithModel)"`.
 
 ## See also
 
@@ -4760,6 +5011,8 @@ These flags work across `flow`, `goal`, and `agent` (with a few command-specific
 | `--resume RUN_ID` | string | unset | Resume from a checkpoint (`flow` only). |
 | `--trace` | bool | off | Enable OpenTelemetry tracing. |
 | `--thinking LEVEL` | enum | `off` | Extended reasoning: `off`, `low`, `medium`, `high`. |
+| `--system-prompt TEXT\|@FILE` | string | unset | Append operator guidance to every agent's system prompt (`@FILE` reads a file). |
+| `--skills DIR` | path | unset | Load a skills directory (repeatable); adds the skill index and the `read_skill` tool. |
 
 `zenflow agent` adds `--max-turns N` for the conversation turn cap.
 
@@ -4827,7 +5080,7 @@ For the full output catalog (event types, JSON shape, an event-by-event capture)
 
 `zenflow` produces two output shapes:
 
-- **Stdout (human-readable).** The default. Colored, glyphed, one event per line. Source: [`sink/stdout.go`](https://github.com/zendev-sh/zenflow/blob/main/sink/stdout.go).
+- **Stdout (human-readable).** The default. Colored, glyphed, one event per line. Source: [`cmd/zenflow/stdout_sink.go`](https://github.com/zendev-sh/zenflow/blob/main/cmd/zenflow/stdout_sink.go).
 - **NDJSON event stream.** Selected with `--json`. One JSON object per line. Source: [`sink/json.go`](https://github.com/zendev-sh/zenflow/blob/main/sink/json.go).
 
 A third mode, `--stream`, layers token-by-token agent text onto either of the above.
@@ -5161,6 +5414,7 @@ effective = (allowlist) - (denylist)
 - If `tools` is omitted, every tool registered with the orchestrator (via `WithTools`) is available to the agent.
 - `tools: [a, b, c]` means exactly those three.
 - `disallowedTools` removes entries from whatever the allowlist resolved to.
+- An [MCP](/integrations/mcp) **server name** in either list expands to all of that server's tools: `tools: [firecrawl]` grants every `firecrawl__*` tool. A specific MCP tool is grantable by its full `server__tool` name.
 
 ```yaml
 agents:
@@ -5171,9 +5425,13 @@ agents:
   builder:
     description: "Builder with most tools but no destructive bash."
     disallowedTools: ["bash"]
+
+  crawler:
+    description: "Crawls pages via the firecrawl MCP server."
+    tools: ["read", "write", "firecrawl"]   # 'firecrawl' = every firecrawl tool
 ```
 
-The CLI's default tool registry includes `bash`, `read`, `write`, `glob`, and `grep`. Library callers register their own via `zenflow.WithTools(...)`.
+The CLI's default tool registry includes `bash`, `read`, `write`, `glob`, and `grep`, plus any tools from [MCP servers](/integrations/mcp) declared in `settings.json`. When `--skills DIR` is set, the registry also includes `read_skill`, and the agents' system prompts include the skill index. Library callers register their own via `zenflow.WithTools(...)` / `zenflow.WithAdditionalTools(...)` / `zenflow.WithSkills(...)`. A tool (or MCP server) name that matches nothing in the catalog is rejected before the first LLM call with a `references unknown tool` error.
 
 ## maxTurns
 
@@ -5538,9 +5796,9 @@ Both parse identically. YAML is the recommended format for human-authored workfl
 | --- | --- |
 | Workflow-level fields | [`/yaml/workflow`](./workflow) |
 | Agent definitions | [`/yaml/agent`](./agent) |
-| Step fields | [`/yaml/step`](./step) |
+| Step fields (including `tool` / `toolInput`) | [`/yaml/step`](./step) |
 | Loops (`forEach`, `repeat-until`) | [`/yaml/loop`](./loop) |
-| CEL expressions in `condition` and `forEach` | [`/yaml/cel-reference`](./cel-reference) |
+| CEL expressions in `condition`, `forEach`, and `toolInput` | [`/yaml/cel-reference`](./cel-reference) |
 
 For runtime semantics (DAG scheduling, failure strategies, retries), see the [Concepts](/concepts/) section.
 
@@ -5606,7 +5864,7 @@ JSON Schema only enforces structural rules. The validator rules (DAG cycles, ref
 - **No YAML anchors, tags, or merge keys.** The spec uses a portable subset.
 - **File references via `@`.** A string starting with `@` in `agents.*.prompt` or `steps.*.instructions` is read from disk relative to the workflow file. `contextFiles` does not use the prefix; its values are always paths.
 - **Keep step IDs greppable.** They appear in logs, JSON events, and error messages. The pattern is `^[a-zA-Z][a-zA-Z0-9_-]*$`.
-- **Co-locate prompts.** Put long-form prompts in `prompts/` next to the workflow file and reference them with `@prompts/...`. The 19 reference workflows in [`spec/v1/examples/`](https://github.com/zendev-sh/zenflow/tree/main/spec/v1/examples) follow this convention.
+- **Co-locate prompts.** Put long-form prompts in `prompts/` next to the workflow file and reference them with `@prompts/...`. The 20 reference workflows in [`spec/v1/examples/`](https://github.com/zendev-sh/zenflow/tree/main/spec/v1/examples) follow this convention.
 
 === docs/yaml/loop.md ===
 
@@ -6036,6 +6294,8 @@ Authoritative source: [`spec/v1/spec.md` §4 and §7](https://github.com/zendev-
 | `condition` | string | no | CEL expression. Step is skipped when false. |
 | `include` | string | no | Sub-workflow reference. Mutually exclusive with several other fields. |
 | `loop` | Loop | no | Loop configuration. See [Loop](./loop). |
+| `tool` | string | no | Name of a registered goai tool to invoke directly. Mutually exclusive with `agent`, `instructions`, `loop`, `include`, `contextFiles`, `model`. See [tool](#tool). |
+| `toolInput` | object | no | Input fields for the named tool. String values starting with `$` are CEL expressions. Requires `tool`. See [toolInput](#toolinput). |
 
 `additionalProperties: false`. Unknown step-level fields are rejected.
 
@@ -6094,6 +6354,8 @@ steps:
     agent: planner
     instructions: "@instructions/plan-feature.md"
 ```
+
+`instructions` also supports `${VAR}` / `$VAR` environment-variable interpolation, resolved at load time from the host environment (an unset variable becomes `""`, a literal dollar is `$$`). This applies to inline text and to the contents of an `@`-referenced file. `toolInput` is **not** interpolated -- a leading `$` there is reserved for CEL. See [Spec §9.1](https://github.com/zendev-sh/zenflow/blob/main/spec/v1/spec.md) and [CLI / Flags](/cli/flags#environment-variables) for `.env` auto-loading.
 
 When a step has dependencies, the engine prepends the dependency outputs to the agent context automatically; `instructions` does not need template syntax to reference upstream content. See [Concepts / DAG Scheduling](/concepts/dag-scheduling) for the data-passing rules.
 
@@ -6286,6 +6548,59 @@ steps:
         - id: deploy
           agent: deployer
           instructions: "Deploy this service."
+```
+
+## tool
+
+Name of a registered goai tool to invoke directly for this step. No LLM call is made; the executor calls the tool with the arguments from `toolInput` and uses the tool's return string as the step's `content`. The step's `result` is always nil.
+
+Available built-in CLI tools: `bash`, `read`, `write`, `glob`, `grep`. Custom tools registered with `WithTools` on the orchestrator are also addressable.
+
+A step with `tool` must not carry `agent`, `instructions`, `loop`, `include`, `contextFiles`, or `model`. This mutual exclusion is enforced by the validator.
+
+```yaml
+steps:
+  - id: find-config
+    agent: analyst
+    instructions: Find the path to the main config file and return it.
+
+  - id: read-config
+    dependsOn: [find-config]
+    tool: read
+    toolInput:
+      path: $steps["find-config"].content
+
+  - id: review
+    dependsOn: [read-config]
+    agent: analyst
+    instructions: Review the config and suggest improvements.
+```
+
+`dependsOn`, `condition`, `timeout`, `retries`, and `maxRetries` all work the same way as on agent steps.
+
+## toolInput
+
+Map of input fields passed to the tool named by `tool`. Requires `tool` to be set.
+
+**CEL evaluation**: any string value that starts with `$` is evaluated as a CEL expression returning a string. The `$` prefix is stripped and the remainder is evaluated against the CEL context. Non-string values (numbers, booleans, objects, arrays) are passed through without evaluation. To pass a literal value that starts with `$`, double it (`$$`): the leading `$$` collapses to a single `$` and the value is passed through without CEL evaluation.
+
+CEL variables available in `toolInput`:
+
+| Variable | Type | Description |
+| --- | --- | --- |
+| `steps["step-id"].content` | string | Text content of a completed dependency step. |
+| `steps["step-id"].result` | object | Structured result of a completed dependency step. |
+| `steps["step-id"].status` | string | Status of a completed dependency step. |
+
+Note: `toolInput` uses bracket notation (`steps["step-id"]`) rather than dot notation (`steps.step-id`) because step IDs may contain hyphens, which are not valid CEL identifiers.
+
+```yaml
+- id: read-config
+  dependsOn: [find-config]
+  tool: read
+  toolInput:
+    path: $steps["find-config"].content    # CEL: resolves to the prior step's output text
+    # maxBytes: 65536                      # non-string: passed through as-is
 ```
 
 ## Output model
@@ -6681,9 +6996,9 @@ Both families are exposed as public constructors so embedders who build a custom
 
 The default coordinator (built by `NewDefaultCoordRunner`) wires three tools (`forward_to_agent`, `narrate`, `finalize`); a fourth helper, `send_message`, is auto-injected on every step runner that has a MessageRouter AND is not the coordinator itself (detection: presence of `forward_to_agent` in the runner's tool list marks the coordinator). Step runners that already have a `send_message` tool keep their own - no overwrite. This page documents all four for reference.
 
-All four take a `*AgentRunner` argument and return a `goai.Tool`. The runner supplies the wiring: `MessageRouter` for routing, `Progress` for narration, the `finalized` atomic + `finalizeCh` channel for finalize. Missing wiring (e.g. nil `MessageRouter`) surfaces as an explicit tool-result error so the LLM observes a clear failure reason instead of silent loss.
+All four take a `RunnerHandle` argument and return a `goai.Tool`. The runner supplies the wiring: `MessageRouter` for routing, `Progress` for narration, the `finalized` atomic + `finalizeCh` channel for finalize. Missing wiring (e.g. nil `MessageRouter`) surfaces as an explicit tool-result error so the LLM observes a clear failure reason instead of silent loss.
 
-## `ForwardToAgentToolDef(runner *AgentRunner) goai.Tool`
+## `ForwardToAgentToolDef(runner RunnerHandle) goai.Tool`
 
 Returns the `forward_to_agent` tool. Coord LLM calls it to route a message into a running step's mailbox for context injection, follow-up questions, or instructions.
 
@@ -6707,7 +7022,7 @@ Returns the `forward_to_agent` tool. Coord LLM calls it to route a message into 
 - unknown-step drop only → the result string additionally appends a `buildUnknownStepHint` block: `". Attempted target \"<id>\" is not a registered step. Available step IDs (current snapshot): <list>."` followed by an `ACTION REQUIRED` directive instructing the LLM to either retry with a valid ID or call `narrate` with the same content. Other drop reasons (target-terminal, coord-down, cap-exhaustion) keep the original concise message since the LLM cannot correct those by re-targeting.
 - nil-MessageRouter → Execute error `"forward_to_agent: no router available (coord not wired into a workflow)"` (distinct from `send_message`'s nil-MessageRouter behaviour).
 
-## `SendMessageToolDef(runner *AgentRunner) goai.Tool`
+## `SendMessageToolDef(runner RunnerHandle) goai.Tool`
 
 Returns the `send_message` tool. Auto-injected on every step runner where (a) `MessageRouter != nil` and (b) the runner's tool list does NOT already contain `forward_to_agent` (which marks the coord). If the runner already has a `send_message` tool, the existing one is preserved (no overwrite). The coord's outbound channel is `forward_to_agent` (preventing the coord from messaging itself in a recursion loop).
 
@@ -6726,7 +7041,7 @@ Step agents use `send_message` to push a message to the workflow coordinator's i
 - no-MessageRouter (e.g. `RunAgent` without a coordinator) → result string `"dropped: no-coordinator"` with a nil Go error - the tool does not fail loudly. This is intentionally different from `forward_to_agent`'s nil-MessageRouter path (which returns an Execute error): `send_message` is callable from steps in any zenflow context, so a missing coord is treated as a runtime routing outcome rather than a coord-side configuration bug.
 - empty / whitespace-only `text` → Execute error `"send_message: text is required and must be non-empty"`.
 
-## `NarrateToolDef(runner *AgentRunner) goai.Tool`
+## `NarrateToolDef(runner RunnerHandle) goai.Tool`
 
 Returns the `narrate` tool. Coord LLM calls it to push a progress event onto `runner.Progress` as `EventCoordinatorNarration`. Independent of the routing path: narrate emissions never enter a mailbox.
 
@@ -6747,7 +7062,7 @@ Notes:
 - One-line, free-form text. The CLI's stdout sink renders it with the `≋` prefix; JSON sink emits it as a structured event.
 - Repeated rapid-fire calls are not rate-limited at the library layer; operators who need rate-limiting wrap the sink.
 
-## `FinalizeToolDef(runner *AgentRunner) goai.Tool`
+## `FinalizeToolDef(runner RunnerHandle) goai.Tool`
 
 Returns the `finalize` tool. Coord LLM calls it to signal "the workflow is done, here is my synthesis." Sets `runner.finalized` to `true`, stores the optional summary on `runner.finalSummary`, and closes the runner's `Done()` channel so callers blocked on it unblock cleanly.
 
@@ -6767,7 +7082,7 @@ The `Done()` channel close is `sync.Once`-guarded, so repeated `finalize` calls 
 
 ### Loop-exit semantics
 
-- The CLI does NOT honour `finalize` as a workflow-exit signal; the workflow's own DAG completion is authoritative. The CLI's coord loop (`cmd/zenflow/main.go`) is `for { runner.Run; WaitForCoordWake }` and exits only on context cancellation - it does not consult `runner.Finalized()`. `finalize` is advisory; it lets the coord deliver a synthesis and stop without blocking workflow termination.
+- The CLI does NOT honour `finalize` as a workflow-exit signal; the workflow's own DAG completion is authoritative. The coord loop (`zenflow.RunCoordinatorLoop`, wired by the CLI in `cmd/zenflow/orchestrator_opts.go`) is `for { runner.Run; WaitForCoordWake }` and exits only on context cancellation - it does not consult `runner.Finalized()`. `finalize` is advisory; it lets the coord deliver a synthesis and stop without blocking workflow termination.
 - Embedders who DO want the signal can build their own coord loop that selects on `runner.Done()` and exits on close. `runner.FinalSummary()` exposes the same state for poll-driven loops.
 
 ## Composition example
@@ -7354,7 +7669,7 @@ Constructs a pre-configured `*AgentRunner` for use as a workflow coordinator. Th
 - `Mailbox` = fresh `InMemoryMailboxStore`
 - `Wake` = cap-1 buffered channel (required for mailbox-mode delivery)
 - `Tools` = the three default coord tools (`forward_to_agent`, `narrate`, `finalize`), plus any from `WithCoordTools(...)`, minus `narrate` if `SynthesizeOnly()` is set
-- `SystemPrompt` = `DefaultCoordSystemPrompt` (overridable via `WithCoordSystemPrompt` / `WithCoordSystemPromptSuffix`)
+- `SystemPrompt` = `DefaultCoordSystemPrompt` (overridable via `WithCoordSystemPrompt` / `WithCoordSystemPromptSuffix`; an orchestrator-level `WithSystemPromptSuffix` is appended on top when the runner is installed via `WithCoordinator`)
 - `MaxWakeCycles` = 100 (overridable via `WithCoordMaxWakeCycles`)
 
 **The factory does NOT start `runner.Run`.** Caller owns the lifecycle - typical usage starts the runner in a goroutine before calling `RunFlow` and waits for it to exit afterward.
@@ -7419,6 +7734,54 @@ func (o *Orchestrator) ListAgentHandles(sessionID string) []*AgentHandle
 **ListAgentHandles** returns all live async handles tagged with the supplied `SessionID` (from `AgentConfig.SessionID`). Used by hosting consumers to surface "this session has N background tasks running" without polling.
 
 `RunAgentAsync` returns `ErrOrchestratorClosed` if `Close` has been called.
+
+## Skills and operator system prompt
+
+### `WithSystemPromptSuffix`
+
+```go
+func WithSystemPromptSuffix(text string) Option
+```
+
+Appends `text` to the system prompt of every agent the orchestrator runs: workflow step agents (`AgentConfig.Prompt` stays the base), the coordinator installed via `WithCoordinator`, and standalone `RunAgent` calls. Repeated calls accumulate with a blank line between blocks; an empty or whitespace-only value is a no-op.
+
+### `LoadSkills` / `LoadSkillsDirs` / `WithSkills`
+
+```go
+func LoadSkills(dir string) (*Skills, error)
+func LoadSkillsDirs(dirs ...string) (*Skills, error)
+func WithSkills(s *Skills) Option
+
+type Skill struct {
+    Name        string
+    Description string
+    Path        string
+    Body        string
+}
+
+func (s *Skills) Names() []string
+func (s *Skills) Len() int
+func (s *Skills) IndexBlock() string
+func (s *Skills) Tool() goai.Tool
+```
+
+`LoadSkills` scans a directory for skills using either layout: `<dir>/<slug>/SKILL.md` or `<dir>/<slug>.md`. Optional YAML frontmatter supplies `name` and `description`; without it, the directory/file stem becomes the name and the first body line the description. Subdirectories without a `SKILL.md` and non-markdown files are skipped. An unreadable directory, or a directory containing no skills, returns an error.
+
+`LoadSkillsDirs` merges multiple directories; the first directory wins when two skills share a name.
+
+`WithSkills` installs the collection with **progressive disclosure**: `New` appends the compact `IndexBlock()` (name + description per skill) to the shared system-prompt suffix and registers the `Tool()` (`read_skill`) on the orchestrator catalog. The full skill body is only read when the agent calls `read_skill`, so context usage tracks what the agent actually uses rather than the size of the skills tree. A caller-registered tool named `read_skill` takes precedence over the built-in loader.
+
+```go
+skills, err := zenflow.LoadSkills("./skills")
+if err != nil {
+    return err
+}
+orch := zenflow.New(
+    zenflow.WithModel(model),
+    zenflow.WithSkills(skills),
+    zenflow.WithSystemPromptSuffix("Always cite file:line."),
+)
+```
 
 ## Workflow loading helpers
 
@@ -7648,7 +8011,7 @@ Every router message that fails to reach its target's mailbox produces exactly o
 | `DropReasonMailboxClosedByFinalize` | `"mailbox-closed-by-finalize"` | Mailbox raced with a concurrent close; the closed flag won | Race during step termination. Usually benign - if observed frequently, check for senders that don't open a sender slot via `MessageRouter.OpenSender`. |
 | `DropReasonMaxWakeCycles` | `"max-wake-cycles"` | The wake-loop hit the `MaxWakeCycles` cap with messages still pending; remaining messages drained as drops | Raise `WithMaxWakeCycles` (default 10; coord default 100). If raising doesn't help, investigate the producer for a hot loop. |
 | `DropReasonHoldTimeout` | `"hold-timeout"` | The hold-timeout fired before the agent's three-invariant termination rule could converge; remaining mailbox messages drained as drops | Raise `WithHoldTimeout` (default 30 seconds) for chat-style workflows; lower it for batch pipelines where idle gaps signal stuck steps. |
-| `DropReasonMailboxFull` | `"mailbox-full"` | The bounded mailbox is at the `MaxMailboxSize` cap; the newest message is rejected (oldest-wins fairness) | Raise `WithMaxMailboxSize`, slow the producer, or speed up the consumer. Default is unbounded; production deployments should set a positive cap. |
+| `DropReasonMailboxFull` | `"mailbox-full"` | The bounded mailbox is at the `MaxMailboxSize` cap; the newest message is rejected (oldest-wins fairness) | Raise `WithMaxMailboxSize`, slow the producer, or speed up the consumer. Default is `DefaultMaxMailboxSize` (10000); pass `WithMaxMailboxSize(0)` for unbounded. |
 | `DropReasonNoTranscript` | `"no-transcript"` | Target mailbox was closed AND the executor's `TranscriptStore` has no saved transcript for the step | Step ran before transcript wiring, or the transcript was explicitly deleted. Resume cannot proceed. |
 | `DropReasonTranscriptTooLarge` | `"transcript-too-large"` | The saved transcript exceeds the configured cap (`WithMaxTranscriptMessages` / `WithMaxTranscriptBytes`); resume would exceed the size bound | Raise the caps, prune transcript history, or enable `WithTruncationOnCapReached()` (paired with `WithoutTruncationOnCapReached()` to disable) to fall back to a truncated tail. |
 | `DropReasonResumeShutdown` | `"resume-shutdown"` | The workflow context was cancelled mid-resume; the in-flight resume goroutine exited early | Expected during clean shutdown. The original sender sees the drop and can retry on the next workflow run. |
@@ -7943,6 +8306,103 @@ orch := zenflow.New(
 
 For per-call tool restriction (e.g., a sub-agent gets only read-only tools), set `AgentConfig.CallTools` instead of using a separate orchestrator.
 
+### `WithAdditionalTools`
+
+```go
+func WithAdditionalTools(tools ...goai.Tool) Option
+```
+
+Appends tools to the catalog instead of replacing it. `WithTools` overwrites the whole slice; `WithAdditionalTools` layers onto whatever an earlier `WithTools` installed. This is the canonical way to add [MCP](/integrations/mcp)-discovered tools on top of a built-in set without rebuilding the slice.
+
+```go
+orch := zenflow.New(
+    zenflow.WithModel(model),
+    zenflow.WithTools(builtins...),          // base catalog
+    zenflow.WithAdditionalTools(mcpTools...), // layered on top
+)
+```
+
+### `WithSystemPromptSuffix`
+
+```go
+func WithSystemPromptSuffix(text string) Option
+```
+
+Appends operator-level guidance to the system prompt of every agent the orchestrator runs: per-step workflow agents, the coordinator runner installed via `WithCoordinator`, and standalone `RunAgent` calls. The suffix is appended after the workflow-declared agent prompt, so it extends rather than replaces the role. Repeated calls accumulate with a blank line between blocks; an empty or whitespace-only value is a no-op.
+
+```go
+orch := zenflow.New(
+    zenflow.WithModel(model),
+    zenflow.WithSystemPromptSuffix("Always cite file:line for code claims."),
+)
+```
+
+### Skills
+
+```go
+func LoadSkills(dir string) (*Skills, error)
+func LoadSkillsDirs(dirs ...string) (*Skills, error)
+func WithSkills(s *Skills) Option
+
+type Skill struct { Name, Description, Path, Body string }
+func (s *Skills) Names() []string
+func (s *Skills) Len() int
+func (s *Skills) IndexBlock() string
+func (s *Skills) Tool() goai.Tool
+```
+
+`LoadSkills` scans a skills directory using either layout: one subdirectory per skill (`<dir>/<slug>/SKILL.md`) or flat markdown files (`<dir>/<slug>.md`). Optional YAML frontmatter supplies `name` and `description`; otherwise the directory/file stem becomes the name and the first body line the description. `LoadSkillsDirs` merges several directories, first directory winning on duplicate names.
+
+`WithSkills` uses **progressive disclosure**: only the compact index (name + description) is appended to the system prompt, and a `read_skill` tool is registered so the agent loads a skill's full body on demand. This keeps context usage proportional to the skills actually used. A caller-registered tool named `read_skill` takes precedence over the built-in loader.
+
+```go
+skills, err := zenflow.LoadSkills("./skills")
+if err != nil {
+    return err
+}
+orch := zenflow.New(
+    zenflow.WithModel(model),
+    zenflow.WithSkills(skills),
+)
+```
+
+From the CLI the same feature is available as `--system-prompt TEXT|@FILE` and `--skills DIR` (repeatable) on `flow`, `goal`, and `agent`.
+
+### MCP configuration
+
+zenflow loads [Model Context Protocol](https://modelcontextprotocol.io) servers from a Claude-compatible `settings.json` and exposes their tools as ordinary `goai.Tool` values.
+
+```go
+func LoadMCPConfig(path string) (*MCPConfig, error)
+func ConnectMCPConfig(ctx context.Context, cfg *MCPConfig, opts ...MCPOption) (*MCPToolset, error)
+
+func WithMCPClientInfo(name, version string) MCPOption
+func WithMCPRequestTimeout(d time.Duration) MCPOption
+func WithMCPStderr(w io.Writer) MCPOption
+```
+
+`LoadMCPConfig` parses the file (a missing file returns an error satisfying `errors.Is(err, os.ErrNotExist)`). `ConnectMCPConfig` connects to every enabled server and returns an `*MCPToolset`; `ts.Tools()` feeds `WithAdditionalTools`, and `ts.Close()` shuts the servers down. A failure connecting to one server does not abort the rest - the toolset carries every server that connected and the error joins the failures.
+
+```go
+cfg, err := zenflow.LoadMCPConfig(".zenflow/settings.json")
+if err != nil && !errors.Is(err, os.ErrNotExist) {
+    return err
+}
+ts, err := zenflow.ConnectMCPConfig(ctx, cfg)
+if err != nil {
+    log.Printf("partial MCP load: %v", err)
+}
+defer ts.Close()
+
+orch := zenflow.New(
+    zenflow.WithModel(model),
+    zenflow.WithTools(builtins...),
+    zenflow.WithAdditionalTools(ts.Tools()...),
+)
+```
+
+See the [MCP servers guide](/integrations/mcp) for the `settings.json` format, transports, env expansion, and tool grouping.
+
 ### `WithMaxTurns`
 
 ```go
@@ -8101,9 +8561,9 @@ func WithMaxMailboxSize(n int) Option
 
 Bounds the per-step in-memory mailbox queue. When the cap is exceeded, Append rejects the newest message and the router emits `EventMessageDropped{reason: mailbox-full}` via OnDrop.
 
-**Default:** 0 (unbounded).
+**Default:** `DefaultMaxMailboxSize` (10000), installed by `New` when the option is not applied. Pass `WithMaxMailboxSize(0)` to opt out (unbounded).
 
-**When to set:** workflows where a producer can flood a slow consumer. Without a cap, runaway producers can OOM. The default is unbounded for backward compatibility; setting any positive value is a good practice.
+**When to set:** workflows where a producer can flood a slow consumer. Without a cap, runaway producers can OOM. Setting a value below the 10000 default is a good practice for tight coupling.
 
 Only takes effect with the default `InMemoryMailboxStore` - custom stores enforce their own caps.
 
@@ -8526,15 +8986,14 @@ Installs a `ProgressSink`. zenflow emits one event per lifecycle transition (wor
 
 **Default:** nil (events discarded; no observable progress).
 
-The two built-in sinks live in `zenflow/sink`:
+The JSON sink lives in `zenflow/sink`; the human-readable `StdoutSink` is CLI-only (`cmd/zenflow`, package `main`) and not importable as a library:
 
-- `sink.NewStdoutSink()` - human-readable progress with glyphs and colors.
-- `sink.NewJSONSink()` - NDJSON to stdout, the CLI's `--json` mode.
+- `sink.JSON(os.Stdout)` - NDJSON, the CLI's `--json` mode.
 
 ```go
 orch := zenflow.New(
     zenflow.WithModel(model),
-    zenflow.WithProgress(sink.NewStdoutSink()),
+    zenflow.WithProgress(sink.JSON(os.Stdout)),
 )
 ```
 
@@ -8895,6 +9354,34 @@ Defines a named agent's role, model, and tool access. Two halves to the struct:
 
 `Tools` and `DisallowedTools` are workflow-only fields - they are read by the executor when filtering tools for a workflow-declared agent, and ignored on the `RunAgent` path (use `CallTools` there).
 
+### `Skill`
+
+```go
+type Skill struct {
+    Name        string
+    Description string
+    Path        string
+    Body        string
+}
+```
+
+One skill loaded from a skills directory. `Name` is the identifier the `read_skill` tool accepts; `Description` is the one-line summary shown in the system-prompt index; `Path` is the absolute markdown path; `Body` is the full markdown body with YAML frontmatter stripped. Loaded via [`LoadSkills` / `LoadSkillsDirs`](/api/core-functions#loadskills-loadskillsdirs-withskills).
+
+### `Skills`
+
+```go
+type Skills struct {
+    // unexported: loaded skills + lookup map + pre-rendered index
+}
+
+func (s *Skills) Names() []string
+func (s *Skills) Len() int
+func (s *Skills) IndexBlock() string
+func (s *Skills) Tool() goai.Tool
+```
+
+An immutable skill collection installed on the orchestrator via `WithSkills`. `IndexBlock` returns the markdown block appended to every agent's system prompt; `Tool` returns the `read_skill` `goai.Tool` (zero value when the collection is empty). Installed skills are never serialized into workflow YAML.
+
 ### `WorkflowOptions`
 
 ```go
@@ -9132,7 +9619,7 @@ type AgentHandle struct {
     // ... internal fields ...
 }
 
-func NewAgentHandle(id string) *AgentHandle
+func NewAgentHandle(id string) (*AgentHandle, error)
 func (h *AgentHandle) Done() <-chan AgentResult
 func (h *AgentHandle) Cancel() error
 ```
@@ -9143,7 +9630,7 @@ Returned by `RunAgentAsync`. The caller drives completion via `Done()` and may f
 - `Done()` - read-only channel, buffered size 1, delivers exactly one terminal `AgentResult` then closes. Multiple reads after close yield the zero value.
 - `Cancel()` - force-terminates. Subsequent `Done()` reads see `AgentResult{Error: AgentError{Sentinel: ErrAgentCancelled}}`. Idempotent.
 
-`NewAgentHandle` is for tests that construct standalone handles outside `RunAgentAsync`. Production code should always go through `RunAgentAsync`. Panics if `id` is empty.
+`NewAgentHandle` is for tests that construct standalone handles outside `RunAgentAsync`. Production code should always go through `RunAgentAsync`. Returns `(nil, ErrInvalidAgentHandleID)` if `id` is empty.
 
 ### `AgentError`
 
@@ -9661,7 +10148,7 @@ Cross-step key-value store. Each entry is namespaced by writer (e.g., `"research
 ```go
 type FactoryCache struct { /* internal fields */ }
 
-func NewFactoryCache(inner func(sessionID string) *Orchestrator) *FactoryCache
+func NewFactoryCache(inner func(sessionID string) *Orchestrator) (*FactoryCache, error)
 func (c *FactoryCache) For(sessionID string) *Orchestrator
 func (c *FactoryCache) Close(sessionID string) error
 func (c *FactoryCache) CloseAll()
@@ -9669,7 +10156,7 @@ func (c *FactoryCache) CloseAll()
 
 Session-scoped `*Orchestrator` cache with TTL-based eviction. Memoizes the orchestrator per `sessionID` so repeated calls for the same session reuse a single instance rather than allocating fresh goroutine trees (handle registry, TTL watchdogs) on every invocation.
 
-- `NewFactoryCache(inner)` - wraps the supplied constructor. Panics if `inner == nil`.
+- `NewFactoryCache(inner)` - wraps the supplied constructor. Returns `(nil, ErrNilFactoryInner)` if `inner == nil`.
 - `For(sessionID)` - returns the cached orchestrator for `sessionID`, building it via `inner` on the first call. Returns `nil` if `inner` exceeds the construction timeout.
 - `Close(sessionID)` - calls `Orchestrator.Close()` on the cached instance and removes it from the cache. Idempotent.
 - `CloseAll()` - closes every cached instance; call on server shutdown.
@@ -9687,10 +10174,9 @@ type ProgressSink interface {
 
 Receives execution events. `OnEvent` is fired for every lifecycle transition (workflow start/end, step start/end, agent turn, tool call, error, etc.); `OnOutput` is fired per streaming token when streaming is on.
 
-Built-in implementations live under `github.com/zendev-sh/zenflow/sink`:
+Built-in implementations: the `github.com/zendev-sh/zenflow/sink` package ships `JSON` and `Buffered`; the human-readable `StdoutSink` lives in the CLI (`cmd/zenflow`, package `main`) and is not importable as a library:
 
-- `sink.NewStdoutSink()` / `sink.NewStdoutSinkTo(w)` - human-readable progress with glyphs and colors.
-- `sink.NewJSONSink()` / `sink.NewJSONSinkTo(w)` - NDJSON, one event per line. The CLI's `--json` mode.
+- `sink.JSON(w)` - NDJSON, one event per line. The CLI's `--json` mode.
 - `sink.Buffered(wrapped, window)` - debounces high-frequency output deltas into one event per window.
 
 ### `Event`
@@ -9851,37 +10337,14 @@ Returning `(nil, nil)` is treated as "not resolvable" - the resume fails with `E
 
 ## Sink helpers
 
-In `github.com/zendev-sh/zenflow/sink`:
-
-### `StdoutSink`
-
-```go
-type StdoutSink struct { /* internal */ }
-type StdoutSinkOption func(*StdoutSink)
-
-func WithStdoutShowPlan(v bool) StdoutSinkOption  // enable DAG rendering on EventPlanReady
-func WithStdoutVerbose(v bool) StdoutSinkOption   // enable agent text and reasoning content
-
-func NewStdoutSink(opts ...StdoutSinkOption) *StdoutSink
-func NewStdoutSinkTo(w io.Writer, opts ...StdoutSinkOption) *StdoutSink
-
-// Deprecated: use WithStdoutShowPlan option in NewStdoutSink. Will be removed before v1.0.
-func (s *StdoutSink) WithShowPlan(enabled bool) *StdoutSink
-// Deprecated: use WithStdoutVerbose option in NewStdoutSink. Will be removed before v1.0.
-func (s *StdoutSink) WithVerbose(enabled bool) *StdoutSink
-```
-
-Human-readable progress: triangle/check glyphs for step start/end, dashed lines for coordinator narration, colored status badges. Pass `WithStdoutShowPlan(true)` to render the DAG on `EventPlanReady`; pass `WithStdoutVerbose(true)` to include agent text and reasoning content.
-
-`SetColorEnabled(v bool)` in the `sink` package overrides the auto-detected color setting. Intended for tests; production code should let the sink detect terminal capabilities automatically.
+The `github.com/zendev-sh/zenflow/sink` package ships the JSON and buffered sinks below. The human-readable `StdoutSink` is CLI-only (`cmd/zenflow/stdout_sink.go`, package `main`) and is not exposed as a library type.
 
 ### `JSONSink`
 
 ```go
 type JSONSink struct { /* internal */ }
 
-func NewJSONSink() *JSONSink              // -> os.Stdout
-func NewJSONSinkTo(w io.Writer) *JSONSink
+func JSON(w io.Writer) *JSONSink
 func (s *JSONSink) Err() error            // first encode error
 ```
 
@@ -9892,7 +10355,7 @@ NDJSON output. One JSON object per line, additive contract (new events / fields 
 ```go
 type BufferedSink struct { /* internal */ }
 
-func Buffered(wrapped ProgressSink, window time.Duration) ProgressSink
+func Buffered(wrapped ProgressSink, window time.Duration) ClosableProgressSink
 func (b *BufferedSink) Close() error
 ```
 
