@@ -1288,6 +1288,7 @@ zenflow runs on top of [goai](https://goai.sh). Any provider [goai](https://goai
 | OpenAI direct | `openai/` | `gpt-4o`, `o3` | `OPENAI_API_KEY` (+ `OPENAI_BASE_URL`) | `goai/provider/openai` |
 | OpenRouter | `openrouter/` | `anthropic/claude-3.5-sonnet` | `OPENROUTER_API_KEY` | `goai/provider/openrouter` |
 | Cerebras | `cerebras/` | `llama3.1-70b` | `CEREBRAS_API_KEY` | `goai/provider/cerebras` |
+| Cheaper Inference | `cheaperinference/` | `gpt-5.4-mini` | `CHEAPER_INFERENCE_API_KEY` (+ `CHEAPER_INFERENCE_BASE_URL`) | `goai/provider/cheaperinference` |
 | Cloudflare Workers AI | `cloudflare/` | `@cf/meta/llama-3.1-8b-instruct` | `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` | `goai/provider/cloudflare` |
 | Cohere | `cohere/` | `command-r-plus` | `COHERE_API_KEY` | `goai/provider/cohere` |
 | DeepInfra | `deepinfra/` | `meta-llama/Llama-3.1-70B-Instruct` | `DEEPINFRA_API_KEY` | `goai/provider/deepinfra` |

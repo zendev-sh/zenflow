@@ -402,6 +402,7 @@ func TestResolveProvider_NewPrefixes(t *testing.T) {
 		{"perplexity/sonar-pro", "sonar-pro"},
 		{"nvidia/meta/llama-3.3-70b-instruct", "meta/llama-3.3-70b-instruct"},
 		{"openrouter/anthropic/claude-sonnet-4.6", "anthropic/claude-sonnet-4.6"},
+		{"cheaperinference/gpt-5.4-mini", "gpt-5.4-mini"},
 		{"minimax/MiniMax-M2", "MiniMax-M2"},
 		{"fptcloud/Qwen3-Coder-30B-A3B-Instruct", "Qwen3-Coder-30B-A3B-Instruct"},
 		{"cloudflare/@cf/meta/llama-3.3-70b-instruct-fp8-fast", "@cf/meta/llama-3.3-70b-instruct-fp8-fast"},

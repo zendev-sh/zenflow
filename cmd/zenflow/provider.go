@@ -8,14 +8,15 @@ package main
 // set.
 //
 // Supported provider prefixes: anthropic, azure, azure-deployment,
-// bedrock, cerebras, cloudflare, cohere, compat, deepinfra, deepseek,
-// fireworks, fptcloud, google, groq, minimax, mistral, nvidia, ollama,
-// openai, openrouter, perplexity, runpod, together, vertex,
-// vertex-anthropic, vllm, xai.
+// bedrock, cerebras, cheaperinference, cloudflare, cohere, compat,
+// deepinfra, deepseek, fireworks, fptcloud, google, groq, minimax,
+// mistral, nvidia, ollama, openai, openrouter, perplexity, runpod,
+// together, vertex, vertex-anthropic, vllm, xai.
 //
 // Each provider's API key (and other config) is read from its standard
 // env var by the underlying goai constructor: ANTHROPIC_API_KEY,
-// CEREBRAS_API_KEY, CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID,
+// CEREBRAS_API_KEY, CHEAPER_INFERENCE_API_KEY,
+// CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID,
 // COHERE_API_KEY, DEEPINFRA_API_KEY, DEEPSEEK_API_KEY,
 // FIREWORKS_API_KEY, FPT_API_KEY (+ FPT_REGION), GEMINI_API_KEY,
 // GOOGLE_GENERATIVE_AI_API_KEY, GROQ_API_KEY, MINIMAX_API_KEY,
@@ -33,6 +34,7 @@ import (
 	"github.com/zendev-sh/goai/provider/azure"
 	"github.com/zendev-sh/goai/provider/bedrock"
 	"github.com/zendev-sh/goai/provider/cerebras"
+	"github.com/zendev-sh/goai/provider/cheaperinference"
 	"github.com/zendev-sh/goai/provider/cloudflare"
 	"github.com/zendev-sh/goai/provider/cohere"
 	"github.com/zendev-sh/goai/provider/compat"
@@ -238,6 +240,11 @@ func resolveModel(providerName, modelID string) provider.LanguageModel {
 	case "openrouter":
 		// OpenRouter (multi-provider router). Reads OPENROUTER_API_KEY.
 		return openrouter.Chat(modelID)
+	case "cheaperinference":
+		// Cheaper Inference (OpenAI-compatible gateway). Reads
+		// CHEAPER_INFERENCE_API_KEY and optional
+		// CHEAPER_INFERENCE_BASE_URL.
+		return cheaperinference.Chat(modelID)
 	case "minimax":
 		// MiniMax (Anthropic-compatible protocol). Reads MINIMAX_API_KEY.
 		return minimax.Chat(modelID)
